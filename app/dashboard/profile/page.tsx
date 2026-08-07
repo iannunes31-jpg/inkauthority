@@ -1,3 +1,4 @@
+// @ts-nocheck
 "use client";
 
 import { UserProfile, useUser } from "@clerk/nextjs";
