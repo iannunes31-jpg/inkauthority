@@ -73,17 +73,15 @@ export function LoginModal({ isOpen, onClose, initialView = "login" }: LoginModa
       });
 
       if (result && result.status === "complete") {
-        await setActive({ session: result.createdSessionId });
         onClose();
-        router.push("/dashboard");
+        window.location.href = "/dashboard";
         return;
       }
       
       // Fallback para caso o signUp já esteja completo
       if (signUp.status === "complete") {
-        await setActive({ session: signUp.createdSessionId });
         onClose();
-        router.push("/dashboard");
+        window.location.href = "/dashboard";
         return;
       }
 
@@ -144,13 +142,11 @@ export function LoginModal({ isOpen, onClose, initialView = "login" }: LoginModa
       }
       
       if (result && result.status === "complete") {
-        await setActive({ session: result.createdSessionId });
         onClose();
-        router.push("/dashboard");
+        window.location.href = "/dashboard";
       } else if (signUp.status === "complete") {
-        await setActive({ session: signUp.createdSessionId });
         onClose();
-        router.push("/dashboard");
+        window.location.href = "/dashboard";
       } else if (result && result.status === "missing_requirements") {
         setErrorMsg(`Quase lá! Faltam os campos obrigatórios no painel do Clerk: ${result.missingFields?.join(", ") || "desconhecidos"}`);
       } else if (signUp.status === "missing_requirements") {
@@ -193,9 +189,8 @@ export function LoginModal({ isOpen, onClose, initialView = "login" }: LoginModa
       const sessionId = result?.createdSessionId || signIn.createdSessionId;
 
       if (status === "complete") {
-        await setActive({ session: sessionId });
         onClose();
-        router.push("/dashboard");
+        window.location.href = "/dashboard";
       } else if (status === "needs_first_factor") {
         // Se a conta existe mas o email não foi verificado
         setErrorMsg("Você precisa verificar seu email antes de entrar.");
