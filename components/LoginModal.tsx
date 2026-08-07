@@ -120,23 +120,26 @@ export function LoginModal({ isOpen, onClose, initialView = "login" }: LoginModa
 
     try {
       let result;
-      if (signUp.verifications && typeof signUp.verifications.verifyEmailCode === "function") {
-        try {
-          result = await signUp.verifications.verifyEmailCode({ code });
-        } catch (e: any) {
-          // Se der erro 'is not a function' por causa do objeto, tenta passar como string
-          if (e.message && e.message.includes('is not a function')) {
-             result = await (signUp.verifications as any).verifyEmailCode(code);
-          } else {
-             throw e;
-          }
-        }
-      } else if (typeof signUp.attemptEmailAddressVerification === "function") {
-        result = await signUp.attemptEmailAddressVerification({ code });
-      } else if (typeof signUp.attemptVerification === "function") {
-        result = await signUp.attemptVerification({ strategy: "email_code", code });
-      } else {
-        throw new Error("Nenhum método de verificação de código encontrado.");
+      const errors = [];
+      
+      try { 
+         result = await (signUp as any).attemptEmailAddressVerification({ code }); 
+      } catch(e: any) { errors.push("1.attemptEmail: " + (e.message || "error")); }
+      
+      if (!result) {
+         try { 
+            result = await (signUp as any).attemptVerification({ strategy: "email_code", code }); 
+         } catch(e: any) { errors.push("2.attemptVerif: " + (e.message || "error")); }
+      }
+      
+      if (!result && signUp.verifications) {
+         try { 
+            result = await (signUp.verifications as any).verifyEmailCode({ code }); 
+         } catch(e: any) { errors.push("3.verifyEmail: " + (e.message || "error")); }
+      }
+      
+      if (!result) {
+         throw new Error("Falhas no Clerk: " + errors.join(" | "));
       }
       
       if (result && result.status === "complete") {
