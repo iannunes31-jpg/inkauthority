@@ -23,7 +23,6 @@ export default function RootLayout({
     <ClerkProvider 
       signInUrl="/sign-in" 
       signUpUrl="/sign-up"
-      appearance={{ baseTheme: dark }}
     >
       <html lang="en" className="dark">
         <body className={`${inter.variable} ${orbitron.variable} font-sans antialiased min-h-screen bg-background text-foreground`} suppressHydrationWarning>
