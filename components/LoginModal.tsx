@@ -229,12 +229,20 @@ export function LoginModal({ isOpen, onClose, initialView = "login" }: LoginModa
       } else if (status === "needs_first_factor" || status === "needs_second_factor" || status === "needs_client_trust") {
         // Envia o código para o email do usuário
         try {
-           // Em versões recentes do Clerk (v7), a verificação de dispositivo (client trust)
-           // ou o primeiro fator é tratado pela função prepareFirstFactor.
-           await signIn.prepareFirstFactor({ 
-              strategy: "email_code", 
-              emailAddressId: signIn.supportedFirstFactors?.find(f => f.strategy === "email_code")?.emailAddressId || "" 
-           });
+           const s = signIn as any;
+           if (typeof s.prepareFirstFactor === "function") {
+              await s.prepareFirstFactor({ strategy: "email_code", emailAddressId: s.supportedFirstFactors?.find((f:any) => f.strategy === "email_code")?.emailAddressId });
+           } else if (s.prepareSecondFactor && typeof s.prepareSecondFactor === "function") {
+              await s.prepareSecondFactor({ strategy: "email_code" });
+           } else if (s.prepareVerification && typeof s.prepareVerification === "function") {
+              await s.prepareVerification({ strategy: "email_code" });
+           } else if (s.emailCode && typeof s.emailCode.sendCode === "function") {
+              await s.emailCode.sendCode();
+           } else if (s.verifications && typeof s.verifications.sendEmailCode === "function") {
+              await s.verifications.sendEmailCode();
+           } else {
+              throw new Error(`Método não encontrado. Chaves do signIn: ${Object.keys(s).join(", ")}`);
+           }
            
            setVerificationType("signin");
            setPendingVerification(true);
