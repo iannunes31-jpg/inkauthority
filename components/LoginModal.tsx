@@ -87,7 +87,9 @@ export function LoginModal({ isOpen, onClose, initialView = "login" }: LoginModa
       } else if (typeof signUp.prepareVerification === "function") {
         await signUp.prepareVerification({ strategy: "email_code" });
       } else {
-        throw new Error("DUMP: " + JSON.stringify(result));
+        const resultDump = typeof result === 'object' ? JSON.stringify(result) : String(result);
+        const signUpKeys = signUp ? Object.keys(signUp).join(", ") : "null";
+        throw new Error("DUMP signUpKeys: " + signUpKeys + " | result: " + resultDump);
       }
       
       setPendingVerification(true);
