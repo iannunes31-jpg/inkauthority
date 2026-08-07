@@ -70,17 +70,27 @@ export function LoginModal({ isOpen, onClose, initialView = "login" }: LoginModa
         unsafeMetadata: { telefone, instagram }
       });
 
-      if (result.status === "complete") {
+      if (result && result.status === "complete") {
         await setSignUpActive({ session: result.createdSessionId });
+        onClose();
+        window.location.href = "/dashboard";
+        return;
+      }
+      
+      // Fallback para caso o signUp já esteja completo
+      if (signUp.status === "complete") {
+        await setSignUpActive({ session: signUp.createdSessionId });
         onClose();
         window.location.href = "/dashboard";
         return;
       }
 
       // 2. Prepara a verificação por código no email
-      if (typeof result.prepareEmailAddressVerification === "function") {
+      if (signUp.verifications && typeof signUp.verifications.sendEmailCode === "function") {
+        await signUp.verifications.sendEmailCode();
+      } else if (typeof result?.prepareEmailAddressVerification === "function") {
         await result.prepareEmailAddressVerification({ strategy: "email_code" });
-      } else if (typeof result.prepareVerification === "function") {
+      } else if (typeof result?.prepareVerification === "function") {
         await result.prepareVerification({ strategy: "email_code" });
       } else if (typeof signUp.prepareEmailAddressVerification === "function") {
         await signUp.prepareEmailAddressVerification({ strategy: "email_code" });
@@ -110,7 +120,9 @@ export function LoginModal({ isOpen, onClose, initialView = "login" }: LoginModa
 
     try {
       let result;
-      if (typeof signUp.attemptEmailAddressVerification === "function") {
+      if (signUp.verifications && typeof signUp.verifications.verifyEmailCode === "function") {
+        result = await signUp.verifications.verifyEmailCode({ code });
+      } else if (typeof signUp.attemptEmailAddressVerification === "function") {
         result = await signUp.attemptEmailAddressVerification({ code });
       } else if (typeof signUp.attemptVerification === "function") {
         result = await signUp.attemptVerification({ strategy: "email_code", code });
@@ -118,8 +130,12 @@ export function LoginModal({ isOpen, onClose, initialView = "login" }: LoginModa
         throw new Error("Nenhum método de verificação de código encontrado.");
       }
       
-      if (result.status === "complete") {
+      if (result && result.status === "complete") {
         await setSignUpActive({ session: result.createdSessionId });
+        onClose();
+        window.location.href = "/dashboard";
+      } else if (signUp.status === "complete") {
+        await setSignUpActive({ session: signUp.createdSessionId });
         onClose();
         window.location.href = "/dashboard";
       } else {
