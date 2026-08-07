@@ -67,7 +67,7 @@ export function LoginModal({ isOpen, onClose, initialView = "login" }: LoginModa
         password: password,
         firstName: nome.split(" ")[0] || "",
         lastName: nome.split(" ").slice(1).join(" ") || "",
-        publicMetadata: { telefone, instagram }
+        unsafeMetadata: { telefone, instagram }
       });
 
       // 2. Prepara a verificação por código no email
@@ -75,7 +75,7 @@ export function LoginModal({ isOpen, onClose, initialView = "login" }: LoginModa
       setPendingVerification(true);
     } catch (err: any) {
       console.error("Erro no Clerk Sign Up:", err);
-      const errorMessage = err.errors?.[0]?.longMessage || err.errors?.[0]?.message || "Erro de conexão com o servidor de autenticação.";
+      const errorMessage = err.errors?.[0]?.longMessage || err.errors?.[0]?.message || err.message || "Erro de conexão com o servidor de autenticação.";
       setErrorMsg(errorMessage);
     } finally {
       setIsLoading(false);
@@ -100,7 +100,7 @@ export function LoginModal({ isOpen, onClose, initialView = "login" }: LoginModa
       }
     } catch (err: any) {
       console.error("Erro no Clerk Verify:", err);
-      setErrorMsg(err.errors?.[0]?.longMessage || err.errors?.[0]?.message || "Erro ao verificar código.");
+      setErrorMsg(err.errors?.[0]?.longMessage || err.errors?.[0]?.message || err.message || "Erro ao verificar código.");
     } finally {
       setIsLoading(false);
     }
@@ -141,7 +141,7 @@ export function LoginModal({ isOpen, onClose, initialView = "login" }: LoginModa
       }
     } catch (err: any) {
       console.error("Erro no Clerk Sign In:", err);
-      setErrorMsg(err.errors?.[0]?.longMessage || err.errors?.[0]?.message || "Email ou senha incorretos.");
+      setErrorMsg(err.errors?.[0]?.longMessage || err.errors?.[0]?.message || err.message || "Email ou senha incorretos.");
     } finally {
       setIsLoading(false);
     }
