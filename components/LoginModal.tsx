@@ -71,7 +71,7 @@ export function LoginModal({ isOpen, onClose, initialView = "login" }: LoginModa
       });
 
       // 2. Prepara a verificação por código no email
-      await signUp.prepareEmailAddressVerification({ strategy: "email_code" });
+      await signUp.prepareVerification({ strategy: "email_code" });
       setPendingVerification(true);
     } catch (err: any) {
       console.error("Erro no Clerk Sign Up:", err);
@@ -89,7 +89,10 @@ export function LoginModal({ isOpen, onClose, initialView = "login" }: LoginModa
     setErrorMsg("");
 
     try {
-      const result = await signUp.attemptEmailAddressVerification({ code });
+      const result = await signUp.attemptVerification({
+        strategy: "email_code",
+        code
+      });
       
       if (result.status === "complete") {
         await setSignUpActive({ session: result.createdSessionId });
