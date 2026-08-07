@@ -87,18 +87,18 @@ export function LoginModal({ isOpen, onClose, initialView = "login" }: LoginModa
       }
 
       // 2. Prepara a verificação por código no email
-      if (typeof result?.prepareEmailAddressVerification === "function") {
-        await result.prepareEmailAddressVerification({ strategy: "email_code" });
-      } else if (typeof result?.prepareVerification === "function") {
-        await result.prepareVerification({ strategy: "email_code" });
-      } else if (typeof signUp.prepareEmailAddressVerification === "function") {
-        await signUp.prepareEmailAddressVerification({ strategy: "email_code" });
-      } else if (typeof signUp.prepareVerification === "function") {
-        await signUp.prepareVerification({ strategy: "email_code" });
-      } else {
-        const resultDump = typeof result === 'object' ? JSON.stringify(result) : String(result);
-        const signUpKeys = signUp ? Object.keys(signUp).join(", ") : "null";
-        throw new Error("DUMP signUpKeys: " + signUpKeys + " | result: " + resultDump);
+      try {
+        if (signUp.prepareEmailAddressVerification) {
+           await signUp.prepareEmailAddressVerification({ strategy: "email_code" });
+        } else if (result && (result as any).prepareEmailAddressVerification) {
+           await (result as any).prepareEmailAddressVerification({ strategy: "email_code" });
+        } else {
+           // Última tentativa caso os métodos tenham sido renomeados no Clerk v7
+           await (signUp as any).prepareVerification({ strategy: "email_code" });
+        }
+      } catch (e: any) {
+         console.error("Falha ao preparar verificação:", e);
+         throw new Error(`Erro ao enviar código: ${e.message}. (signUpKeys: ${Object.keys(signUp).join(",")})`);
       }
       
       setPendingVerification(true);
