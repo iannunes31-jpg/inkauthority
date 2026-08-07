@@ -229,16 +229,22 @@ export function LoginModal({ isOpen, onClose, initialView = "login" }: LoginModa
       } else if (status === "needs_first_factor" || status === "needs_second_factor" || status === "needs_client_trust") {
         // Envia o código para o email do usuário
         try {
-           await signIn.prepareFirstFactor({ strategy: "email_code", emailAddressId: signIn.supportedFirstFactors?.find(f => f.strategy === "email_code")?.emailAddressId || "" });
-        } catch (e) {
-           try {
+           if (status === "needs_client_trust" || status === "needs_second_factor") {
               await signIn.prepareSecondFactor({ strategy: "email_code" });
-           } catch (e2) {
-              console.error("Erro ao preparar fator:", e, e2);
+           } else {
+              await signIn.prepareFirstFactor({ 
+                 strategy: "email_code", 
+                 emailAddressId: signIn.supportedFirstFactors?.find(f => f.strategy === "email_code")?.emailAddressId || "" 
+              });
            }
+           setVerificationType("signin");
+           setPendingVerification(true);
+        } catch (e: any) {
+           console.error("Erro ao preparar fator:", e);
+           const errs = e.errors || [];
+           const msg = errs.length > 0 ? errs[0].longMessage : e.message;
+           setErrorMsg(`Erro ao enviar código: ${msg || JSON.stringify(e)}`);
         }
-        setVerificationType("signin");
-        setPendingVerification(true);
       } else {
         setErrorMsg(`Erro inesperado ao fazer login. Status: ${status}`);
         console.error("DUMP SignIn result:", JSON.stringify(result));
