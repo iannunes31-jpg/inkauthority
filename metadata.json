@@ -1,0 +1,8 @@
+{
+  "name": "INK AUTHORITY",
+  "description": "The Future of Tattoo Education - Premium online platform for tattoo professionals.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
