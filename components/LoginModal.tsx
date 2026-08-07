@@ -299,8 +299,9 @@ export function LoginModal({ isOpen, onClose, initialView = "login" }: LoginModa
                 </div>
               )}
 
-              {/* TELA DE VERIFICAÇÃO DE CÓDIGO (APENAS CADASTRO) */}
-              <form onSubmit={pendingVerification ? (verificationType === "signup" ? handleVerifySignUp : handleVerifySignIn) : view === "login" ? handleSignIn : handleSignUp} className="space-y-4 relative z-10">
+              {/* TELA DE VERIFICAÇÃO DE CÓDIGO */}
+              {pendingVerification ? (
+                <form onSubmit={verificationType === "signup" ? handleVerifySignUp : handleVerifySignIn} className="space-y-4 relative z-10">
                   <div className="relative">
                     <ShieldCheck className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                     <input
