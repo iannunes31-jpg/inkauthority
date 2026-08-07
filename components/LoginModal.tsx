@@ -89,9 +89,7 @@ export function LoginModal({ isOpen, onClose, initialView = "login" }: LoginModa
       }
 
       // 2. Prepara a verificação por código no email
-      if (signUp.verifications && typeof signUp.verifications.sendEmailCode === "function") {
-        await signUp.verifications.sendEmailCode();
-      } else if (typeof result?.prepareEmailAddressVerification === "function") {
+      if (typeof result?.prepareEmailAddressVerification === "function") {
         await result.prepareEmailAddressVerification({ strategy: "email_code" });
       } else if (typeof result?.prepareVerification === "function") {
         await result.prepareVerification({ strategy: "email_code" });
@@ -123,9 +121,7 @@ export function LoginModal({ isOpen, onClose, initialView = "login" }: LoginModa
 
     try {
       let result;
-      if (signUp.verifications && typeof signUp.verifications.verifyEmailCode === "function") {
-        result = await signUp.verifications.verifyEmailCode({ code });
-      } else if (typeof signUp.attemptEmailAddressVerification === "function") {
+      if (typeof signUp.attemptEmailAddressVerification === "function") {
         result = await signUp.attemptEmailAddressVerification({ code });
       } else if (typeof signUp.attemptVerification === "function") {
         result = await signUp.attemptVerification({ strategy: "email_code", code });
