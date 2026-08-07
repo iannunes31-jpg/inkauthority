@@ -229,14 +229,13 @@ export function LoginModal({ isOpen, onClose, initialView = "login" }: LoginModa
       } else if (status === "needs_first_factor" || status === "needs_second_factor" || status === "needs_client_trust") {
         // Envia o código para o email do usuário
         try {
-           if (status === "needs_client_trust" || status === "needs_second_factor") {
-              await signIn.prepareSecondFactor({ strategy: "email_code" });
-           } else {
-              await signIn.prepareFirstFactor({ 
-                 strategy: "email_code", 
-                 emailAddressId: signIn.supportedFirstFactors?.find(f => f.strategy === "email_code")?.emailAddressId || "" 
-              });
-           }
+           // Em versões recentes do Clerk (v7), a verificação de dispositivo (client trust)
+           // ou o primeiro fator é tratado pela função prepareFirstFactor.
+           await signIn.prepareFirstFactor({ 
+              strategy: "email_code", 
+              emailAddressId: signIn.supportedFirstFactors?.find(f => f.strategy === "email_code")?.emailAddressId || "" 
+           });
+           
            setVerificationType("signin");
            setPendingVerification(true);
         } catch (e: any) {
