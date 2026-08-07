@@ -112,7 +112,7 @@ export function Navbar() {
                   </div>
 
                   <div className="ml-2 flex items-center justify-center">
-                    <UserButton afterSignOutUrl="/" />
+                    <UserButton />
                   </div>
                 </>
               )}
@@ -206,7 +206,7 @@ export function Navbar() {
                 </>
               ) : (
                 <div className="flex items-center gap-4 px-4 py-2">
-                  <UserButton afterSignOutUrl="/" />
+                  <UserButton />
                   <span className="text-sm font-medium text-white/60">Minha Conta</span>
                 </div>
               )}
