@@ -8,7 +8,7 @@ import { Menu, X, Search, Bell } from "lucide-react";
 import { useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { NotificationPanel } from "./NotificationPanel";
-import { useAuth } from "@clerk/nextjs";
+import { useAuth, UserButton } from "@clerk/nextjs";
 
 export function Navbar() {
   const pathname = usePathname();
@@ -39,29 +39,27 @@ export function Navbar() {
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center gap-8 text-[11px] uppercase tracking-[0.2em] font-semibold">
-            {!isLoggedIn && (
-              <div className="flex items-center gap-6">
-                {navLinks.map((link) => (
-                  <Link
-                    key={link.path}
-                    href={link.path}
-                    className={cn(
-                      "transition-colors hover:text-white relative py-2",
-                      pathname === link.path ? "text-white" : "text-muted-foreground"
-                    )}
-                  >
-                    {link.name}
-                    {pathname === link.path && (
-                      <motion.div
-                        layoutId="navbar-indicator"
-                        className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-full neon-glow"
-                        transition={{ type: "spring", bounce: 0.25, stiffness: 130, damping: 9 }}
-                      />
-                    )}
-                  </Link>
-                ))}
-              </div>
-            )}
+            <div className="flex items-center gap-6">
+              {navLinks.map((link) => (
+                <Link
+                  key={link.path}
+                  href={link.path}
+                  className={cn(
+                    "transition-colors hover:text-white relative py-2",
+                    pathname === link.path ? "text-white" : "text-muted-foreground"
+                  )}
+                >
+                  {link.name}
+                  {pathname === link.path && (
+                    <motion.div
+                      layoutId="navbar-indicator"
+                      className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-full neon-glow"
+                      transition={{ type: "spring", bounce: 0.25, stiffness: 130, damping: 9 }}
+                    />
+                  )}
+                </Link>
+              ))}
+            </div>
             
             <div className="h-6 w-px bg-white/10" />
             
@@ -107,6 +105,10 @@ export function Navbar() {
                       isOpen={isNotificationsOpen} 
                       onClose={() => setIsNotificationsOpen(false)} 
                     />
+                  </div>
+
+                  <div className="ml-2 flex items-center justify-center">
+                    <UserButton afterSignOutUrl="/" />
                   </div>
                 </>
               )}
@@ -162,7 +164,7 @@ export function Navbar() {
               exit={{ opacity: 0, y: -10 }}
               className="absolute top-full left-0 w-full bg-black/95 border-b border-white/10 p-4 flex flex-col gap-4 md:hidden backdrop-blur-xl"
             >
-              {!isLoggedIn && navLinks.map((link) => (
+              {navLinks.map((link) => (
                 <Link
                   key={link.path}
                   href={link.path}
@@ -176,7 +178,7 @@ export function Navbar() {
                 </Link>
               ))}
               <div className="h-px w-full bg-white/10 my-2" />
-              {!isLoggedIn && (
+              {!isLoggedIn ? (
                 <>
                   <Button 
                     variant="ghost" 
@@ -198,6 +200,11 @@ export function Navbar() {
                     Matricule-se
                   </Button>
                 </>
+              ) : (
+                <div className="flex items-center gap-4 px-4 py-2">
+                  <UserButton afterSignOutUrl="/" />
+                  <span className="text-sm font-medium text-white/60">Minha Conta</span>
+                </div>
               )}
             </motion.div>
           )}
