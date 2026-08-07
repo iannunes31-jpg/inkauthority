@@ -5,7 +5,7 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { X, Mail, Lock, ArrowRight, User, Phone, Instagram, Upload, ShieldCheck, Eye, EyeOff } from "lucide-react";
 import { Button } from "./ui/button";
-import { useSignUp, useSignIn } from "@clerk/nextjs";
+import { useSignUp, useSignIn, useClerk } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 
 interface LoginModalProps {
@@ -16,8 +16,9 @@ interface LoginModalProps {
 
 export function LoginModal({ isOpen, onClose, initialView = "login" }: LoginModalProps) {
   const router = useRouter();
-  const { isLoaded: isSignUpLoaded, signUp, setActive: setSignUpActive } = useSignUp();
-  const { isLoaded: isSignInLoaded, signIn, setActive: setSignInActive } = useSignIn();
+  const { setActive } = useClerk();
+  const { isLoaded: isSignUpLoaded, signUp } = useSignUp();
+  const { isLoaded: isSignInLoaded, signIn } = useSignIn();
 
   const [view, setView] = useState<"login" | "register">("login");
   const [pendingVerification, setPendingVerification] = useState(false);
@@ -72,7 +73,7 @@ export function LoginModal({ isOpen, onClose, initialView = "login" }: LoginModa
       });
 
       if (result && result.status === "complete") {
-        await setSignUpActive({ session: result.createdSessionId });
+        await setActive({ session: result.createdSessionId });
         onClose();
         router.push("/dashboard");
         return;
@@ -80,7 +81,7 @@ export function LoginModal({ isOpen, onClose, initialView = "login" }: LoginModa
       
       // Fallback para caso o signUp já esteja completo
       if (signUp.status === "complete") {
-        await setSignUpActive({ session: signUp.createdSessionId });
+        await setActive({ session: signUp.createdSessionId });
         onClose();
         router.push("/dashboard");
         return;
@@ -143,11 +144,11 @@ export function LoginModal({ isOpen, onClose, initialView = "login" }: LoginModa
       }
       
       if (result && result.status === "complete") {
-        await setSignUpActive({ session: result.createdSessionId });
+        await setActive({ session: result.createdSessionId });
         onClose();
         router.push("/dashboard");
       } else if (signUp.status === "complete") {
-        await setSignUpActive({ session: signUp.createdSessionId });
+        await setActive({ session: signUp.createdSessionId });
         onClose();
         router.push("/dashboard");
       } else if (result && result.status === "missing_requirements") {
@@ -189,7 +190,7 @@ export function LoginModal({ isOpen, onClose, initialView = "login" }: LoginModa
       });
 
       if (result.status === "complete") {
-        await setSignInActive({ session: result.createdSessionId });
+        await setActive({ session: result.createdSessionId });
         onClose();
         router.push("/dashboard");
       } else if (result.status === "needs_first_factor") {
