@@ -70,6 +70,13 @@ export function LoginModal({ isOpen, onClose, initialView = "login" }: LoginModa
         unsafeMetadata: { telefone, instagram }
       });
 
+      if (result.status === "complete") {
+        await setSignUpActive({ session: result.createdSessionId });
+        onClose();
+        window.location.href = "/dashboard";
+        return;
+      }
+
       // 2. Prepara a verificação por código no email
       if (typeof result.prepareEmailAddressVerification === "function") {
         await result.prepareEmailAddressVerification({ strategy: "email_code" });
