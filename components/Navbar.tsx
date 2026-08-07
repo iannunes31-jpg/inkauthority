@@ -8,9 +8,80 @@ import { Menu, X, Search, Bell } from "lucide-react";
 import { useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { NotificationPanel } from "./NotificationPanel";
-import { useAuth, UserButton } from "@clerk/nextjs";
-
+import { useAuth, useUser, useClerk } from "@clerk/nextjs";
+import { LogOut, LayoutDashboard, Settings } from "lucide-react";
 import { LoginModal } from "./LoginModal";
+
+function UserDropdown() {
+  const { user } = useUser();
+  const { signOut } = useClerk();
+  const [isOpen, setIsOpen] = useState(false);
+  
+  if (!user) return null;
+
+  const isAdmin = 
+    user.primaryEmailAddress?.emailAddress === "yurilojavirtual@gmail.com" || 
+    user.primaryEmailAddress?.emailAddress === "o9.yuri@gmail.com";
+
+  return (
+    <div className="relative">
+      <button 
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors border border-white/20 overflow-hidden"
+      >
+        <span className="text-xs font-bold text-white">
+          {user.firstName ? user.firstName.charAt(0).toUpperCase() : user.primaryEmailAddress?.emailAddress.charAt(0).toUpperCase()}
+        </span>
+      </button>
+      
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: 10, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 10, scale: 0.95 }}
+            className="absolute right-0 top-full mt-2 w-56 glass rounded-xl border border-white/10 shadow-2xl py-2 z-50 flex flex-col"
+          >
+            <div className="px-4 py-2 border-b border-white/10 mb-2">
+              <p className="text-sm font-medium text-white">{user.fullName || "Usuário"}</p>
+              <p className="text-xs text-muted-foreground truncate">{user.primaryEmailAddress?.emailAddress}</p>
+            </div>
+            
+            <Link 
+              href="/dashboard" 
+              onClick={() => setIsOpen(false)}
+              className="px-4 py-2 text-sm text-white/70 hover:text-white hover:bg-white/5 flex items-center gap-2 transition-colors"
+            >
+              <LayoutDashboard className="w-4 h-4" />
+              Painel do Aluno
+            </Link>
+
+            {isAdmin && (
+              <Link 
+                href="/admin" 
+                onClick={() => setIsOpen(false)}
+                className="px-4 py-2 text-sm text-primary hover:bg-white/5 flex items-center gap-2 transition-colors"
+              >
+                <Settings className="w-4 h-4" />
+                Painel Admin
+              </Link>
+            )}
+            
+            <div className="h-px w-full bg-white/10 my-1" />
+            
+            <button 
+              onClick={() => signOut()}
+              className="px-4 py-2 text-sm text-red-400 hover:text-red-300 hover:bg-white/5 flex items-center gap-2 transition-colors text-left w-full"
+            >
+              <LogOut className="w-4 h-4" />
+              Sair da conta
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
 
 export function Navbar() {
   const pathname = usePathname();
@@ -44,7 +115,7 @@ export function Navbar() {
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center gap-8 text-[11px] uppercase tracking-[0.2em] font-semibold">
             <div className="flex items-center gap-6">
-              {navLinks.map((link) => (
+              {!isLoggedIn && navLinks.map((link) => (
                 <Link
                   key={link.path}
                   href={link.path}
@@ -65,7 +136,7 @@ export function Navbar() {
               ))}
             </div>
             
-            <div className="h-6 w-px bg-white/10" />
+            {!isLoggedIn && <div className="h-6 w-px bg-white/10" />}
             
             <div className="flex items-center gap-4 relative">
               {/* Search Bar & Notifications (Only for logged in users) */}
@@ -112,7 +183,7 @@ export function Navbar() {
                   </div>
 
                   <div className="ml-2 flex items-center justify-center">
-                    <UserButton />
+                    <UserDropdown />
                   </div>
                 </>
               )}
@@ -168,7 +239,7 @@ export function Navbar() {
               exit={{ opacity: 0, y: -10 }}
               className="absolute top-full left-0 w-full bg-black/95 border-b border-white/10 p-4 flex flex-col gap-4 md:hidden backdrop-blur-xl"
             >
-              {navLinks.map((link) => (
+              {!isLoggedIn && navLinks.map((link) => (
                 <Link
                   key={link.path}
                   href={link.path}
@@ -181,7 +252,7 @@ export function Navbar() {
                   {link.name}
                 </Link>
               ))}
-              <div className="h-px w-full bg-white/10 my-2" />
+              {!isLoggedIn && <div className="h-px w-full bg-white/10 my-2" />}
               {!isLoggedIn ? (
                 <>
                   <Button 
@@ -205,9 +276,9 @@ export function Navbar() {
                   </Button>
                 </>
               ) : (
-                <div className="flex items-center gap-4 px-4 py-2">
-                  <UserButton />
+                <div className="flex items-center gap-4 px-4 py-2 justify-between">
                   <span className="text-sm font-medium text-white/60">Minha Conta</span>
+                  <UserDropdown />
                 </div>
               )}
             </motion.div>
