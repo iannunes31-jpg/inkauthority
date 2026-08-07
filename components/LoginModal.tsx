@@ -52,7 +52,7 @@ export function LoginModal({ isOpen, onClose, initialView = "login" }: LoginModa
       return;
     }
 
-    if (!isSignUpLoaded) {
+    if (!signUp) {
       setErrorMsg("Conectando ao servidor de segurança... aguarde um segundo e tente novamente.");
       return;
     }
@@ -84,7 +84,7 @@ export function LoginModal({ isOpen, onClose, initialView = "login" }: LoginModa
 
   const handleVerifySignUp = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!isSignUpLoaded) return;
+    if (!signUp) return;
     setIsLoading(true);
     setErrorMsg("");
 
@@ -115,7 +115,7 @@ export function LoginModal({ isOpen, onClose, initialView = "login" }: LoginModa
       return;
     }
 
-    if (!isSignInLoaded) {
+    if (!signIn) {
       setErrorMsg("Conectando ao servidor... aguarde um segundo.");
       return;
     }
