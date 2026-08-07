@@ -88,17 +88,11 @@ export function LoginModal({ isOpen, onClose, initialView = "login" }: LoginModa
 
       // 2. Prepara a verificação por código no email
       try {
-        if (signUp.prepareEmailAddressVerification) {
-           await signUp.prepareEmailAddressVerification({ strategy: "email_code" });
-        } else if (result && (result as any).prepareEmailAddressVerification) {
-           await (result as any).prepareEmailAddressVerification({ strategy: "email_code" });
-        } else {
-           // Última tentativa caso os métodos tenham sido renomeados no Clerk v7
-           await (signUp as any).prepareVerification({ strategy: "email_code" });
-        }
+        const verificationsKeys = signUp.verifications ? Object.keys(signUp.verifications).join(", ") : "null";
+        throw new Error(`DUMP Verifications: ${verificationsKeys}`);
       } catch (e: any) {
          console.error("Falha ao preparar verificação:", e);
-         throw new Error(`Erro ao enviar código: ${e.message}. (signUpKeys: ${Object.keys(signUp).join(",")})`);
+         throw new Error(`${e.message}`);
       }
       
       setPendingVerification(true);
