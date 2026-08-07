@@ -7,8 +7,7 @@ export default clerkMiddleware(async (auth, req) => {
   if (isProtectedRoute(req)) {
     const { userId } = await auth();
     if (!userId) {
-      const signInUrl = new URL("/sign-in", req.url);
-      signInUrl.searchParams.set("redirect_url", req.url);
+      const signInUrl = new URL("/", req.url); // Volta para a home ao invés do /sign-in que não existe mais
       return NextResponse.redirect(signInUrl);
     }
   }

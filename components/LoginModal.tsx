@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from "motion/react";
 import { X, Mail, Lock, ArrowRight, User, Phone, Instagram, Upload, ShieldCheck, Eye, EyeOff } from "lucide-react";
 import { Button } from "./ui/button";
 import { useSignUp, useSignIn } from "@clerk/nextjs";
+import { useRouter } from "next/navigation";
 
 interface LoginModalProps {
   isOpen: boolean;
@@ -14,6 +15,7 @@ interface LoginModalProps {
 }
 
 export function LoginModal({ isOpen, onClose, initialView = "login" }: LoginModalProps) {
+  const router = useRouter();
   const { isLoaded: isSignUpLoaded, signUp, setActive: setSignUpActive } = useSignUp();
   const { isLoaded: isSignInLoaded, signIn, setActive: setSignInActive } = useSignIn();
 
@@ -72,7 +74,7 @@ export function LoginModal({ isOpen, onClose, initialView = "login" }: LoginModa
       if (result && result.status === "complete") {
         await setSignUpActive({ session: result.createdSessionId });
         onClose();
-        window.location.href = "/dashboard";
+        router.push("/dashboard");
         return;
       }
       
@@ -80,7 +82,7 @@ export function LoginModal({ isOpen, onClose, initialView = "login" }: LoginModa
       if (signUp.status === "complete") {
         await setSignUpActive({ session: signUp.createdSessionId });
         onClose();
-        window.location.href = "/dashboard";
+        router.push("/dashboard");
         return;
       }
 
@@ -128,11 +130,11 @@ export function LoginModal({ isOpen, onClose, initialView = "login" }: LoginModa
       if (result && result.status === "complete") {
         await setSignUpActive({ session: result.createdSessionId });
         onClose();
-        window.location.href = "/dashboard";
+        router.push("/dashboard");
       } else if (signUp.status === "complete") {
         await setSignUpActive({ session: signUp.createdSessionId });
         onClose();
-        window.location.href = "/dashboard";
+        router.push("/dashboard");
       } else if (result && result.status === "missing_requirements") {
         setErrorMsg(`Quase lá! Faltam os campos obrigatórios no painel do Clerk: ${result.missingFields?.join(", ") || "desconhecidos"}`);
       } else if (signUp.status === "missing_requirements") {
@@ -174,12 +176,13 @@ export function LoginModal({ isOpen, onClose, initialView = "login" }: LoginModa
       if (result.status === "complete") {
         await setSignInActive({ session: result.createdSessionId });
         onClose();
-        window.location.href = "/dashboard";
+        router.push("/dashboard");
       } else if (result.status === "needs_first_factor") {
         // Se a conta existe mas o email não foi verificado
         setErrorMsg("Você precisa verificar seu email antes de entrar.");
       } else {
-        setErrorMsg("Erro inesperado ao fazer login.");
+        setErrorMsg(`Erro inesperado ao fazer login. Status: ${result.status}`);
+        console.error("DUMP SignIn result:", JSON.stringify(result));
       }
     } catch (err: any) {
       console.error("Erro no Clerk Sign In:", err);
