@@ -405,17 +405,17 @@ document.addEventListener('DOMContentLoaded', () => {
   const interval = setInterval(() => {
     const form = document.querySelector('form');
     if (form) {
-      const video = document.createElement('video');
-      video.src = '/video_badini.mp4';
-      video.controls = true;
-      video.autoplay = true;
-      video.muted = false;
-      video.playsInline = true;
-      video.style.width = '100%';
-      video.style.borderRadius = '16px';
-      video.style.marginTop = '20px';
-      video.style.boxShadow = '0 0 30px rgba(255,255,255,0.05)';
-      form.replaceWith(video);
+      const iframe = document.createElement('iframe');
+      iframe.src = 'https://customer-pqzfhfevg12hmnf8.cloudflarestream.com/30319fb40456d90f8d03d1bdb372b768/iframe?autoplay=true&controls=true';
+      iframe.style.border = 'none';
+      iframe.style.width = '100%';
+      iframe.style.aspectRatio = '16/9';
+      iframe.style.borderRadius = '16px';
+      iframe.style.marginTop = '20px';
+      iframe.style.boxShadow = '0 0 30px rgba(255,255,255,0.05)';
+      iframe.allow = 'accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture;';
+      iframe.allowFullscreen = true;
+      form.replaceWith(iframe);
       clearInterval(interval);
     }
     if (attempts > 30) clearInterval(interval);
