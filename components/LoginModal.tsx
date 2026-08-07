@@ -88,11 +88,18 @@ export function LoginModal({ isOpen, onClose, initialView = "login" }: LoginModa
 
       // 2. Prepara a verificação por código no email
       try {
-        const verificationsKeys = signUp.verifications ? Object.keys(signUp.verifications).join(", ") : "null";
-        throw new Error(`DUMP Verifications: ${verificationsKeys}`);
+        if (signUp.verifications && typeof signUp.verifications.sendEmailCode === 'function') {
+           await signUp.verifications.sendEmailCode();
+        } else if (signUp.prepareEmailAddressVerification) {
+           await signUp.prepareEmailAddressVerification({ strategy: "email_code" });
+        } else if (result && (result as any).prepareEmailAddressVerification) {
+           await (result as any).prepareEmailAddressVerification({ strategy: "email_code" });
+        } else {
+           await (signUp as any).prepareVerification({ strategy: "email_code" });
+        }
       } catch (e: any) {
          console.error("Falha ao preparar verificação:", e);
-         throw new Error(`${e.message}`);
+         throw new Error(`Erro ao enviar código: ${e.message}`);
       }
       
       setPendingVerification(true);
@@ -113,7 +120,18 @@ export function LoginModal({ isOpen, onClose, initialView = "login" }: LoginModa
 
     try {
       let result;
-      if (typeof signUp.attemptEmailAddressVerification === "function") {
+      if (signUp.verifications && typeof signUp.verifications.verifyEmailCode === "function") {
+        try {
+          result = await signUp.verifications.verifyEmailCode({ code });
+        } catch (e: any) {
+          // Se der erro 'is not a function' por causa do objeto, tenta passar como string
+          if (e.message && e.message.includes('is not a function')) {
+             result = await (signUp.verifications as any).verifyEmailCode(code);
+          } else {
+             throw e;
+          }
+        }
+      } else if (typeof signUp.attemptEmailAddressVerification === "function") {
         result = await signUp.attemptEmailAddressVerification({ code });
       } else if (typeof signUp.attemptVerification === "function") {
         result = await signUp.attemptVerification({ strategy: "email_code", code });
