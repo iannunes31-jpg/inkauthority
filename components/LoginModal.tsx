@@ -20,8 +20,9 @@ export function LoginModal({ isOpen, onClose, initialView = "login" }: LoginModa
   const { isLoaded: isSignUpLoaded, signUp } = useSignUp();
   const { isLoaded: isSignInLoaded, signIn } = useSignIn();
 
-  const [view, setView] = useState<"login" | "register">("login");
+  const [view, setView] = useState<"login" | "register" | "forgot">(initialView);
   const [pendingVerification, setPendingVerification] = useState(false);
+  const [verificationType, setVerificationType] = useState<"signup" | "signin">("signup");
   const [isLoading, setIsLoading] = useState(false);
 
   // Form states
@@ -162,6 +163,40 @@ export function LoginModal({ isOpen, onClose, initialView = "login" }: LoginModa
     }
   };
 
+  const handleVerifySignIn = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!signIn) return;
+    setIsLoading(true);
+    setErrorMsg("");
+
+    try {
+      let result;
+      // Try both first and second factor attempt methods because Clerk's status mappings can vary
+      try {
+        result = await signIn.attemptFirstFactor({ strategy: "email_code", code });
+      } catch (e1: any) {
+        try {
+          result = await signIn.attemptSecondFactor({ strategy: "email_code", code });
+        } catch (e2: any) {
+          throw e1; // Throw the first error if both fail
+        }
+      }
+
+      const status = result?.status || signIn.status;
+      if (status === "complete") {
+        onClose();
+        window.location.href = "/dashboard";
+      } else {
+        setErrorMsg(`Status inesperado: ${status}`);
+      }
+    } catch (err: any) {
+      console.error("Erro no Clerk Verify SignIn:", err);
+      setErrorMsg(err.errors?.[0]?.longMessage || err.errors?.[0]?.message || err.message || "Código inválido.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   // Login usando Email e Senha
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -191,9 +226,19 @@ export function LoginModal({ isOpen, onClose, initialView = "login" }: LoginModa
       if (status === "complete") {
         onClose();
         window.location.href = "/dashboard";
-      } else if (status === "needs_first_factor") {
-        // Se a conta existe mas o email não foi verificado
-        setErrorMsg("Você precisa verificar seu email antes de entrar.");
+      } else if (status === "needs_first_factor" || status === "needs_second_factor" || status === "needs_client_trust") {
+        // Envia o código para o email do usuário
+        try {
+           await signIn.prepareFirstFactor({ strategy: "email_code", emailAddressId: signIn.supportedFirstFactors?.find(f => f.strategy === "email_code")?.emailAddressId || "" });
+        } catch (e) {
+           try {
+              await signIn.prepareSecondFactor({ strategy: "email_code" });
+           } catch (e2) {
+              console.error("Erro ao preparar fator:", e, e2);
+           }
+        }
+        setVerificationType("signin");
+        setPendingVerification(true);
       } else {
         setErrorMsg(`Erro inesperado ao fazer login. Status: ${status}`);
         console.error("DUMP SignIn result:", JSON.stringify(result));
@@ -255,8 +300,7 @@ export function LoginModal({ isOpen, onClose, initialView = "login" }: LoginModa
               )}
 
               {/* TELA DE VERIFICAÇÃO DE CÓDIGO (APENAS CADASTRO) */}
-              {pendingVerification ? (
-                <form className="space-y-4 relative z-10" onSubmit={handleVerifySignUp}>
+              <form onSubmit={pendingVerification ? (verificationType === "signup" ? handleVerifySignUp : handleVerifySignIn) : view === "login" ? handleSignIn : handleSignUp} className="space-y-4 relative z-10">
                   <div className="relative">
                     <ShieldCheck className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                     <input
