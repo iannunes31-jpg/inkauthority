@@ -62,7 +62,7 @@ export function LoginModal({ isOpen, onClose, initialView = "login" }: LoginModa
 
     try {
       // 1. Inicia o cadastro no Clerk com senha
-      await signUp.create({
+      const result = await signUp.create({
         emailAddress: email,
         password: password,
         firstName: nome.split(" ")[0] || "",
@@ -71,7 +71,18 @@ export function LoginModal({ isOpen, onClose, initialView = "login" }: LoginModa
       });
 
       // 2. Prepara a verificação por código no email
-      await signUp.prepareVerification({ strategy: "email_code" });
+      if (typeof result.prepareEmailAddressVerification === "function") {
+        await result.prepareEmailAddressVerification({ strategy: "email_code" });
+      } else if (typeof result.prepareVerification === "function") {
+        await result.prepareVerification({ strategy: "email_code" });
+      } else if (typeof signUp.prepareEmailAddressVerification === "function") {
+        await signUp.prepareEmailAddressVerification({ strategy: "email_code" });
+      } else if (typeof signUp.prepareVerification === "function") {
+        await signUp.prepareVerification({ strategy: "email_code" });
+      } else {
+        throw new Error("Nenhum método de verificação encontrado no objeto de sign up.");
+      }
+      
       setPendingVerification(true);
     } catch (err: any) {
       console.error("Erro no Clerk Sign Up:", err);
@@ -89,10 +100,14 @@ export function LoginModal({ isOpen, onClose, initialView = "login" }: LoginModa
     setErrorMsg("");
 
     try {
-      const result = await signUp.attemptVerification({
-        strategy: "email_code",
-        code
-      });
+      let result;
+      if (typeof signUp.attemptEmailAddressVerification === "function") {
+        result = await signUp.attemptEmailAddressVerification({ code });
+      } else if (typeof signUp.attemptVerification === "function") {
+        result = await signUp.attemptVerification({ strategy: "email_code", code });
+      } else {
+        throw new Error("Nenhum método de verificação de código encontrado.");
+      }
       
       if (result.status === "complete") {
         await setSignUpActive({ session: result.createdSessionId });
