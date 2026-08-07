@@ -80,9 +80,7 @@ export function LoginModal({ isOpen, onClose, initialView = "login" }: LoginModa
       } else if (typeof signUp.prepareVerification === "function") {
         await signUp.prepareVerification({ strategy: "email_code" });
       } else {
-        const resultMethods = Object.keys(result).filter(k => typeof result[k] === 'function').join(", ");
-        const protoMethods = Object.keys(Object.getPrototypeOf(result)).filter(k => typeof Object.getPrototypeOf(result)[k] === 'function').join(", ");
-        throw new Error("Nenhum método de verificação encontrado. Result: " + resultMethods + " / Proto: " + protoMethods);
+        throw new Error("DUMP: " + JSON.stringify(result));
       }
       
       setPendingVerification(true);
