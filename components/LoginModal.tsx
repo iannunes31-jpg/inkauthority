@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { X, Mail, Lock, ArrowRight, User, Phone, Instagram, Upload, ShieldCheck } from "lucide-react";
+import { X, Mail, Lock, ArrowRight, User, Phone, Instagram, Upload, ShieldCheck, Eye, EyeOff } from "lucide-react";
 import { Button } from "./ui/button";
 import { useSignUp, useSignIn } from "@clerk/nextjs";
 
@@ -23,6 +23,8 @@ export function LoginModal({ isOpen, onClose, initialView = "login" }: LoginModa
 
   // Form states
   const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [nome, setNome] = useState("");
   const [telefone, setTelefone] = useState("");
   const [instagram, setInstagram] = useState("");
@@ -30,7 +32,6 @@ export function LoginModal({ isOpen, onClose, initialView = "login" }: LoginModa
   const [foto, setFoto] = useState<File | null>(null);
   const [fotoPreview, setFotoPreview] = useState<string | null>(null);
   
-  // No caso do login sem senha (OTP), usamos o mesmo email.
   const [errorMsg, setErrorMsg] = useState("");
 
   useEffect(() => {
@@ -38,14 +39,16 @@ export function LoginModal({ isOpen, onClose, initialView = "login" }: LoginModa
       setView(initialView);
       setPendingVerification(false);
       setErrorMsg("");
+      setPassword("");
+      setCode("");
     }
   }, [isOpen, initialView]);
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!email || !nome) {
-      setErrorMsg("Por favor, preencha pelo menos o Nome e o E-mail.");
+    if (!email || !nome || !password) {
+      setErrorMsg("Por favor, preencha Nome, E-mail e Senha.");
       return;
     }
 
@@ -58,12 +61,12 @@ export function LoginModal({ isOpen, onClose, initialView = "login" }: LoginModa
     setErrorMsg("");
 
     try {
-      // 1. Inicia o cadastro no Clerk
+      // 1. Inicia o cadastro no Clerk com senha
       await signUp.create({
         emailAddress: email,
+        password: password,
         firstName: nome.split(" ")[0] || "",
         lastName: nome.split(" ").slice(1).join(" ") || "",
-        // Salvamos dados extras no publicMetadata do Clerk (que depois vai pro Supabase)
         publicMetadata: { telefone, instagram }
       });
 
@@ -90,12 +93,7 @@ export function LoginModal({ isOpen, onClose, initialView = "login" }: LoginModa
       
       if (result.status === "complete") {
         await setSignUpActive({ session: result.createdSessionId });
-        
-        // Se houver uma foto, o ideal é enviar depois que o usuário já estiver logado
-        // (O Clerk permite atualizar a foto via user.setProfileImage depois do login, ou enviamos pro Supabase)
-        
         onClose();
-        // Recarrega para aplicar a sessão
         window.location.href = "/dashboard";
       } else {
         setErrorMsg("Código inválido ou expirado.");
@@ -108,12 +106,12 @@ export function LoginModal({ isOpen, onClose, initialView = "login" }: LoginModa
     }
   };
 
-  // Login usando OTP via Email (Magic Code)
+  // Login usando Email e Senha
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!email) {
-      setErrorMsg("Por favor, digite seu e-mail.");
+    if (!email || !password) {
+      setErrorMsg("Por favor, digite seu e-mail e senha.");
       return;
     }
 
@@ -126,52 +124,24 @@ export function LoginModal({ isOpen, onClose, initialView = "login" }: LoginModa
     setErrorMsg("");
 
     try {
-      const { supportedFirstFactors } = await signIn.create({
+      const result = await signIn.create({
         identifier: email,
-      });
-
-      const emailCodeFactor = supportedFirstFactors?.find(
-        (factor) => factor.strategy === "email_code"
-      );
-
-      if (emailCodeFactor) {
-        await signIn.prepareFirstFactor({
-          strategy: "email_code",
-          emailAddressId: emailCodeFactor.emailAddressId,
-        });
-        setPendingVerification(true);
-      } else {
-        setErrorMsg("Não foi possível enviar o código para este email. Verifique se a conta existe.");
-      }
-    } catch (err: any) {
-      console.error("Erro no Clerk Sign In:", err);
-      setErrorMsg(err.errors?.[0]?.longMessage || err.errors?.[0]?.message || "Email não encontrado ou erro no servidor.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleVerifySignIn = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!isSignInLoaded) return;
-    setIsLoading(true);
-    setErrorMsg("");
-
-    try {
-      const result = await signIn.attemptFirstFactor({
-        strategy: "email_code",
-        code,
+        password: password,
       });
 
       if (result.status === "complete") {
         await setSignInActive({ session: result.createdSessionId });
         onClose();
         window.location.href = "/dashboard";
+      } else if (result.status === "needs_first_factor") {
+        // Se a conta existe mas o email não foi verificado
+        setErrorMsg("Você precisa verificar seu email antes de entrar.");
       } else {
-        setErrorMsg("Código inválido.");
+        setErrorMsg("Erro inesperado ao fazer login.");
       }
     } catch (err: any) {
-      setErrorMsg(err.errors?.[0]?.message || "Erro ao verificar código.");
+      console.error("Erro no Clerk Sign In:", err);
+      setErrorMsg(err.errors?.[0]?.longMessage || err.errors?.[0]?.message || "Email ou senha incorretos.");
     } finally {
       setIsLoading(false);
     }
@@ -214,7 +184,7 @@ export function LoginModal({ isOpen, onClose, initialView = "login" }: LoginModa
                   {pendingVerification 
                     ? "Digite o código que enviamos para o seu e-mail." 
                     : view === "login" 
-                      ? "Acesse com seu e-mail (enviaremos um código)." 
+                      ? "Acesse com seu e-mail e senha." 
                       : "Preencha seus dados para se matricular."}
                 </p>
               </div>
@@ -225,9 +195,9 @@ export function LoginModal({ isOpen, onClose, initialView = "login" }: LoginModa
                 </div>
               )}
 
-              {/* TELA DE VERIFICAÇÃO DE CÓDIGO (OTP) */}
+              {/* TELA DE VERIFICAÇÃO DE CÓDIGO (APENAS CADASTRO) */}
               {pendingVerification ? (
-                <form className="space-y-4 relative z-10" onSubmit={view === "login" ? handleVerifySignIn : handleVerifySignUp}>
+                <form className="space-y-4 relative z-10" onSubmit={handleVerifySignUp}>
                   <div className="relative">
                     <ShieldCheck className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                     <input
@@ -249,7 +219,7 @@ export function LoginModal({ isOpen, onClose, initialView = "login" }: LoginModa
                       onClick={() => setPendingVerification(false)}
                       className="text-xs text-muted-foreground hover:text-white"
                     >
-                      Voltar e tentar outro e-mail
+                      Voltar
                     </button>
                   </div>
                 </form>
@@ -268,8 +238,26 @@ export function LoginModal({ isOpen, onClose, initialView = "login" }: LoginModa
                     />
                   </div>
 
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="Sua Senha"
+                      className="w-full bg-black/50 border border-white/10 rounded-xl py-3 pl-10 pr-12 text-sm text-white placeholder:text-muted-foreground focus:outline-none focus:border-white/30 transition-colors"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-white transition-colors"
+                    >
+                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+
                   <Button type="submit" disabled={isLoading} className="w-full group h-12 uppercase font-bold tracking-widest text-[11px] rounded-xl mt-6 neon-glow metallic-gradient text-black hover:opacity-90 border-0">
-                    <span>{isLoading ? "Carregando..." : "Receber Código por E-mail"}</span>
+                    <span>{isLoading ? "Entrando..." : "Acessar Plataforma"}</span>
                     <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
                   </Button>
                 </form>
@@ -352,9 +340,27 @@ export function LoginModal({ isOpen, onClose, initialView = "login" }: LoginModa
                       className="w-full bg-black/50 border border-white/10 rounded-xl py-3 pl-10 pr-4 text-sm text-white placeholder:text-muted-foreground focus:outline-none focus:border-white/30 transition-colors"
                     />
                   </div>
+                  
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="Crie uma Senha (mínimo 8 caracteres)"
+                      className="w-full bg-black/50 border border-white/10 rounded-xl py-3 pl-10 pr-12 text-sm text-white placeholder:text-muted-foreground focus:outline-none focus:border-white/30 transition-colors"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-white transition-colors"
+                    >
+                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
 
                   <Button type="submit" disabled={isLoading} className="w-full group h-12 uppercase font-bold tracking-widest text-[11px] rounded-xl mt-6 neon-glow metallic-gradient text-black hover:opacity-90 border-0">
-                    <span>{isLoading ? "Processando..." : "Receber Código de Acesso"}</span>
+                    <span>{isLoading ? "Processando..." : "Criar Conta"}</span>
                     <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
                   </Button>
                 </form>

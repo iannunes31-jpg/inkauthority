@@ -10,10 +10,13 @@ import { usePathname, useRouter } from "next/navigation";
 import { NotificationPanel } from "./NotificationPanel";
 import { useAuth, UserButton } from "@clerk/nextjs";
 
+import { LoginModal } from "./LoginModal";
+
 export function Navbar() {
   const pathname = usePathname();
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
+  const [isLoginOpen, setIsLoginOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const { isSignedIn: isLoggedIn } = useAuth();
@@ -26,6 +29,7 @@ export function Navbar() {
 
   return (
     <>
+      <LoginModal isOpen={isLoginOpen} onClose={() => setIsLoginOpen(false)} />
       <nav className="fixed top-0 w-full z-50 glass border-b border-white/5">
         <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2 relative group">
@@ -120,13 +124,13 @@ export function Navbar() {
                   <Button 
                     variant="ghost" 
                     className="text-muted-foreground hover:text-white"
-                    onClick={() => router.push("/sign-in")}
+                    onClick={() => setIsLoginOpen(true)}
                   >
                     Entrar
                   </Button>
                   <Button 
                     className="metallic-gradient text-black hover:opacity-90 border-0"
-                    onClick={() => router.push("/sign-up")}
+                    onClick={() => setIsLoginOpen(true)}
                   >
                     Matricule-se
                   </Button>
@@ -185,7 +189,7 @@ export function Navbar() {
                     className="w-full justify-start text-muted-foreground hover:text-white"
                     onClick={() => {
                       setIsOpen(false);
-                      router.push("/sign-in");
+                      setIsLoginOpen(true);
                     }}
                   >
                     Entrar
@@ -194,7 +198,7 @@ export function Navbar() {
                     className="w-full metallic-gradient text-black border-0"
                     onClick={() => {
                       setIsOpen(false);
-                      router.push("/sign-up");
+                      setIsLoginOpen(true);
                     }}
                   >
                     Matricule-se
