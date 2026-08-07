@@ -189,15 +189,18 @@ export function LoginModal({ isOpen, onClose, initialView = "login" }: LoginModa
         password: password,
       });
 
-      if (result.status === "complete") {
-        await setActive({ session: result.createdSessionId });
+      const status = result?.status || signIn.status;
+      const sessionId = result?.createdSessionId || signIn.createdSessionId;
+
+      if (status === "complete") {
+        await setActive({ session: sessionId });
         onClose();
         router.push("/dashboard");
-      } else if (result.status === "needs_first_factor") {
+      } else if (status === "needs_first_factor") {
         // Se a conta existe mas o email não foi verificado
         setErrorMsg("Você precisa verificar seu email antes de entrar.");
       } else {
-        setErrorMsg(`Erro inesperado ao fazer login. Status: ${result.status}`);
+        setErrorMsg(`Erro inesperado ao fazer login. Status: ${status}`);
         console.error("DUMP SignIn result:", JSON.stringify(result));
       }
     } catch (err: any) {
