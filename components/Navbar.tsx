@@ -6,16 +6,14 @@ import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "motion/react";
 import { Menu, X, Search, Bell } from "lucide-react";
 import { useState } from "react";
-import { usePathname } from "next/navigation";
-import { LoginModal } from "./LoginModal";
+import { usePathname, useRouter } from "next/navigation";
 import { NotificationPanel } from "./NotificationPanel";
 import { useAuth } from "@clerk/nextjs";
 
 export function Navbar() {
   const pathname = usePathname();
+  const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
-  const [isLoginOpen, setIsLoginOpen] = useState(false);
-  const [modalView, setModalView] = useState<"login" | "register">("login");
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const { isSignedIn: isLoggedIn } = useAuth();
@@ -120,19 +118,13 @@ export function Navbar() {
                   <Button 
                     variant="ghost" 
                     className="text-muted-foreground hover:text-white"
-                    onClick={() => {
-                      setModalView("login");
-                      setIsLoginOpen(true);
-                    }}
+                    onClick={() => router.push("/sign-in")}
                   >
                     Entrar
                   </Button>
                   <Button 
                     className="metallic-gradient text-black hover:opacity-90 border-0"
-                    onClick={() => {
-                      setModalView("register");
-                      setIsLoginOpen(true);
-                    }}
+                    onClick={() => router.push("/sign-up")}
                   >
                     Matricule-se
                   </Button>
@@ -191,8 +183,7 @@ export function Navbar() {
                     className="w-full justify-start text-muted-foreground hover:text-white"
                     onClick={() => {
                       setIsOpen(false);
-                      setModalView("login");
-                      setIsLoginOpen(true);
+                      router.push("/sign-in");
                     }}
                   >
                     Entrar
@@ -201,8 +192,7 @@ export function Navbar() {
                     className="w-full metallic-gradient text-black border-0"
                     onClick={() => {
                       setIsOpen(false);
-                      setModalView("register");
-                      setIsLoginOpen(true);
+                      router.push("/sign-up");
                     }}
                   >
                     Matricule-se
@@ -213,13 +203,6 @@ export function Navbar() {
           )}
         </AnimatePresence>
       </nav>
-
-      {/* Login Modal */}
-      <LoginModal 
-        isOpen={isLoginOpen} 
-        onClose={() => setIsLoginOpen(false)} 
-        initialView={modalView}
-      />
     </>
   );
 }

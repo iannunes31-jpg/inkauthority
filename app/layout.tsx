@@ -19,7 +19,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <ClerkProvider>
+    <ClerkProvider signInUrl="/sign-in" signUpUrl="/sign-up">
       <html lang="en" className="dark">
         <body className={`${inter.variable} ${orbitron.variable} font-sans antialiased min-h-screen bg-background text-foreground`} suppressHydrationWarning>
           <Navbar />
