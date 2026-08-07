@@ -61,15 +61,11 @@ export function LoginModal({ isOpen, onClose, initialView = "login" }: LoginModa
     setErrorMsg("");
 
     try {
-      // 1. Inicia o cadastro no Clerk com senha
-      const baseUsername = email.split("@")[0].replace(/[^a-zA-Z0-9]/g, "") + Math.floor(Math.random() * 10000);
-      
       const result = await signUp.create({
         emailAddress: email,
         password: password,
         firstName: nome.split(" ")[0] || "",
         lastName: nome.split(" ").slice(1).join(" ") || "",
-        username: baseUsername, // Resolve o erro de 'missing_requirements: username'
         unsafeMetadata: { telefone, instagram }
       });
 
