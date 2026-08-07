@@ -138,8 +138,12 @@ export function LoginModal({ isOpen, onClose, initialView = "login" }: LoginModa
         await setSignUpActive({ session: signUp.createdSessionId });
         onClose();
         window.location.href = "/dashboard";
+      } else if (result && result.status === "missing_requirements") {
+        setErrorMsg(`Quase lá! Faltam os campos obrigatórios no painel do Clerk: ${result.missingFields?.join(", ") || "desconhecidos"}`);
+      } else if (signUp.status === "missing_requirements") {
+        setErrorMsg(`Quase lá! Faltam os campos obrigatórios no painel do Clerk: ${signUp.missingFields?.join(", ") || "desconhecidos"}`);
       } else {
-        setErrorMsg("Código inválido ou expirado.");
+        setErrorMsg(`Status inesperado: ${result?.status || signUp.status}`);
       }
     } catch (err: any) {
       console.error("Erro no Clerk Verify:", err);
