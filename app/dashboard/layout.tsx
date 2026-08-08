@@ -7,6 +7,8 @@ import { cn } from "@/lib/utils";
 import { BookOpen, Compass, Trophy, Download, History, Settings, User, Users, Bot, Radio } from "lucide-react";
 import { useAuth, UserButton } from "@clerk/nextjs";
 
+import { AITutorWidget } from "@/components/AITutorWidget";
+
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { signOut } = useAuth();
@@ -80,6 +82,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <main className="flex-1 lg:ml-64 w-full relative">
          {children}
       </main>
+
+      {/* Tutor IA Global */}
+      <AITutorWidget />
     </div>
   );
 }
