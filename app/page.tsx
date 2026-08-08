@@ -49,7 +49,7 @@ export default function Home() {
             // 3. Injetar Botão FERRAMENTAS no Menu Nativo
             if (!doc.getElementById('btn-ferramentas-injetado')) {
               const allElements = Array.from(doc.querySelectorAll('*'));
-              const cursosElement = allElements.find(el => el.textContent?.trim() === 'CURSOS' && el.tagName !== 'SCRIPT' && el.children.length === 0);
+              const cursosElement = allElements.find(el => el.textContent?.trim() === 'CURSOS' && el.tagName !== 'SCRIPT' && el.children.length === 0) as HTMLElement | undefined;
               
               if (cursosElement && cursosElement.parentNode) {
                 const parent = cursosElement.parentNode;
@@ -60,7 +60,7 @@ export default function Home() {
                 
                 // Copiar estilos computados
                 const computed = window.getComputedStyle(cursosElement);
-                newBtn.style.cssText = cursosElement.style.cssText;
+                newBtn.style.cssText = cursosElement.style ? cursosElement.style.cssText : '';
                 newBtn.style.color = computed.color || 'rgba(238, 238, 242, 0.66)';
                 newBtn.style.fontSize = computed.fontSize || '11px';
                 newBtn.style.fontFamily = computed.fontFamily || 'Jost, sans-serif';
