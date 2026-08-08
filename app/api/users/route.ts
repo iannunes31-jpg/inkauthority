@@ -7,7 +7,7 @@ export async function GET() {
     const response = await client.users.getUserList();
     
     // Check if the response contains the data property (newer Clerk SDKs) or is the array itself
-    const usersList = response.data ? response.data : response;
+    const usersList: any[] = Array.isArray(response) ? response : (response as any).data || [];
     
     const formattedUsers = usersList.map((user: any) => ({
       id: user.id,
