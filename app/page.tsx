@@ -48,7 +48,7 @@ export default function Home() {
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-primary/10 blur-[120px] rounded-full pointer-events-none z-0" />
       
       {/* Botão de Ferramentas (Fixo próximo ao menu nativo) */}
-      <div className="fixed top-[32px] right-[400px] lg:right-[460px] z-[999999]">
+      <div className="fixed top-[32px] right-[300px] lg:right-[360px] z-[999999]">
         <Link href="/tools" className="text-white/80 hover:text-white font-bold text-[11px] lg:text-[13px] uppercase tracking-[0.1em] transition-colors">
           Ferramentas
         </Link>
