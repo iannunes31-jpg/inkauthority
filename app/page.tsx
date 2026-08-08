@@ -1,19 +1,21 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { LoginModal } from "@/components/LoginModal";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/lib/supabase";
-import { PlayCircle, CheckCircle, Library, ArrowRight } from "lucide-react";
+import { PlayCircle, CheckCircle, ArrowRight } from "lucide-react";
 import Link from "next/link";
 
 export default function Home() {
   const [isLoginOpen, setIsLoginOpen] = useState(false);
   const [courses, setCourses] = useState<any[]>([]);
-  const [library, setLibrary] = useState<any[]>([]);
+  const iframeRef = useRef<HTMLIFrameElement>(null);
 
   useEffect(() => {
-    // Escuta eventos do iframe para abrir o Login
+    fetchProducts();
+
+    // Evento de mensagem vindo do iframe caso tenha algum botão de login antigo
     const handleMessage = (event: MessageEvent) => {
       if (event.data === "openLogin") {
         setIsLoginOpen(true);
@@ -21,64 +23,31 @@ export default function Home() {
     };
     window.addEventListener("message", handleMessage);
     
-    const muteTimer = setInterval(() => {
-      const iframe = document.querySelector('iframe');
-      if (iframe) {
+    // Timer seguro para ajustar a altura do iframe UMA VEZ após carregamento
+    // Isso evita o loop infinito de rolagem (ResizeObserver infinite loop)
+    const adjustTimer = setTimeout(() => {
+      if (iframeRef.current) {
         try {
-          const doc = iframe.contentDocument || iframe.contentWindow?.document;
+          const doc = iframeRef.current.contentDocument || iframeRef.current.contentWindow?.document;
           if (doc) {
-            // Muta e dá play automático nos vídeos
-            const vids = doc.querySelectorAll('video');
-            vids.forEach(v => {
-              if (!v.muted) {
-                v.muted = true;
-                v.play().catch(() => {});
-              }
-            });
-
-            // Ajusta a altura do iframe para remover a segunda barra de rolagem
-            const adjustHeight = () => {
-              const bodyHeight = doc.body.scrollHeight;
-              const htmlHeight = doc.documentElement.scrollHeight;
-              const height = Math.max(bodyHeight, htmlHeight);
-              if (height > 0) {
-                iframe.style.height = `${height}px`;
-              }
-            };
-            
-            adjustHeight(); // Ajusta imediatamente
-            const observer = new ResizeObserver(adjustHeight);
-            observer.observe(doc.body);
-
-            // Injeta o link FERRAMENTAS no menu nativo do Webflow
-            if (!doc.querySelector('#injected-ferramentas')) {
-              const links = Array.from(doc.querySelectorAll('a'));
-              const cursosLink = links.find(a => a.textContent?.toUpperCase().includes('CURSOS'));
-              
-              if (cursosLink && cursosLink.parentElement) {
-                const ferramentasLink = doc.createElement('a');
-                ferramentasLink.id = 'injected-ferramentas';
-                ferramentasLink.href = '/tools';
-                ferramentasLink.textContent = 'FERRAMENTAS';
-                ferramentasLink.className = cursosLink.className; // Copia o exato estilo do botão CURSOS
-                ferramentasLink.style.marginLeft = '20px'; // Espaçamento extra
-                
-                // Abre na mesma aba pai
-                ferramentasLink.target = '_parent';
-
-                cursosLink.parentElement.insertBefore(ferramentasLink, cursosLink.nextSibling);
-              }
+            // Pegamos o offsetHeight que é mais estável
+            const height = Math.max(
+              doc.body.scrollHeight, 
+              doc.documentElement.scrollHeight,
+              doc.body.offsetHeight, 
+              doc.documentElement.offsetHeight
+            );
+            if (height > 500) {
+              iframeRef.current.style.height = `${height}px`;
             }
           }
         } catch(e) {}
       }
-    }, 1000);
-
-    fetchProducts();
+    }, 2500); // Aguarda 2.5s para garantir que os assets pesados carregaram
 
     return () => {
       window.removeEventListener("message", handleMessage);
-      clearInterval(muteTimer);
+      clearTimeout(adjustTimer);
     };
   }, []);
 
@@ -100,16 +69,57 @@ export default function Home() {
     alert(`Redirecionando para o checkout seguro de: ${productName}.`);
   };
 
+  const scrollToCourses = () => {
+    const el = document.getElementById('produtos');
+    if (el) el.scrollIntoView({ behavior: 'smooth' });
+  };
+
   return (
     <main className="min-h-screen bg-black text-white selection:bg-primary selection:text-black">
       
+      {/* Novo Menu Superior (Substitui o menu do iframe) */}
+      <header className="fixed top-0 w-full z-50 bg-black/90 backdrop-blur-md border-b border-white/5 h-[80px] flex items-center justify-between px-6 lg:px-12">
+        <div className="flex items-center gap-3 cursor-pointer" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
+          <div className="w-8 h-8 bg-primary rounded-sm rotate-45 flex items-center justify-center neon-glow">
+             <div className="w-2 h-2 bg-black rounded-full"></div>
+          </div>
+          <span className="font-black text-xl tracking-tighter uppercase">Ink Authority</span>
+        </div>
+        
+        {/* Navegação Central */}
+        <nav className="hidden md:flex items-center gap-8">
+          <button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className="text-sm font-bold text-white/80 hover:text-primary transition-colors">
+            HOME
+          </button>
+          <button onClick={scrollToCourses} className="text-sm font-bold text-white/80 hover:text-primary transition-colors">
+            CURSOS
+          </button>
+          <Link href="/tools" className="text-sm font-bold text-white/80 hover:text-primary transition-colors">
+            FERRAMENTAS
+          </Link>
+        </nav>
+
+        {/* Botões da Direita */}
+        <div className="flex items-center gap-4">
+          <Button variant="ghost" className="hover:bg-white/5 text-sm" onClick={() => setIsLoginOpen(true)}>
+            Área de Membros
+          </Button>
+          <Button onClick={scrollToCourses} className="metallic-gradient text-black font-bold hidden sm:flex">
+            Ver Produtos
+          </Button>
+        </div>
+      </header>
+
       {/* Landing Page Original (Iframe com o Vídeo) */}
-      <iframe 
-        src="/isabella.html" 
-        className="w-full h-screen border-0 block"
-        title="Landing Page"
-        scrolling="no"
-      />
+      <div className="w-full pt-[80px] relative">
+        <iframe 
+          ref={iframeRef}
+          src="/isabella.html" 
+          className="w-full min-h-screen border-0 block"
+          title="Landing Page"
+          scrolling="no"
+        />
+      </div>
 
       {/* Cursos - Vitrine de Cross-sell */}
       <section className="py-24 px-6 lg:px-12 max-w-7xl mx-auto relative z-10" id="produtos">
