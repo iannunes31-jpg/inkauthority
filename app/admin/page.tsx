@@ -1,4 +1,6 @@
 import { Users, DollarSign, BookOpen, Share2 } from "lucide-react";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
 
 export default function AdminDashboard() {
   const stats = [
@@ -10,9 +12,16 @@ export default function AdminDashboard() {
 
   return (
     <div className="space-y-8">
-      <div>
-        <h2 className="text-2xl font-bold mb-2">Visão Geral</h2>
-        <p className="text-muted-foreground font-light">Acompanhe as métricas principais da plataforma.</p>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <h2 className="text-2xl font-bold mb-2">Visão Geral</h2>
+          <p className="text-muted-foreground font-light">Acompanhe as métricas principais da plataforma.</p>
+        </div>
+        <Link href="/admin/courses/new">
+          <Button className="bg-primary text-black font-bold hover:bg-primary/90">
+            + Nova Aula
+          </Button>
+        </Link>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
