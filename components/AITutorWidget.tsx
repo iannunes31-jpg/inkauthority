@@ -7,16 +7,28 @@ import { Button } from "@/components/ui/button";
 
 export function AITutorWidget() {
   const [isOpen, setIsOpen] = useState(false);
-  const { messages, input, handleInputChange, handleSubmit, isLoading } = useChat({
+  const [inputValue, setInputValue] = useState("");
+  
+  const { messages, status, sendMessage } = useChat({
     api: '/api/chat',
   });
   
+  const isLoading = status === "streaming" || status === "submitted";
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Auto-scroll para a última mensagem
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  const onSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!inputValue.trim() || isLoading) return;
+    
+    // Envia a nova mensagem
+    sendMessage({ content: inputValue, role: "user" });
+    setInputValue("");
+  };
 
   return (
     <>
@@ -103,17 +115,17 @@ export function AITutorWidget() {
 
           {/* Input Area */}
           <div className="p-4 bg-black/50 border-t border-white/10">
-            <form onSubmit={handleSubmit} className="flex items-center gap-2 relative">
+            <form onSubmit={onSubmit} className="flex items-center gap-2 relative">
               <input
-                value={input}
-                onChange={handleInputChange}
+                value={inputValue}
+                onChange={(e) => setInputValue(e.target.value)}
                 placeholder="Pergunte algo sobre tatuagem..."
                 className="w-full bg-white/5 border border-white/10 rounded-full py-3 pl-4 pr-12 text-sm text-white focus:outline-none focus:border-primary/50 transition-colors"
                 disabled={isLoading}
               />
               <button 
                 type="submit" 
-                disabled={!input || isLoading}
+                disabled={!inputValue.trim() || isLoading}
                 className="absolute right-2 p-2 bg-primary text-black rounded-full disabled:opacity-50 hover:scale-105 transition-transform"
               >
                 {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
