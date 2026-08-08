@@ -4,6 +4,7 @@ import { useSearchParams } from "next/navigation";
 import { VideoPlayer } from "@/components/VideoPlayer";
 import { Activity, MessageSquare } from "lucide-react";
 import { Suspense } from "react";
+import { LiveChat } from "@/components/LiveChat";
 
 function LiveStreamContent() {
   const searchParams = useSearchParams();
@@ -40,24 +41,8 @@ function LiveStreamContent() {
         </div>
       </div>
 
-      {/* Chat Placeholder */}
-      <div className="glass rounded-2xl border border-white/10 flex flex-col h-[600px] lg:h-auto">
-        <div className="p-4 border-b border-white/5 flex items-center gap-2 bg-black/40">
-          <MessageSquare className="w-5 h-5 text-primary" />
-          <h3 className="font-bold">Chat ao Vivo</h3>
-        </div>
-        
-        <div className="flex-1 p-4 flex flex-col items-center justify-center text-center opacity-50">
-          <MessageSquare className="w-10 h-10 mb-2" />
-          <p className="text-sm">O chat será ativado em breve.</p>
-        </div>
-        
-        <div className="p-4 border-t border-white/5 bg-black/40">
-          <div className="bg-white/5 border border-white/10 rounded-xl p-3 text-sm text-muted-foreground cursor-not-allowed">
-            Envie uma mensagem...
-          </div>
-        </div>
-      </div>
+      {/* Chat Interativo em Tempo Real */}
+      <LiveChat liveId={liveId} />
     </div>
   );
 }

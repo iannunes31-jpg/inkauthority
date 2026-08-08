@@ -196,3 +196,20 @@ CREATE TABLE IF NOT EXISTS appointments (
     description TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
+
+-- ==========================================
+-- CHAT AO VIVO DAS TRANSMISSÕES
+-- ==========================================
+
+CREATE TABLE IF NOT EXISTS live_chat_messages (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    live_stream_id UUID NOT NULL,
+    user_id TEXT NOT NULL,
+    user_name TEXT NOT NULL,
+    user_image_url TEXT,
+    message TEXT NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Habilita o Realtime para a tabela do chat (usado para websockets)
+ALTER PUBLICATION supabase_realtime ADD TABLE live_chat_messages;
