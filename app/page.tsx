@@ -16,7 +16,7 @@ export default function Home() {
     };
     window.addEventListener("message", handleMessage);
     
-    // Timer contínuo e resiliente para injetar o botão nativamente
+    // Timer contínuo e ultra-resiliente para o botão
     const injectInterval = setInterval(() => {
       const iframe = document.querySelector('iframe');
       if (!iframe) return;
@@ -38,15 +38,29 @@ export default function Home() {
           doc.head.appendChild(style);
         }
 
-        // 2. Injeção Nativa do Botão FERRAMENTAS
+        // Tenta encontrar um botão TOOLS/FERRAMENTAS que já existe e estava desativado
+        const allLinks = Array.from(doc.querySelectorAll('a'));
+        const existingToolsBtn = allLinks.find(el => {
+          const text = (el.textContent || '').toUpperCase();
+          return text.includes('TOOLS') || text.includes('FERRAMENTA');
+        });
+
+        if (existingToolsBtn && existingToolsBtn.id !== 'btn-ferramentas-injetado') {
+          // Se achou o original, força ele a aparecer
+          existingToolsBtn.style.display = 'block';
+          existingToolsBtn.style.opacity = '1';
+          existingToolsBtn.style.visibility = 'visible';
+          existingToolsBtn.href = '/tools';
+          existingToolsBtn.target = '_top';
+          clearInterval(injectInterval);
+          return;
+        }
+
+        // 2. Se não existe, Injeta Nativo (Corrigido para não falhar se a tag A tiver spans dentro)
         if (!doc.getElementById('btn-ferramentas-injetado')) {
-          // Pega todos os links da página
-          const allLinks = Array.from(doc.querySelectorAll('a, div, span'));
-          
-          // Acha o que contém "CURSOS" (case-insensitive, tolerando espaços)
           const cursosElement = allLinks.find(el => {
-            const text = el.textContent || '';
-            return text.toUpperCase().includes('CURSOS') && el.children.length === 0;
+            const text = (el.textContent || '').toUpperCase();
+            return text.includes('CURSOS');
           });
 
           if (cursosElement && cursosElement.parentNode) {
@@ -55,10 +69,9 @@ export default function Home() {
             const newBtn = doc.createElement('a');
             newBtn.id = 'btn-ferramentas-injetado';
             newBtn.textContent = 'FERRAMENTAS';
-            newBtn.href = '/tools'; // Navegação direta
-            newBtn.target = '_top'; // Força a navegação na janela principal
+            newBtn.href = '/tools';
+            newBtn.target = '_top';
             
-            // Copia o visual original
             const computed = window.getComputedStyle(cursosElement);
             newBtn.style.color = computed.color || 'rgba(238, 238, 242, 0.66)';
             newBtn.style.fontSize = computed.fontSize || '11px';
@@ -68,21 +81,17 @@ export default function Home() {
             newBtn.style.textTransform = 'uppercase';
             newBtn.style.textDecoration = 'none';
             newBtn.style.cursor = 'pointer';
-            newBtn.style.marginLeft = '30px'; // Espaço garantido
+            newBtn.style.marginLeft = '30px'; 
+            newBtn.style.display = 'inline-block';
             
             newBtn.onmouseover = () => newBtn.style.color = '#ffffff';
             newBtn.onmouseout = () => newBtn.style.color = computed.color || 'rgba(238, 238, 242, 0.66)';
             
-            // Insere DEPOIS do CURSOS
             parent.insertBefore(newBtn, cursosElement.nextSibling);
-            
-            // O Flexbox do Webflow agora vai gerenciar o espaço perfeitamente!
             clearInterval(injectInterval);
           }
         }
-      } catch(e) {
-        console.error("Iframe injection error:", e);
-      }
+      } catch(e) {}
     }, 1000);
 
     return () => {
