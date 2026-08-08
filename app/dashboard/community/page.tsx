@@ -313,11 +313,10 @@ export default function CommunityPage() {
               {/* Imagem da Postagem (se houver) */}
               {post.image_url && (
                 <div className="mb-4 rounded-xl overflow-hidden bg-black/50 aspect-video relative">
-                  <Image 
+                  <img 
                     src={post.image_url} 
                     alt="Postagem" 
-                    fill 
-                    className="object-cover"
+                    className="w-full h-full object-cover"
                   />
                 </div>
               )}
