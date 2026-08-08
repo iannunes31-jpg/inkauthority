@@ -4,8 +4,7 @@ import { useState, useEffect } from "react";
 import { LoginModal } from "@/components/LoginModal";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/lib/supabase";
-import { PlayCircle, Star, Shield, ArrowRight, Zap, Library, CheckCircle } from "lucide-react";
-import { motion } from "motion/react";
+import { PlayCircle, CheckCircle, Library, ArrowRight } from "lucide-react";
 import Link from "next/link";
 
 export default function Home() {
@@ -14,7 +13,39 @@ export default function Home() {
   const [library, setLibrary] = useState<any[]>([]);
 
   useEffect(() => {
+    // Escuta eventos do iframe para abrir o Login
+    const handleMessage = (event: MessageEvent) => {
+      if (event.data === "openLogin") {
+        setIsLoginOpen(true);
+      }
+    };
+    window.addEventListener("message", handleMessage);
+    
+    // Timer para garantir que o iframe carregou e mutar o vídeo
+    const muteTimer = setInterval(() => {
+      const iframe = document.querySelector('iframe');
+      if (iframe) {
+        try {
+          const doc = iframe.contentDocument || iframe.contentWindow?.document;
+          if (doc) {
+            const vids = doc.querySelectorAll('video');
+            vids.forEach(v => {
+              if (!v.muted) {
+                v.muted = true;
+                v.play().catch(() => {});
+              }
+            });
+          }
+        } catch(e) {}
+      }
+    }, 1000);
+
     fetchProducts();
+
+    return () => {
+      window.removeEventListener("message", handleMessage);
+      clearInterval(muteTimer);
+    };
   }, []);
 
   const fetchProducts = async () => {
@@ -46,58 +77,25 @@ export default function Home() {
   };
 
   return (
-    <main className="min-h-screen bg-black text-white selection:bg-primary selection:text-black overflow-x-hidden">
-      {/* Header Fixo */}
-      <header className="fixed top-0 w-full z-50 glass border-b border-white/5 h-20 flex items-center justify-between px-6 lg:px-12">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 bg-primary rounded-sm rotate-45 flex items-center justify-center neon-glow">
-             <div className="w-2 h-2 bg-black rounded-full"></div>
-          </div>
-          <span className="font-black text-xl tracking-tighter uppercase">Ink Authority</span>
-        </div>
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" className="hover:bg-white/5" onClick={() => setIsLoginOpen(true)}>
-            Área de Membros
-          </Button>
-          <Button className="metallic-gradient text-black font-bold hidden sm:flex">
-            Ver Produtos
-          </Button>
-        </div>
-      </header>
-
-      {/* Hero Section */}
-      <section className="relative pt-40 pb-20 px-6 lg:px-12 max-w-7xl mx-auto flex flex-col items-center text-center">
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-primary/20 blur-[120px] rounded-full pointer-events-none opacity-50" />
-        
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8 }}
-          className="relative z-10"
-        >
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 text-primary text-xs font-bold uppercase tracking-widest mb-8">
-            <Zap className="w-3 h-3" /> A Plataforma Definitiva
-          </div>
-          <h1 className="text-5xl lg:text-7xl font-black uppercase tracking-tighter mb-6 leading-[0.9]">
-            Eleve sua <span className="metallic-text">Arte</span><br />
-            ao Nível Profissional
-          </h1>
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto mb-10">
-            Acesso imediato aos melhores cursos, ferramentas, brushes e contratos para tatuadores que desejam se destacar no mercado.
-          </p>
-        </motion.div>
-      </section>
+    <main className="min-h-screen bg-black text-white selection:bg-primary selection:text-black">
+      
+      {/* Landing Page Original (Iframe com o Vídeo) */}
+      <iframe 
+        src="/isabella.html" 
+        className="w-full h-screen border-0 block"
+        title="Landing Page"
+      />
 
       {/* Cursos - Vitrine de Cross-sell */}
-      <section className="py-20 px-6 lg:px-12 max-w-7xl mx-auto border-t border-white/5 relative z-10">
-        <div className="mb-12 text-center">
+      <section className="py-24 px-6 lg:px-12 max-w-7xl mx-auto relative z-10" id="produtos">
+        <div className="mb-16 text-center">
           <h2 className="text-3xl lg:text-5xl font-black uppercase tracking-tighter mb-4">Treinamentos Completos</h2>
           <p className="text-muted-foreground">Escolha o curso que vai transformar a sua técnica hoje.</p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {courses.map((course) => (
-            <div key={course.id} className="glass rounded-3xl border border-white/10 overflow-hidden flex flex-col group hover:border-primary/50 transition-colors">
+            <div key={course.id} className="glass rounded-3xl border border-white/10 overflow-hidden flex flex-col group hover:border-primary/50 transition-colors bg-white/[0.02]">
               <div className="aspect-video bg-black relative border-b border-white/10 overflow-hidden">
                 {course.thumbnail_url ? (
                   <img src={course.thumbnail_url} alt={course.title} className="w-full h-full object-cover opacity-80 group-hover:scale-105 transition-transform duration-700" />
@@ -154,7 +152,7 @@ export default function Home() {
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {library.map((item) => (
-            <div key={item.id} className="glass p-6 rounded-2xl border border-white/5 hover:border-primary/30 transition-colors flex flex-col">
+            <div key={item.id} className="glass p-6 rounded-2xl border border-white/5 hover:border-primary/30 transition-colors flex flex-col bg-white/[0.02]">
               <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center text-primary mb-4">
                 <Library className="w-6 h-6" />
               </div>
@@ -173,7 +171,7 @@ export default function Home() {
       </section>
 
       {/* Footer */}
-      <footer className="py-10 border-t border-white/5 text-center text-sm text-muted-foreground">
+      <footer className="py-10 border-t border-white/5 text-center text-sm text-muted-foreground bg-black relative z-10">
         <p>© 2026 Ink Authority. Todos os direitos reservados.</p>
         <p className="mt-2 text-xs">Desenvolvido para criadores e tatuadores profissionais.</p>
       </footer>
