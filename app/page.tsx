@@ -76,7 +76,9 @@ export default function Home() {
                 
                 newBtn.onclick = (e) => {
                   e.preventDefault();
-                  window.top.location.href = '/tools';
+                  if (window.top) {
+                    window.top.location.href = '/tools';
+                  }
                 };
                 
                 parent.insertBefore(newBtn, cursosElement.nextSibling);
