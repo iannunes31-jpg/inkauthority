@@ -44,8 +44,12 @@ export default function Home() {
 
   return (
     <main className="relative min-h-screen w-full m-0 p-0 overflow-hidden bg-gradient-to-br from-[#0a0a0a] via-black to-[#050505]">
-      {/* Efeito de Fundo enquanto o Iframe Carrega */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-primary/10 blur-[120px] rounded-full pointer-events-none z-0" />
+      {/* Efeito de Brilho no Fundo (por cima do iframe, para não ser escondido pelo fundo preto do Webflow) */}
+      <div className="fixed top-0 left-0 w-full h-full pointer-events-none z-[50] overflow-hidden">
+        <div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-primary/10 blur-[120px] rounded-full mix-blend-screen opacity-50" />
+        <div className="absolute top-[40%] right-[-10%] w-[600px] h-[600px] bg-primary/5 blur-[150px] rounded-full mix-blend-screen opacity-60" />
+        <div className="absolute bottom-[-20%] left-[20%] w-[800px] h-[800px] bg-white/5 blur-[120px] rounded-full mix-blend-screen opacity-30" />
+      </div>
       
       {/* Botão de Ferramentas (Fixo próximo ao menu nativo) */}
       <div className="fixed top-[32px] right-[300px] lg:right-[360px] z-[999999]">
