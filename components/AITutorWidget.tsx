@@ -1,17 +1,14 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { useChat } from "@ai-sdk/react";
 import { MessageSquare, X, Send, Bot, User, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export function AITutorWidget() {
   const [isOpen, setIsOpen] = useState(false);
   const [inputValue, setInputValue] = useState("");
-  
-  const { messages, status, sendMessage } = useChat({
-    api: '/api/chat',
-  });
+  const [messages, setMessages] = useState<{ id: string, role: string, content: string }[]>([]);
+  const [status, setStatus] = useState<"idle" | "submitted" | "streaming" | "error">("idle");
   
   const isLoading = status === "streaming" || status === "submitted";
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -21,13 +18,52 @@ export function AITutorWidget() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  const onSubmit = (e: React.FormEvent) => {
+  const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!inputValue.trim() || isLoading) return;
     
-    // Envia a nova mensagem
-    sendMessage({ content: inputValue, role: "user" });
+    const newMessage = { id: Date.now().toString(), role: "user", content: inputValue };
+    const newMessages = [...messages, newMessage];
+    
+    setMessages(newMessages);
     setInputValue("");
+    setStatus("submitted");
+    
+    try {
+      const response = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ messages: newMessages })
+      });
+      
+      if (!response.ok) throw new Error("Erro na rede");
+      if (!response.body) throw new Error("No body");
+      
+      setStatus("streaming");
+      
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      const assistantId = (Date.now() + 1).toString();
+      
+      setMessages(prev => [...prev, { id: assistantId, role: "assistant", content: "" }]);
+      
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        
+        const chunk = decoder.decode(value, { stream: true });
+        
+        setMessages(prev => {
+          const last = prev[prev.length - 1];
+          return [...prev.slice(0, -1), { ...last, content: last.content + chunk }];
+        });
+      }
+      
+      setStatus("idle");
+    } catch (e) {
+      console.error(e);
+      setStatus("error");
+    }
   };
 
   return (
