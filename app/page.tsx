@@ -46,45 +46,6 @@ export default function Home() {
               doc.head.appendChild(style);
             }
 
-            // 3. Injetar Botão FERRAMENTAS no Menu Nativo
-            if (!doc.getElementById('btn-ferramentas-injetado')) {
-              const allElements = Array.from(doc.querySelectorAll('*'));
-              const cursosElement = allElements.find(el => el.textContent?.trim() === 'CURSOS' && el.tagName !== 'SCRIPT' && el.children.length === 0) as HTMLElement | undefined;
-              
-              if (cursosElement && cursosElement.parentNode) {
-                const parent = cursosElement.parentNode;
-                const newBtn = doc.createElement('a');
-                newBtn.id = 'btn-ferramentas-injetado';
-                newBtn.textContent = 'FERRAMENTAS';
-                newBtn.href = '#';
-                
-                // Copiar estilos computados
-                const computed = window.getComputedStyle(cursosElement);
-                newBtn.style.cssText = cursosElement.style ? cursosElement.style.cssText : '';
-                newBtn.style.color = computed.color || 'rgba(238, 238, 242, 0.66)';
-                newBtn.style.fontSize = computed.fontSize || '11px';
-                newBtn.style.fontFamily = computed.fontFamily || 'Jost, sans-serif';
-                newBtn.style.fontWeight = computed.fontWeight || '300';
-                newBtn.style.letterSpacing = computed.letterSpacing || '0.28em';
-                newBtn.style.textTransform = 'uppercase';
-                newBtn.style.textDecoration = 'none';
-                newBtn.style.cursor = 'pointer';
-                newBtn.style.marginLeft = '18px'; // Espaçamento natural
-                
-                newBtn.onmouseover = () => newBtn.style.color = '#ffffff';
-                newBtn.onmouseout = () => newBtn.style.color = computed.color || 'rgba(238, 238, 242, 0.66)';
-                
-                newBtn.onclick = (e) => {
-                  e.preventDefault();
-                  if (window.top) {
-                    window.top.location.href = '/tools';
-                  }
-                };
-                
-                parent.insertBefore(newBtn, cursosElement.nextSibling);
-              }
-            }
-
           }
         } catch(e) {}
       }
@@ -98,6 +59,13 @@ export default function Home() {
 
   return (
     <main className="relative min-h-screen w-full m-0 p-0 overflow-hidden bg-[#050505]">
+      
+      {/* Botão de Ferramentas (Fixo próximo ao menu nativo) */}
+      <div className="fixed top-[32px] right-[300px] lg:right-[360px] z-[999999]">
+        <Link href="/tools" className="text-white/80 hover:text-white font-bold text-[11px] lg:text-[13px] uppercase tracking-[0.1em] transition-colors">
+          Ferramentas
+        </Link>
+      </div>
       
       {/* NOVO FUNDO DE ALTA QUALIDADE */}
       <div className="fixed inset-0 z-0 pointer-events-none">
