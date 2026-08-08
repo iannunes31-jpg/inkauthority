@@ -66,7 +66,7 @@ export async function POST(request: Request) {
 
     if (dbError) {
       console.error("Erro Supabase:", dbError);
-      return NextResponse.json({ error: "Live criada no servidor, mas falha ao salvar no banco." }, { status: 500 });
+      return NextResponse.json({ error: "Erro Supabase: " + (dbError.message || JSON.stringify(dbError)) }, { status: 500 });
     }
 
     // Retorna os dados para o frontend (apenas para exibição no painel admin)
