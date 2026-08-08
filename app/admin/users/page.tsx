@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Search, ChevronDown, User, ShieldAlert, MoreHorizontal } from "lucide-react";
+import { Search, ChevronDown, User, ShieldAlert, MoreHorizontal, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export default function AdminUsers() {
@@ -25,11 +25,45 @@ export default function AdminUsers() {
     fetchUsers();
   }, []);
 
+  const downloadCSV = () => {
+    if (users.length === 0) return;
+
+    const headers = ["ID", "Nome", "Email", "Permissão", "Status", "Data de Entrada"];
+    const csvRows = [headers.join(",")];
+
+    for (const user of users) {
+      const row = [
+        user.id,
+        `"${user.name}"`,
+        `"${user.email}"`,
+        `"${user.role}"`,
+        `"${user.status}"`,
+        `"${user.joinDate}"`
+      ];
+      csvRows.push(row.join(","));
+    }
+
+    const csvContent = "data:text/csv;charset=utf-8,\uFEFF" + csvRows.join("\n");
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `usuarios_inkauthority_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold mb-1">Gestão de Usuários</h2>
-        <p className="text-muted-foreground font-light">Controle os acessos, permissões e histórico de todos os usuários da plataforma.</p>
+      <div className="flex justify-between items-center">
+        <div>
+          <h2 className="text-2xl font-bold mb-1">Gestão de Usuários</h2>
+          <p className="text-muted-foreground font-light">Controle os acessos, permissões e histórico de todos os usuários da plataforma.</p>
+        </div>
+        <Button onClick={downloadCSV} disabled={users.length === 0} className="metallic-gradient text-black font-bold">
+          <Download className="w-4 h-4 mr-2" />
+          Exportar CSV
+        </Button>
       </div>
 
       <div className="glass p-6 rounded-2xl border border-white/10">
