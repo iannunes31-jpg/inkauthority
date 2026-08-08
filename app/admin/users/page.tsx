@@ -1,10 +1,29 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { Search, ChevronDown, User, ShieldAlert, MoreHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export default function AdminUsers() {
-  const users: any[] = [];
+  const [users, setUsers] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchUsers() {
+      try {
+        const res = await fetch("/api/users");
+        if (res.ok) {
+          const data = await res.json();
+          setUsers(data);
+        }
+      } catch (error) {
+        console.error("Erro ao carregar usuários", error);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchUsers();
+  }, []);
 
   return (
     <div className="space-y-6">
@@ -45,7 +64,13 @@ export default function AdminUsers() {
               </tr>
             </thead>
             <tbody>
-              {users.length === 0 ? (
+              {loading ? (
+                <tr>
+                  <td colSpan={5} className="py-12 text-center text-muted-foreground">
+                    <p>Carregando usuários...</p>
+                  </td>
+                </tr>
+              ) : users.length === 0 ? (
                 <tr>
                   <td colSpan={5} className="py-12 text-center text-muted-foreground">
                     <User className="w-12 h-12 mx-auto mb-4 opacity-20" />
@@ -57,9 +82,13 @@ export default function AdminUsers() {
                   <tr key={user.id} className="border-b border-white/5 hover:bg-white/5 transition-colors group">
                     <td className="py-4">
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center">
-                          <User className="w-4 h-4 text-white" />
-                        </div>
+                        {user.imageUrl ? (
+                          <img src={user.imageUrl} alt={user.name} className="w-10 h-10 rounded-full object-cover" />
+                        ) : (
+                          <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center">
+                            <User className="w-4 h-4 text-white" />
+                          </div>
+                        )}
                         <div>
                           <div className="font-medium text-white">{user.name}</div>
                           <div className="text-xs text-muted-foreground">{user.email}</div>
