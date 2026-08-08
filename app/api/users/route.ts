@@ -17,6 +17,8 @@ export async function GET() {
       status: "Ativo", // Clerk users are active unless banned
       joinDate: new Date(user.createdAt).toLocaleDateString("pt-BR"),
       imageUrl: user.imageUrl,
+      telefone: user.unsafeMetadata?.telefone || "Não informado",
+      instagram: user.unsafeMetadata?.instagram || "Não informado",
     }));
 
     return NextResponse.json(formattedUsers);

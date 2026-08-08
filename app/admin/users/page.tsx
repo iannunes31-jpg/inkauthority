@@ -1,12 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Search, ChevronDown, User, ShieldAlert, MoreHorizontal, Download } from "lucide-react";
+import { Search, ChevronDown, User, ShieldAlert, MoreHorizontal, Download, X, Phone, Instagram, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export default function AdminUsers() {
   const [users, setUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedUser, setSelectedUser] = useState<any | null>(null);
 
   useEffect(() => {
     async function fetchUsers() {
@@ -28,7 +29,7 @@ export default function AdminUsers() {
   const downloadCSV = () => {
     if (users.length === 0) return;
 
-    const headers = ["ID", "Nome", "Email", "Permissão", "Status", "Data de Entrada"];
+    const headers = ["ID", "Nome", "Email", "Permissão", "Status", "Data de Entrada", "Telefone", "Instagram"];
     const csvRows = [headers.join(",")];
 
     for (const user of users) {
@@ -38,7 +39,9 @@ export default function AdminUsers() {
         `"${user.email}"`,
         `"${user.role}"`,
         `"${user.status}"`,
-        `"${user.joinDate}"`
+        `"${user.joinDate}"`,
+        `"${user.telefone || ''}"`,
+        `"${user.instagram || ''}"`
       ];
       csvRows.push(row.join(","));
     }
@@ -113,7 +116,11 @@ export default function AdminUsers() {
                 </tr>
               ) : (
                 users.map((user) => (
-                  <tr key={user.id} className="border-b border-white/5 hover:bg-white/5 transition-colors group">
+                  <tr 
+                    key={user.id} 
+                    onClick={() => setSelectedUser(user)}
+                    className="border-b border-white/5 hover:bg-white/5 transition-colors group cursor-pointer"
+                  >
                     <td className="py-4">
                       <div className="flex items-center gap-3">
                         {user.imageUrl ? (
@@ -153,6 +160,64 @@ export default function AdminUsers() {
           </table>
         </div>
       </div>
+
+      {/* Modal de Detalhes do Usuário */}
+      {selectedUser && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+          <div className="bg-[#111] border border-white/10 rounded-2xl p-6 w-full max-w-md relative shadow-2xl">
+            <button 
+              onClick={() => setSelectedUser(null)}
+              className="absolute top-4 right-4 p-2 text-muted-foreground hover:text-white hover:bg-white/10 rounded-full transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+            
+            <div className="flex flex-col items-center mb-6">
+              {selectedUser.imageUrl ? (
+                <img src={selectedUser.imageUrl} alt={selectedUser.name} className="w-24 h-24 rounded-full object-cover mb-4 border-2 border-white/10" />
+              ) : (
+                <div className="w-24 h-24 rounded-full bg-white/10 flex items-center justify-center mb-4 border-2 border-white/10">
+                  <User className="w-10 h-10 text-white" />
+                </div>
+              )}
+              <h3 className="text-xl font-bold text-white">{selectedUser.name}</h3>
+              <p className="text-sm text-muted-foreground">{selectedUser.role} • Entrou em {selectedUser.joinDate}</p>
+            </div>
+            
+            <div className="space-y-4 bg-black/50 p-4 rounded-xl border border-white/5">
+              <div className="flex items-center gap-3">
+                <Mail className="w-5 h-5 text-muted-foreground" />
+                <div>
+                  <p className="text-xs text-muted-foreground">Email</p>
+                  <p className="text-sm font-medium text-white">{selectedUser.email}</p>
+                </div>
+              </div>
+              
+              <div className="flex items-center gap-3">
+                <Phone className="w-5 h-5 text-muted-foreground" />
+                <div>
+                  <p className="text-xs text-muted-foreground">WhatsApp / Telefone</p>
+                  <p className="text-sm font-medium text-white">{selectedUser.telefone}</p>
+                </div>
+              </div>
+              
+              <div className="flex items-center gap-3">
+                <Instagram className="w-5 h-5 text-muted-foreground" />
+                <div>
+                  <p className="text-xs text-muted-foreground">Instagram</p>
+                  <a href={selectedUser.instagram?.includes('http') ? selectedUser.instagram : `https://instagram.com/${selectedUser.instagram?.replace('@', '')}`} target="_blank" rel="noreferrer" className="text-sm font-medium text-primary hover:underline">
+                    {selectedUser.instagram}
+                  </a>
+                </div>
+              </div>
+            </div>
+            
+            <div className="mt-6 flex gap-3">
+              <Button className="w-full metallic-gradient text-black font-bold">Enviar Mensagem</Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -1,7 +1,6 @@
 "use client";
 
 import { UserProfile } from "@clerk/nextjs";
-import { dark } from "@clerk/themes";
 
 export default function ProfilePage() {
   return (
@@ -13,7 +12,6 @@ export default function ProfilePage() {
       
       <UserProfile 
         appearance={{
-          baseTheme: dark,
           elements: {
             card: "bg-black/40 border border-white/10 shadow-2xl backdrop-blur-md rounded-2xl w-full",
             navbar: "border-r border-white/5",
