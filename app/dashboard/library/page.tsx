@@ -1,20 +1,52 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { motion } from "motion/react";
-import { Download, FileText, FileCode, Brush, Search } from "lucide-react";
+import { Download, FileText, FileCode, Brush, Search, Library } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { supabase } from "@/lib/supabase";
 
 export default function LibraryPage() {
-  const categories = ["Todos", "Contratos", "Procreate", "Marketing", "Planilhas"];
-  
-  const resources = [
-    { id: 1, title: "Contrato de Prestação de Serviço (Tatuagem)", type: "PDF", icon: <FileText className="w-8 h-8" />, size: "120 KB" },
-    { id: 2, title: "Pack de Brushes de Sombreamento Procreate", type: "BRUSH", icon: <Brush className="w-8 h-8" />, size: "15 MB" },
-    { id: 3, title: "Ficha de Anamnese Digital", type: "PDF", icon: <FileText className="w-8 h-8" />, size: "85 KB" },
-    { id: 4, title: "Planilha de Precificação Inteligente", type: "XLSX", icon: <FileCode className="w-8 h-8" />, size: "2.1 MB" },
-    { id: 5, title: "Script de Vendas pelo WhatsApp", type: "DOCX", icon: <FileText className="w-8 h-8" />, size: "45 KB" },
-    { id: 6, title: "Pack de Artes Editáveis Canva", type: "LINK", icon: <Brush className="w-8 h-8" />, size: "Online" },
-  ];
+  const [resources, setResources] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [activeCategory, setActiveCategory] = useState("Todos");
+
+  const categories = ["Todos", "Contratos", "Procreate", "Marketing", "Planilhas", "Outros"];
+
+  useEffect(() => {
+    fetchResources();
+  }, []);
+
+  const fetchResources = async () => {
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('library_resources')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setResources(data || []);
+    } catch (err) {
+      console.error("Erro ao carregar biblioteca:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getIconForType = (type: string) => {
+    if (type === 'PDF' || type === 'DOCX') return <FileText className="w-8 h-8" />;
+    if (type === 'BRUSH' || type === 'IMAGE') return <Brush className="w-8 h-8" />;
+    return <FileCode className="w-8 h-8" />;
+  };
+
+  const filteredResources = activeCategory === "Todos" 
+    ? resources 
+    : resources.filter(r => r.category === activeCategory);
+
+  const handleDownload = (url: string) => {
+    window.open(url, '_blank');
+  };
 
   return (
     <div className="max-w-5xl mx-auto pb-20 p-6 lg:p-10">
@@ -39,8 +71,9 @@ export default function LibraryPage() {
         {categories.map((cat, i) => (
           <button 
             key={i}
+            onClick={() => setActiveCategory(cat)}
             className={`px-4 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-colors ${
-              i === 0 ? "bg-primary text-black" : "bg-white/5 text-white/70 hover:bg-white/10"
+              activeCategory === cat ? "bg-primary text-black" : "bg-white/5 text-white/70 hover:bg-white/10"
             }`}
           >
             {cat}
@@ -49,35 +82,48 @@ export default function LibraryPage() {
       </div>
 
       {/* Grid de Materiais */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {resources.map((item, i) => (
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: i * 0.1 }}
-            key={item.id}
-            className="glass p-6 rounded-2xl border border-white/5 hover:border-primary/50 transition-colors group flex flex-col h-full"
-          >
-            <div className="flex items-start justify-between mb-4">
-              <div className="w-14 h-14 rounded-xl bg-white/5 flex items-center justify-center text-primary group-hover:bg-primary/20 transition-colors">
-                {item.icon}
+      {loading ? (
+        <div className="text-center py-20 text-muted-foreground animate-pulse">Carregando acervo...</div>
+      ) : filteredResources.length === 0 ? (
+        <div className="text-center py-20 glass rounded-2xl border border-white/10 text-muted-foreground">
+           <Library className="w-12 h-12 mx-auto mb-4 opacity-20" />
+           <p>Nenhum material encontrado nesta categoria.</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filteredResources.map((item, i) => (
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.1 }}
+              key={item.id}
+              className="glass p-6 rounded-2xl border border-white/5 hover:border-primary/50 transition-colors group flex flex-col h-full"
+            >
+              <div className="flex items-start justify-between mb-4">
+                <div className="w-14 h-14 rounded-xl bg-white/5 flex items-center justify-center text-primary group-hover:bg-primary/20 transition-colors">
+                  {getIconForType(item.resource_type)}
+                </div>
+                <span className="text-[10px] font-bold px-2 py-1 bg-white/10 rounded uppercase tracking-widest text-white/50">
+                  {item.resource_type}
+                </span>
               </div>
-              <span className="text-[10px] font-bold px-2 py-1 bg-white/10 rounded uppercase tracking-widest text-white/50">
-                {item.type}
-              </span>
-            </div>
-            
-            <h3 className="font-bold text-lg mb-2 leading-tight flex-1">{item.title}</h3>
-            
-            <div className="flex items-center justify-between mt-4 pt-4 border-t border-white/5">
-              <span className="text-xs text-muted-foreground">{item.size}</span>
-              <Button size="sm" className="bg-primary/10 text-primary hover:bg-primary hover:text-black transition-colors rounded-full px-4 text-xs font-bold">
-                <Download className="w-3 h-3 mr-2" /> Baixar
-              </Button>
-            </div>
-          </motion.div>
-        ))}
-      </div>
+              
+              <h3 className="font-bold text-lg mb-2 leading-tight flex-1">{item.title}</h3>
+              
+              <div className="flex items-center justify-between mt-4 pt-4 border-t border-white/5">
+                <span className="text-xs text-muted-foreground">{item.file_size}</span>
+                <Button 
+                  size="sm" 
+                  onClick={() => handleDownload(item.file_url)}
+                  className="bg-primary/10 text-primary hover:bg-primary hover:text-black transition-colors rounded-full px-4 text-xs font-bold"
+                >
+                  <Download className="w-3 h-3 mr-2" /> Baixar
+                </Button>
+              </div>
+            </motion.div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
