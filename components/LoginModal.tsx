@@ -185,10 +185,12 @@ export function LoginModal({ isOpen, onClose, initialView = "login" }: LoginModa
           result = await s.emailCode.attempt({ code });
         } else if (s.emailCode && typeof s.emailCode.verify === "function") {
           result = await s.emailCode.verify({ code });
+        } else if (s.emailCode && typeof s.emailCode.verifyCode === "function") {
+          result = await s.emailCode.verifyCode({ code });
         } else if (s.verifications && typeof s.verifications.verifyEmailCode === "function") {
           result = await s.verifications.verifyEmailCode({ code });
         } else {
-          throw new Error(`Método de verificação não encontrado. Chaves do signIn: ${Object.keys(s).join(", ")}`);
+          throw new Error(`Método não encontrado. Chaves do signIn: ${Object.keys(s).join(", ")}. Chaves do emailCode: ${s.emailCode ? Object.keys(s.emailCode).join(", ") : "N/A"}`);
         }
       } catch (err: any) {
         throw err; // throw to be caught by the outer catch
