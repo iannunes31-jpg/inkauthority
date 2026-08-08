@@ -47,9 +47,28 @@ export default function Home() {
             };
             
             adjustHeight(); // Ajusta imediatamente
-            // Observa mudanças futuras (ex: imagens carregando ou redimensionamento)
             const observer = new ResizeObserver(adjustHeight);
             observer.observe(doc.body);
+
+            // Injeta o link FERRAMENTAS no menu nativo do Webflow
+            if (!doc.querySelector('#injected-ferramentas')) {
+              const links = Array.from(doc.querySelectorAll('a'));
+              const cursosLink = links.find(a => a.textContent?.toUpperCase().includes('CURSOS'));
+              
+              if (cursosLink && cursosLink.parentElement) {
+                const ferramentasLink = doc.createElement('a');
+                ferramentasLink.id = 'injected-ferramentas';
+                ferramentasLink.href = '/tools';
+                ferramentasLink.textContent = 'FERRAMENTAS';
+                ferramentasLink.className = cursosLink.className; // Copia o exato estilo do botão CURSOS
+                ferramentasLink.style.marginLeft = '20px'; // Espaçamento extra
+                
+                // Abre na mesma aba pai
+                ferramentasLink.target = '_parent';
+
+                cursosLink.parentElement.insertBefore(ferramentasLink, cursosLink.nextSibling);
+              }
+            }
           }
         } catch(e) {}
       }
@@ -65,7 +84,6 @@ export default function Home() {
 
   const fetchProducts = async () => {
     try {
-      // Busca cursos publicados
       const { data: coursesData } = await supabase
         .from('courses')
         .select('*')
@@ -73,15 +91,6 @@ export default function Home() {
         .order('created_at', { ascending: false });
       
       if (coursesData) setCourses(coursesData);
-
-      // Busca materiais da biblioteca (limite de 3 para vitrine)
-      const { data: libraryData } = await supabase
-        .from('library_resources')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(3);
-        
-      if (libraryData) setLibrary(libraryData);
     } catch (e) {
       console.error(e);
     }
@@ -151,38 +160,6 @@ export default function Home() {
               Em breve novos cursos disponíveis.
             </div>
           )}
-        </div>
-      </section>
-
-      {/* Biblioteca - Cross-sell */}
-      <section className="py-20 px-6 lg:px-12 max-w-7xl mx-auto border-t border-white/5 relative z-10">
-        <div className="mb-12 flex flex-col md:flex-row md:items-end justify-between gap-6">
-          <div>
-            <h2 className="text-3xl lg:text-5xl font-black uppercase tracking-tighter mb-4">Biblioteca Pro</h2>
-            <p className="text-muted-foreground">Acelere seu fluxo de trabalho com materiais prontos.</p>
-          </div>
-          <Button onClick={() => handleCheckout("Acesso Completo à Biblioteca")} variant="outline" className="border-primary text-primary hover:bg-primary hover:text-black">
-            Comprar Acesso Completo
-          </Button>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {library.map((item) => (
-            <div key={item.id} className="glass p-6 rounded-2xl border border-white/5 hover:border-primary/30 transition-colors flex flex-col bg-white/[0.02]">
-              <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center text-primary mb-4">
-                <Library className="w-6 h-6" />
-              </div>
-              <h3 className="font-bold text-lg mb-2">{item.title}</h3>
-              <p className="text-xs text-muted-foreground uppercase tracking-widest mb-6">Arquivo {item.resource_type}</p>
-              
-              <Button 
-                onClick={() => handleCheckout(item.title)}
-                className="mt-auto w-full bg-white/5 hover:bg-white/10 text-white border border-white/10"
-              >
-                Comprar Avulso
-              </Button>
-            </div>
-          ))}
         </div>
       </section>
 
