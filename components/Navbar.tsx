@@ -29,9 +29,13 @@ function UserDropdown() {
         onClick={() => setIsOpen(!isOpen)}
         className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors border border-white/20 overflow-hidden"
       >
-        <span className="text-xs font-bold text-white">
-          {user.firstName ? user.firstName.charAt(0).toUpperCase() : user.primaryEmailAddress?.emailAddress.charAt(0).toUpperCase()}
-        </span>
+        {user.hasImage ? (
+          <img src={user.imageUrl} alt={user.fullName || "Perfil"} className="w-full h-full object-cover" />
+        ) : (
+          <span className="text-xs font-bold text-white">
+            {user.firstName ? user.firstName.charAt(0).toUpperCase() : user.primaryEmailAddress?.emailAddress.charAt(0).toUpperCase()}
+          </span>
+        )}
       </button>
       
       <AnimatePresence>

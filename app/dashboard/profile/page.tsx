@@ -1,12 +1,12 @@
 // @ts-nocheck
 "use client";
 
-import { UserProfile, useUser } from "@clerk/nextjs";
-import { dark } from "@clerk/themes";
-import { User, Loader2 } from "lucide-react";
+import { useUser } from "@clerk/nextjs";
+import { User, Loader2, Mail, Shield, ShieldAlert, Camera, Edit2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 export default function ProfilePage() {
-  const { isLoaded, isSignedIn } = useUser();
+  const { isLoaded, isSignedIn, user } = useUser();
 
   if (!isLoaded) {
     return (
@@ -24,39 +24,96 @@ export default function ProfilePage() {
       </div>
     );
   }
+
+  const email = user.primaryEmailAddress?.emailAddress;
+  const isVerified = user.primaryEmailAddress?.verification?.status === "verified";
+
   return (
     <div className="max-w-4xl mx-auto pb-20 p-6 lg:p-10">
       <div className="mb-10">
         <h1 className="text-3xl font-black uppercase tracking-tighter mb-2 flex items-center gap-3">
           <User className="w-8 h-8 text-primary" /> Meu Perfil
         </h1>
-        <p className="text-muted-foreground">Gerencie sua conta, senha e informações de segurança.</p>
+        <p className="text-muted-foreground">Gerencie sua conta e informações de segurança.</p>
       </div>
 
-      <div className="glass rounded-2xl border border-white/5 p-4 flex justify-center">
-        {/* Usamos o tema dark do Clerk para combinar com nosso SaaS */}
-        <UserProfile 
-          appearance={{
-            baseTheme: dark,
-            elements: {
-              rootBox: "w-full",
-              card: "shadow-none bg-transparent w-full max-w-full",
-              navbar: "hidden sm:block border-r border-white/10",
-              navbarButton: "text-white/70 hover:text-white hover:bg-white/5 data-[active=true]:bg-primary/10 data-[active=true]:text-primary",
-              headerTitle: "text-white",
-              headerSubtitle: "text-white/50",
-              profileSectionTitleText: "text-white/80",
-              formButtonPrimary: "bg-primary text-black font-bold hover:bg-primary/90",
-              formFieldInput: "bg-black/50 border-white/10 text-white focus:border-primary focus:ring-primary",
-              formFieldLabel: "text-white/70",
-              dividerLine: "bg-white/10",
-              dividerText: "text-white/50",
-              badge: "bg-primary/20 text-primary border-primary/20",
-              breadcrumbsItem: "text-white/50",
-              breadcrumbsItemDivider: "text-white/30",
-            }
-          }}
-        />
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {/* Coluna da Esquerda - Foto e Ações Básicas */}
+        <div className="glass rounded-2xl border border-white/5 p-8 flex flex-col items-center text-center">
+          <div className="relative mb-6 group cursor-pointer">
+            <div className="w-32 h-32 rounded-full overflow-hidden border-2 border-white/10 group-hover:border-primary/50 transition-colors bg-white/5 flex items-center justify-center">
+              {user.hasImage ? (
+                <img src={user.imageUrl} alt="Sua foto" className="w-full h-full object-cover" />
+              ) : (
+                <span className="text-4xl font-bold text-white">
+                  {user.firstName ? user.firstName.charAt(0).toUpperCase() : email?.charAt(0).toUpperCase()}
+                </span>
+              )}
+            </div>
+            <div className="absolute inset-0 bg-black/60 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+               <Camera className="w-6 h-6 text-white" />
+            </div>
+          </div>
+          
+          <h2 className="text-xl font-bold text-white mb-1">{user.fullName || "Usuário"}</h2>
+          <p className="text-sm text-muted-foreground mb-6">{email}</p>
+          
+          <Button variant="outline" className="w-full border-white/10 hover:bg-white/5">
+            <Edit2 className="w-4 h-4 mr-2" /> Editar Perfil
+          </Button>
+        </div>
+
+        {/* Coluna da Direita - Detalhes */}
+        <div className="md:col-span-2 space-y-6">
+          <div className="glass rounded-2xl border border-white/5 p-6">
+            <h3 className="text-lg font-bold text-white mb-6 flex items-center gap-2">
+              <Mail className="w-5 h-5 text-primary" /> Endereços de Email
+            </h3>
+            
+            <div className="flex items-center justify-between p-4 bg-white/5 rounded-xl border border-white/5">
+              <div>
+                <p className="font-medium text-white">{email}</p>
+                <div className="flex items-center gap-2 mt-1">
+                  {isVerified ? (
+                    <span className="text-xs text-green-400 flex items-center gap-1"><Shield className="w-3 h-3" /> Verificado</span>
+                  ) : (
+                    <span className="text-xs text-yellow-400 flex items-center gap-1"><ShieldAlert className="w-3 h-3" /> Não verificado</span>
+                  )}
+                  <span className="text-[10px] uppercase tracking-wider text-muted-foreground bg-white/5 px-2 py-0.5 rounded-full">Principal</span>
+                </div>
+              </div>
+              <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-white">
+                Gerenciar
+              </Button>
+            </div>
+          </div>
+          
+          <div className="glass rounded-2xl border border-white/5 p-6">
+            <h3 className="text-lg font-bold text-white mb-6 flex items-center gap-2">
+              <Shield className="w-5 h-5 text-primary" /> Segurança da Conta
+            </h3>
+            
+            <div className="flex items-center justify-between p-4 bg-white/5 rounded-xl border border-white/5 mb-4">
+              <div>
+                <p className="font-medium text-white">Senha</p>
+                <p className="text-xs text-muted-foreground mt-1">Última alteração não registrada</p>
+              </div>
+              <Button variant="outline" size="sm" className="border-white/10 hover:bg-white/5">
+                Alterar Senha
+              </Button>
+            </div>
+            
+            <div className="flex items-center justify-between p-4 bg-white/5 rounded-xl border border-white/5">
+              <div>
+                <p className="font-medium text-white">Autenticação em Duas Etapas</p>
+                <p className="text-xs text-muted-foreground mt-1">Status de proteção da conta</p>
+              </div>
+              <Button variant="outline" size="sm" className="border-white/10 hover:bg-white/5">
+                Configurar
+              </Button>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );

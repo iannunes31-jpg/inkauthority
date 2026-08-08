@@ -8,32 +8,7 @@ interface NotificationPanelProps {
   onClose: () => void;
 }
 
-const mockNotifications = [
-  {
-    id: 1,
-    type: "info",
-    title: "Novo Masterclass Disponível",
-    message: "Aprenda técnicas de Blackwork com o novo módulo.",
-    time: "Há 2 horas",
-    read: false,
-  },
-  {
-    id: 2,
-    type: "success",
-    title: "Certificado Liberado",
-    message: "Você concluiu o curso de Biossegurança.",
-    time: "Há 1 dia",
-    read: true,
-  },
-  {
-    id: 3,
-    type: "warning",
-    title: "Assinatura Expirando",
-    message: "Sua assinatura premium expira em 5 dias.",
-    time: "Há 3 dias",
-    read: true,
-  },
-];
+const mockNotifications: any[] = [];
 
 export function NotificationPanel({ isOpen, onClose }: NotificationPanelProps) {
   const getIcon = (type: string) => {
@@ -77,34 +52,41 @@ export function NotificationPanel({ isOpen, onClose }: NotificationPanelProps) {
             </div>
 
             <div className="max-h-[400px] overflow-y-auto">
-              {mockNotifications.map((notif) => (
-                <div 
-                  key={notif.id} 
-                  className={`p-4 border-b border-white/5 flex gap-4 transition-colors hover:bg-white/5 cursor-pointer ${
-                    !notif.read ? "bg-white/[0.02]" : ""
-                  }`}
-                >
-                  <div className="shrink-0 mt-1">
-                    {getIcon(notif.type)}
-                  </div>
-                  <div>
-                    <div className="flex items-center justify-between gap-2 mb-1">
-                      <h4 className={`text-sm font-semibold ${!notif.read ? "text-white" : "text-muted-foreground"}`}>
-                        {notif.title}
-                      </h4>
-                      {!notif.read && (
-                        <span className="w-2 h-2 rounded-full bg-white neon-glow"></span>
-                      )}
-                    </div>
-                    <p className="text-xs text-muted-foreground mb-2 line-clamp-2">
-                      {notif.message}
-                    </p>
-                    <span className="text-[10px] text-muted-foreground/60 uppercase tracking-wider font-mono">
-                      {notif.time}
-                    </span>
-                  </div>
+              {mockNotifications.length === 0 ? (
+                <div className="p-8 text-center text-muted-foreground flex flex-col items-center gap-2">
+                  <Bell className="w-8 h-8 opacity-20" />
+                  <p className="text-sm">Nenhuma notificação no momento</p>
                 </div>
-              ))}
+              ) : (
+                mockNotifications.map((notif) => (
+                  <div 
+                    key={notif.id} 
+                    className={`p-4 border-b border-white/5 flex gap-4 transition-colors hover:bg-white/5 cursor-pointer ${
+                      !notif.read ? "bg-white/[0.02]" : ""
+                    }`}
+                  >
+                    <div className="shrink-0 mt-1">
+                      {getIcon(notif.type)}
+                    </div>
+                    <div>
+                      <div className="flex items-center justify-between gap-2 mb-1">
+                        <h4 className={`text-sm font-semibold ${!notif.read ? "text-white" : "text-muted-foreground"}`}>
+                          {notif.title}
+                        </h4>
+                        {!notif.read && (
+                          <span className="w-2 h-2 rounded-full bg-white neon-glow"></span>
+                        )}
+                      </div>
+                      <p className="text-xs text-muted-foreground mb-2 line-clamp-2">
+                        {notif.message}
+                      </p>
+                      <span className="text-[10px] text-muted-foreground/60 uppercase tracking-wider font-mono">
+                        {notif.time}
+                      </span>
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
 
             <div className="p-3 border-t border-white/5 bg-black/40 text-center">
