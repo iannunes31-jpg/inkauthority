@@ -38,26 +38,9 @@ export default function Home() {
           doc.head.appendChild(style);
         }
 
-        // Tenta encontrar um botão TOOLS/FERRAMENTAS que já existe e estava desativado
-        const allLinks = Array.from(doc.querySelectorAll('a'));
-        const existingToolsBtn = allLinks.find(el => {
-          const text = (el.textContent || '').toUpperCase();
-          return text.includes('TOOLS') || text.includes('FERRAMENTA');
-        });
-
-        if (existingToolsBtn && existingToolsBtn.id !== 'btn-ferramentas-injetado') {
-          // Se achou o original, força ele a aparecer
-          existingToolsBtn.style.display = 'block';
-          existingToolsBtn.style.opacity = '1';
-          existingToolsBtn.style.visibility = 'visible';
-          existingToolsBtn.href = '/tools';
-          existingToolsBtn.target = '_top';
-          clearInterval(injectInterval);
-          return;
-        }
-
-        // 2. Se não existe, Injeta Nativo (Corrigido para não falhar se a tag A tiver spans dentro)
+        // 2. Injeção Nativa do Botão FERRAMENTAS
         if (!doc.getElementById('btn-ferramentas-injetado')) {
+          const allLinks = Array.from(doc.querySelectorAll('a'));
           const cursosElement = allLinks.find(el => {
             const text = (el.textContent || '').toUpperCase();
             return text.includes('CURSOS');
@@ -82,10 +65,20 @@ export default function Home() {
             newBtn.style.textDecoration = 'none';
             newBtn.style.cursor = 'pointer';
             newBtn.style.marginLeft = '30px'; 
+            newBtn.style.marginRight = '60px'; // Empurra tudo pra esquerda!
             newBtn.style.display = 'inline-block';
             
             newBtn.onmouseover = () => newBtn.style.color = '#ffffff';
             newBtn.onmouseout = () => newBtn.style.color = computed.color || 'rgba(238, 238, 242, 0.66)';
+            
+            // Oculta qualquer lixo que o Webflow tenha deixado (divisores duplos)
+            const lixo = allLinks.find(el => {
+              const text = (el.textContent || '').toUpperCase();
+              return (text.includes('TOOLS') || text.includes('FERRAMENTA')) && el.id !== 'btn-ferramentas-injetado';
+            });
+            if (lixo) {
+               lixo.style.display = 'none';
+            }
             
             parent.insertBefore(newBtn, cursosElement.nextSibling);
             clearInterval(injectInterval);
