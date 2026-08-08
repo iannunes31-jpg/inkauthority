@@ -2,33 +2,56 @@
 
 import { useEffect, useState } from "react";
 import { motion } from "motion/react";
-import { Download, FileText, FileCode, Brush, Search, Library } from "lucide-react";
+import { Download, FileText, FileCode, Brush, Search, Library, Lock, ShoppingCart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/lib/supabase";
+import { useAuth } from "@clerk/nextjs";
 
 export default function LibraryPage() {
+  const { userId } = useAuth();
   const [resources, setResources] = useState<any[]>([]);
+  const [purchasedResourceIds, setPurchasedResourceIds] = useState<string[]>([]);
+  const [hasFullAccess, setHasFullAccess] = useState(false);
   const [loading, setLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState("Todos");
 
   const categories = ["Todos", "Contratos", "Procreate", "Marketing", "Planilhas", "Outros"];
 
   useEffect(() => {
-    fetchResources();
-  }, []);
+    if (userId) {
+      fetchResourcesAndAccess();
+    }
+  }, [userId]);
 
-  const fetchResources = async () => {
+  const fetchResourcesAndAccess = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
+      
+      // 1. Fetch library items
+      const { data: libraryData, error: libraryError } = await supabase
         .from('library_resources')
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
-      setResources(data || []);
+      if (libraryError) throw libraryError;
+      
+      // 2. Fetch user purchases
+      const { data: purchasesData, error: purchasesError } = await supabase
+        .from('user_purchases')
+        .select('product_id')
+        .eq('user_id', userId)
+        .eq('product_type', 'library');
+
+      if (purchasesError) throw purchasesError;
+
+      const purchasedIds = purchasesData.map(p => p.product_id);
+      
+      setResources(libraryData || []);
+      setPurchasedResourceIds(purchasedIds);
+      setHasFullAccess(purchasedIds.includes('all'));
+      
     } catch (err) {
-      console.error("Erro ao carregar biblioteca:", err);
+      console.error("Erro ao carregar biblioteca e acessos:", err);
     } finally {
       setLoading(false);
     }
@@ -46,6 +69,12 @@ export default function LibraryPage() {
 
   const handleDownload = (url: string) => {
     window.open(url, '_blank');
+  };
+
+  const handleLockedClick = (e: React.MouseEvent, title: string) => {
+    e.preventDefault();
+    alert(`Você ainda não possui acesso ao material: ${title}. Em breve você poderá comprá-lo diretamente por aqui!`);
+    // Aqui no futuro entrará o link de checkout
   };
 
   return (
@@ -91,37 +120,60 @@ export default function LibraryPage() {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredResources.map((item, i) => (
-            <motion.div 
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.1 }}
-              key={item.id}
-              className="glass p-6 rounded-2xl border border-white/5 hover:border-primary/50 transition-colors group flex flex-col h-full"
-            >
-              <div className="flex items-start justify-between mb-4">
-                <div className="w-14 h-14 rounded-xl bg-white/5 flex items-center justify-center text-primary group-hover:bg-primary/20 transition-colors">
-                  {getIconForType(item.resource_type)}
+          {filteredResources.map((item, i) => {
+            const hasAccess = hasFullAccess || purchasedResourceIds.includes(item.id);
+
+            return (
+              <motion.div 
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.1 }}
+                key={item.id}
+                className={`glass p-6 rounded-2xl border ${hasAccess ? 'border-white/5 hover:border-primary/50' : 'border-white/5 opacity-80'} transition-colors group flex flex-col h-full relative`}
+              >
+                {!hasAccess && (
+                  <div className="absolute top-4 right-4 text-white/30">
+                    <Lock className="w-5 h-5" />
+                  </div>
+                )}
+                
+                <div className="flex items-start justify-between mb-4">
+                  <div className={`w-14 h-14 rounded-xl flex items-center justify-center transition-colors ${hasAccess ? 'bg-white/5 text-primary group-hover:bg-primary/20' : 'bg-white/5 text-white/30'}`}>
+                    {getIconForType(item.resource_type)}
+                  </div>
+                  <span className={`text-[10px] font-bold px-2 py-1 rounded uppercase tracking-widest ${hasAccess ? 'bg-white/10 text-white/50' : 'bg-black text-white/30'}`}>
+                    {item.resource_type}
+                  </span>
                 </div>
-                <span className="text-[10px] font-bold px-2 py-1 bg-white/10 rounded uppercase tracking-widest text-white/50">
-                  {item.resource_type}
-                </span>
-              </div>
-              
-              <h3 className="font-bold text-lg mb-2 leading-tight flex-1">{item.title}</h3>
-              
-              <div className="flex items-center justify-between mt-4 pt-4 border-t border-white/5">
-                <span className="text-xs text-muted-foreground">{item.file_size}</span>
-                <Button 
-                  size="sm" 
-                  onClick={() => handleDownload(item.file_url)}
-                  className="bg-primary/10 text-primary hover:bg-primary hover:text-black transition-colors rounded-full px-4 text-xs font-bold"
-                >
-                  <Download className="w-3 h-3 mr-2" /> Baixar
-                </Button>
-              </div>
-            </motion.div>
-          ))}
+                
+                <h3 className={`font-bold text-lg mb-2 leading-tight flex-1 ${hasAccess ? '' : 'text-white/70'}`}>
+                  {item.title}
+                </h3>
+                
+                <div className="flex items-center justify-between mt-4 pt-4 border-t border-white/5">
+                  <span className="text-xs text-muted-foreground">{item.file_size}</span>
+                  
+                  {hasAccess ? (
+                    <Button 
+                      size="sm" 
+                      onClick={() => handleDownload(item.file_url)}
+                      className="bg-primary/10 text-primary hover:bg-primary hover:text-black transition-colors rounded-full px-4 text-xs font-bold"
+                    >
+                      <Download className="w-3 h-3 mr-2" /> Baixar
+                    </Button>
+                  ) : (
+                    <Button 
+                      size="sm" 
+                      onClick={(e) => handleLockedClick(e, item.title)}
+                      className="bg-white/5 text-muted-foreground hover:bg-primary/20 hover:text-primary transition-colors rounded-full px-4 text-xs font-bold border border-white/5"
+                    >
+                      <ShoppingCart className="w-3 h-3 mr-2" /> Comprar
+                    </Button>
+                  )}
+                </div>
+              </motion.div>
+            );
+          })}
         </div>
       )}
     </div>
