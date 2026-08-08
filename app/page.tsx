@@ -43,11 +43,15 @@ export default function Home() {
   }, []);
 
   return (
-    <main className="relative min-h-screen w-full m-0 p-0 overflow-hidden bg-black">
-      {/* Botão de Ferramentas (Fixo sobre o iframe) */}
-      <div className="absolute top-8 right-8 lg:right-32 z-50">
+    <main className="relative min-h-screen w-full m-0 p-0 overflow-hidden bg-gradient-to-br from-[#0a0a0a] via-black to-[#050505]">
+      {/* Efeito de Fundo enquanto o Iframe Carrega */}
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-primary/10 blur-[120px] rounded-full pointer-events-none z-0" />
+      
+      {/* Botão de Ferramentas (Fixo e centralizado no topo para não quebrar o menu nativo) */}
+      <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[999999]">
         <Link href="/tools">
-          <Button className="bg-black/40 hover:bg-primary hover:text-black border border-white/20 backdrop-blur-md text-white font-bold uppercase tracking-widest transition-all shadow-xl shadow-black/50 px-6 py-5 rounded-full">
+          <Button className="bg-black/60 hover:bg-primary hover:text-black border border-white/10 backdrop-blur-md text-white font-black uppercase tracking-widest transition-all shadow-[0_0_40px_rgba(0,0,0,0.8)] px-8 py-6 rounded-full flex items-center gap-3">
+            <span className="w-2 h-2 rounded-full bg-primary animate-pulse"></span>
             Acessar Ferramentas
           </Button>
         </Link>
@@ -55,7 +59,7 @@ export default function Home() {
 
       <iframe 
         src="/isabella.html" 
-        className="w-full h-screen border-0 block"
+        className="w-full h-screen border-0 block relative z-10"
         title="Landing Page"
       />
       <LoginModal 
