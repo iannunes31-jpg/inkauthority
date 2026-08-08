@@ -21,13 +21,13 @@ export default function Home() {
     };
     window.addEventListener("message", handleMessage);
     
-    // Timer para garantir que o iframe carregou e mutar o vídeo
     const muteTimer = setInterval(() => {
       const iframe = document.querySelector('iframe');
       if (iframe) {
         try {
           const doc = iframe.contentDocument || iframe.contentWindow?.document;
           if (doc) {
+            // Muta e dá play automático nos vídeos
             const vids = doc.querySelectorAll('video');
             vids.forEach(v => {
               if (!v.muted) {
@@ -35,6 +35,21 @@ export default function Home() {
                 v.play().catch(() => {});
               }
             });
+
+            // Ajusta a altura do iframe para remover a segunda barra de rolagem
+            const adjustHeight = () => {
+              const bodyHeight = doc.body.scrollHeight;
+              const htmlHeight = doc.documentElement.scrollHeight;
+              const height = Math.max(bodyHeight, htmlHeight);
+              if (height > 0) {
+                iframe.style.height = `${height}px`;
+              }
+            };
+            
+            adjustHeight(); // Ajusta imediatamente
+            // Observa mudanças futuras (ex: imagens carregando ou redimensionamento)
+            const observer = new ResizeObserver(adjustHeight);
+            observer.observe(doc.body);
           }
         } catch(e) {}
       }
@@ -84,6 +99,7 @@ export default function Home() {
         src="/isabella.html" 
         className="w-full h-screen border-0 block"
         title="Landing Page"
+        scrolling="no"
       />
 
       {/* Cursos - Vitrine de Cross-sell */}

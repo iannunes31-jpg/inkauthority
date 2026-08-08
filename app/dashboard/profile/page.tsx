@@ -1,11 +1,14 @@
 "use client";
 
+import { useRef, useState } from "react";
 import { useUser } from "@clerk/nextjs";
 import { Camera, Edit2, Mail, Shield, ShieldAlert, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export default function ProfilePage() {
   const { user, isLoaded } = useUser();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isUploading, setIsUploading] = useState(false);
 
   if (!isLoaded) {
     return (
@@ -27,6 +30,21 @@ export default function ProfilePage() {
   const email = user.primaryEmailAddress?.emailAddress;
   const isVerified = user.primaryEmailAddress?.verification?.status === "verified";
 
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    setIsUploading(true);
+    try {
+      await user.setProfileImage({ file });
+    } catch (error) {
+      console.error("Erro ao fazer upload da imagem:", error);
+      alert("Erro ao alterar a foto de perfil. Tente novamente.");
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
   return (
     <div className="max-w-4xl mx-auto pb-20 p-6 lg:p-10 flex flex-col items-center">
       <div className="w-full mb-10 text-left">
@@ -37,9 +55,21 @@ export default function ProfilePage() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full">
         {/* Coluna da Esquerda - Foto e Ações Básicas */}
         <div className="glass rounded-2xl border border-white/5 p-8 flex flex-col items-center text-center">
-          <div className="relative mb-6 group cursor-pointer">
-            <div className="w-32 h-32 rounded-full overflow-hidden border-2 border-white/10 group-hover:border-primary/50 transition-colors bg-white/5 flex items-center justify-center">
-              {user.hasImage ? (
+          <input 
+            type="file" 
+            ref={fileInputRef} 
+            className="hidden" 
+            accept="image/*" 
+            onChange={handleImageUpload}
+          />
+          <div 
+            className="relative mb-6 group cursor-pointer"
+            onClick={() => fileInputRef.current?.click()}
+          >
+            <div className="w-32 h-32 rounded-full overflow-hidden border-2 border-white/10 group-hover:border-primary/50 transition-colors bg-white/5 flex items-center justify-center relative">
+              {isUploading ? (
+                <Loader2 className="w-8 h-8 animate-spin text-primary z-10" />
+              ) : user.hasImage ? (
                 <img src={user.imageUrl} alt="Sua foto" className="w-full h-full object-cover" />
               ) : (
                 <span className="text-4xl font-bold text-white">
@@ -47,9 +77,11 @@ export default function ProfilePage() {
                 </span>
               )}
             </div>
-            <div className="absolute inset-0 bg-black/60 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-               <Camera className="w-6 h-6 text-white" />
-            </div>
+            {!isUploading && (
+              <div className="absolute inset-0 bg-black/60 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                 <Camera className="w-6 h-6 text-white" />
+              </div>
+            )}
           </div>
           
           <h2 className="text-xl font-bold text-white mb-1">{user.fullName || "Usuário"}</h2>
