@@ -16,8 +16,12 @@ export default function Home() {
     };
     window.addEventListener("message", handleMessage);
     
-    // Timer para garantir que o iframe carregou
-    const iframeTimer = setInterval(() => {
+    // Timer contínuo para injetar o botão nativamente (tenta até achar o menu)
+    let attempts = 0;
+    const injectInterval = setInterval(() => {
+      attempts++;
+      if (attempts > 40) clearInterval(injectInterval); // desiste após 20 segundos
+
       const iframe = document.querySelector('iframe');
       if (iframe) {
         try {
@@ -33,7 +37,7 @@ export default function Home() {
               }
             });
 
-            // 2. Tornar fundo transparente para revelar o Next.js
+            // 2. Tornar fundo transparente
             if (!doc.getElementById('custom-bg-style')) {
               const style = doc.createElement('style');
               style.id = 'custom-bg-style';
@@ -46,6 +50,56 @@ export default function Home() {
               doc.head.appendChild(style);
             }
 
+            // 3. Injeção Nativa do Botão (A prova de falhas)
+            if (!doc.getElementById('btn-ferramentas-injetado')) {
+              // Procura por qualquer elemento que tenha exatamente o texto "CURSOS"
+              const allElements = Array.from(doc.querySelectorAll('*'));
+              const cursosElement = allElements.find(el => 
+                el.textContent?.trim() === 'CURSOS' && 
+                el.tagName !== 'SCRIPT' && 
+                el.tagName !== 'STYLE' && 
+                el.children.length === 0
+              ) as HTMLElement | undefined;
+              
+              if (cursosElement && cursosElement.parentNode) {
+                const parent = cursosElement.parentNode;
+                
+                const newBtn = doc.createElement('a');
+                newBtn.id = 'btn-ferramentas-injetado';
+                newBtn.textContent = 'FERRAMENTAS';
+                newBtn.href = '#';
+                
+                // Copia exatamente os mesmos estilos do "CURSOS" para ficar idêntico
+                const computed = window.getComputedStyle(cursosElement);
+                newBtn.style.cssText = cursosElement.style ? cursosElement.style.cssText : '';
+                newBtn.style.color = computed.color || 'rgba(238, 238, 242, 0.66)';
+                newBtn.style.fontSize = computed.fontSize || '11px';
+                newBtn.style.fontFamily = computed.fontFamily || 'Jost, sans-serif';
+                newBtn.style.fontWeight = computed.fontWeight || '300';
+                newBtn.style.letterSpacing = computed.letterSpacing || '0.28em';
+                newBtn.style.textTransform = 'uppercase';
+                newBtn.style.textDecoration = 'none';
+                newBtn.style.cursor = 'pointer';
+                
+                // Adiciona a margem para separar do "CURSOS"
+                newBtn.style.marginLeft = '20px'; 
+                
+                newBtn.onmouseover = () => newBtn.style.color = '#ffffff';
+                newBtn.onmouseout = () => newBtn.style.color = computed.color || 'rgba(238, 238, 242, 0.66)';
+                
+                newBtn.onclick = (e) => {
+                  e.preventDefault();
+                  if (window.top) {
+                    window.top.location.href = '/tools';
+                  }
+                };
+                
+                // Insere logo DEPOIS do "CURSOS". O Flexbox do Webflow vai empurrar o resto pra esquerda automaticamente!
+                parent.insertBefore(newBtn, cursosElement.nextSibling);
+                
+                clearInterval(injectInterval); // Sucesso, pode parar de tentar
+              }
+            }
           }
         } catch(e) {}
       }
@@ -53,19 +107,12 @@ export default function Home() {
 
     return () => {
       window.removeEventListener("message", handleMessage);
-      clearInterval(iframeTimer);
+      clearInterval(injectInterval);
     };
   }, []);
 
   return (
     <main className="relative min-h-screen w-full m-0 p-0 overflow-hidden bg-[#050505]">
-      
-      {/* Botão de Ferramentas (Fixo próximo ao menu nativo) */}
-      <div className="fixed top-[32px] right-[300px] lg:right-[360px] z-[999999]">
-        <Link href="/tools" className="text-white/80 hover:text-white font-bold text-[11px] lg:text-[13px] uppercase tracking-[0.1em] transition-colors">
-          Ferramentas
-        </Link>
-      </div>
       
       {/* NOVO FUNDO DE ALTA QUALIDADE */}
       <div className="fixed inset-0 z-0 pointer-events-none">
