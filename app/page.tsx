@@ -47,13 +47,10 @@ export default function Home() {
       {/* Efeito de Fundo enquanto o Iframe Carrega */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-primary/10 blur-[120px] rounded-full pointer-events-none z-0" />
       
-      {/* Botão de Ferramentas (Fixo e centralizado no topo para não quebrar o menu nativo) */}
-      <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[999999]">
-        <Link href="/tools">
-          <Button className="bg-black/60 hover:bg-primary hover:text-black border border-white/10 backdrop-blur-md text-white font-black uppercase tracking-widest transition-all shadow-[0_0_40px_rgba(0,0,0,0.8)] px-8 py-6 rounded-full flex items-center gap-3">
-            <span className="w-2 h-2 rounded-full bg-primary animate-pulse"></span>
-            Acessar Ferramentas
-          </Button>
+      {/* Botão de Ferramentas (Fixo próximo ao menu nativo) */}
+      <div className="fixed top-[34px] left-[52%] lg:left-[53%] z-[999999]">
+        <Link href="/tools" className="text-white/80 hover:text-white font-bold text-[11px] lg:text-[13px] uppercase tracking-[0.1em] transition-colors">
+          Ferramentas
         </Link>
       </div>
 
