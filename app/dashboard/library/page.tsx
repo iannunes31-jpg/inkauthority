@@ -5,15 +5,20 @@ import { motion } from "motion/react";
 import { Download, FileText, FileCode, Brush, Search, Library, Lock, ShoppingCart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/lib/supabase";
-import { useAuth } from "@clerk/nextjs";
+import { useUser, useAuth } from "@clerk/nextjs";
 
 export default function LibraryPage() {
   const { userId } = useAuth();
+  const { user } = useUser();
   const [resources, setResources] = useState<any[]>([]);
   const [purchasedResourceIds, setPurchasedResourceIds] = useState<string[]>([]);
   const [hasFullAccess, setHasFullAccess] = useState(false);
   const [loading, setLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState("Todos");
+
+  const isAdmin = 
+    user?.primaryEmailAddress?.emailAddress === "yurilojavirtual@gmail.com" || 
+    user?.primaryEmailAddress?.emailAddress === "o9.yuri@gmail.com";
 
   const categories = ["Todos", "Contratos", "Procreate", "Marketing", "Planilhas", "Outros"];
 
@@ -121,7 +126,7 @@ export default function LibraryPage() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredResources.map((item, i) => {
-            const hasAccess = hasFullAccess || purchasedResourceIds.includes(item.id);
+            const hasAccess = isAdmin || hasFullAccess || purchasedResourceIds.includes(item.id);
 
             return (
               <motion.div 

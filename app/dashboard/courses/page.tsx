@@ -4,14 +4,19 @@ import { useEffect, useState } from "react";
 import { PlayCircle, Clock, Award, Layers, Lock, ShoppingCart } from "lucide-react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
-import { useAuth } from "@clerk/nextjs";
+import { useUser, useAuth } from "@clerk/nextjs";
 
 export default function MyCoursesPage() {
   const { userId } = useAuth();
+  const { user } = useUser();
   const [courses, setCourses] = useState<any[]>([]);
   const [purchasedCourseIds, setPurchasedCourseIds] = useState<string[]>([]);
   const [hasFullAccess, setHasFullAccess] = useState(false);
   const [loading, setLoading] = useState(true);
+
+  const isAdmin = 
+    user?.primaryEmailAddress?.emailAddress === "yurilojavirtual@gmail.com" || 
+    user?.primaryEmailAddress?.emailAddress === "o9.yuri@gmail.com";
 
   useEffect(() => {
     if (userId) {
@@ -78,7 +83,7 @@ export default function MyCoursesPage() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {courses.map((course) => {
-            const hasAccess = hasFullAccess || purchasedCourseIds.includes(course.id);
+            const hasAccess = isAdmin || hasFullAccess || purchasedCourseIds.includes(course.id);
 
             return (
               <Link 
