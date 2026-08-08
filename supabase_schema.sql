@@ -44,6 +44,22 @@ CREATE TABLE IF NOT EXISTS lessons (
 );
 
 -- ==========================================
+-- TRANSMISSÕES AO VIVO (Cloudflare Stream Live)
+-- ==========================================
+
+CREATE TABLE IF NOT EXISTS live_streams (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    title TEXT NOT NULL,
+    description TEXT,
+    cloudflare_input_id TEXT NOT NULL,
+    stream_key TEXT,
+    rtmps_url TEXT,
+    status TEXT DEFAULT 'scheduled', -- 'scheduled', 'live', 'ended'
+    scheduled_for TIMESTAMP WITH TIME ZONE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- ==========================================
 -- PROGRESSO E HISTÓRICO DO ALUNO
 -- ==========================================
 

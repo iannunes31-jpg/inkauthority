@@ -10,7 +10,8 @@ import {
   Megaphone, 
   Share2, 
   Settings,
-  LogOut
+  LogOut,
+  Activity
 } from "lucide-react";
 import { motion } from "motion/react";
 
@@ -20,6 +21,7 @@ export function AdminSidebar() {
   const links = [
     { name: "Dashboard", path: "/admin", icon: <LayoutDashboard className="w-4 h-4" /> },
     { name: "Cursos", path: "/admin/courses", icon: <Video className="w-4 h-4" /> },
+    { name: "Lives", path: "/admin/lives", icon: <Activity className="w-4 h-4" /> },
     { name: "Usuários", path: "/admin/users", icon: <Users className="w-4 h-4" /> },
     { name: "Anúncios", path: "/admin/ads", icon: <Megaphone className="w-4 h-4" /> },
     { name: "Afiliados", path: "/admin/affiliates", icon: <Share2 className="w-4 h-4" /> },
