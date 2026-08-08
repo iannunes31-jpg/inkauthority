@@ -16,55 +16,83 @@ export default function Home() {
     };
     window.addEventListener("message", handleMessage);
     
-    // Timer para garantir que o iframe carregou
-    const iframeTimer = setInterval(() => {
+    // Timer contínuo e resiliente para injetar o botão nativamente
+    const injectInterval = setInterval(() => {
       const iframe = document.querySelector('iframe');
-      if (iframe) {
-        try {
-          const doc = iframe.contentDocument || iframe.contentWindow?.document;
-          if (doc && doc.body) {
-            
-            // 1. Mutar vídeos
-            const vids = doc.querySelectorAll('video');
-            vids.forEach(v => {
-              if (!v.muted) {
-                v.muted = true;
-                v.play().catch(() => {});
-              }
-            });
+      if (!iframe) return;
 
-            // 2. Tornar fundo transparente
-            if (!doc.getElementById('custom-bg-style')) {
-              const style = doc.createElement('style');
-              style.id = 'custom-bg-style';
-              style.textContent = `
-                html, body, section, div[style*="background:#08080a"], div[style*="background-color:#08080a"], div[style*="background: #08080a"] {
-                  background-color: transparent !important;
-                  background: transparent !important;
-                }
-              `;
-              doc.head.appendChild(style);
+      try {
+        const doc = iframe.contentDocument || iframe.contentWindow?.document;
+        if (!doc || !doc.body) return;
+
+        // 1. Tornar fundo transparente
+        if (!doc.getElementById('custom-bg-style')) {
+          const style = doc.createElement('style');
+          style.id = 'custom-bg-style';
+          style.textContent = `
+            html, body, section, div[style*="background:#08080a"], div[style*="background-color:#08080a"] {
+              background-color: transparent !important;
+              background: transparent !important;
             }
+          `;
+          doc.head.appendChild(style);
+        }
+
+        // 2. Injeção Nativa do Botão FERRAMENTAS
+        if (!doc.getElementById('btn-ferramentas-injetado')) {
+          // Pega todos os links da página
+          const allLinks = Array.from(doc.querySelectorAll('a, div, span'));
+          
+          // Acha o que contém "CURSOS" (case-insensitive, tolerando espaços)
+          const cursosElement = allLinks.find(el => {
+            const text = el.textContent || '';
+            return text.toUpperCase().includes('CURSOS') && el.children.length === 0;
+          });
+
+          if (cursosElement && cursosElement.parentNode) {
+            const parent = cursosElement.parentNode;
+            
+            const newBtn = doc.createElement('a');
+            newBtn.id = 'btn-ferramentas-injetado';
+            newBtn.textContent = 'FERRAMENTAS';
+            newBtn.href = '/tools'; // Navegação direta
+            newBtn.target = '_top'; // Força a navegação na janela principal
+            
+            // Copia o visual original
+            const computed = window.getComputedStyle(cursosElement);
+            newBtn.style.color = computed.color || 'rgba(238, 238, 242, 0.66)';
+            newBtn.style.fontSize = computed.fontSize || '11px';
+            newBtn.style.fontFamily = computed.fontFamily || 'Jost, sans-serif';
+            newBtn.style.fontWeight = computed.fontWeight || '300';
+            newBtn.style.letterSpacing = computed.letterSpacing || '0.28em';
+            newBtn.style.textTransform = 'uppercase';
+            newBtn.style.textDecoration = 'none';
+            newBtn.style.cursor = 'pointer';
+            newBtn.style.marginLeft = '30px'; // Espaço garantido
+            
+            newBtn.onmouseover = () => newBtn.style.color = '#ffffff';
+            newBtn.onmouseout = () => newBtn.style.color = computed.color || 'rgba(238, 238, 242, 0.66)';
+            
+            // Insere DEPOIS do CURSOS
+            parent.insertBefore(newBtn, cursosElement.nextSibling);
+            
+            // O Flexbox do Webflow agora vai gerenciar o espaço perfeitamente!
+            clearInterval(injectInterval);
           }
-        } catch(e) {}
+        }
+      } catch(e) {
+        console.error("Iframe injection error:", e);
       }
-    }, 500);
+    }, 1000);
 
     return () => {
       window.removeEventListener("message", handleMessage);
-      clearInterval(iframeTimer);
+      clearInterval(injectInterval);
     };
   }, []);
 
   return (
     <main className="relative min-h-screen w-full m-0 p-0 overflow-hidden bg-[#050505]">
-
-      {/* Botão de Ferramentas (Fixo próximo ao menu nativo) */}
-      <div className="fixed top-[32px] right-[350px] lg:right-[380px] z-[999999]">
-        <Link href="/tools" className="text-white/80 hover:text-white font-bold text-[11px] lg:text-[13px] uppercase tracking-[0.1em] transition-colors">
-          Ferramentas
-        </Link>
-      </div>
       
       {/* NOVO FUNDO DE ALTA QUALIDADE */}
       <div className="fixed inset-0 z-0 pointer-events-none">
