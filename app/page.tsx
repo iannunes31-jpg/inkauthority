@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { LoginModal } from "@/components/LoginModal";
+import { Button } from "@/components/ui/button";
+import Link from "next/link";
 
 export default function Home() {
   const [isLoginOpen, setIsLoginOpen] = useState(false);
@@ -21,7 +23,7 @@ export default function Home() {
         try {
           const doc = iframe.contentDocument || iframe.contentWindow?.document;
           if (doc) {
-            // Garante que o vídeo toque
+            // Garante que o vídeo toque nativamente sem scripts agressivos
             const vids = doc.querySelectorAll('video');
             vids.forEach(v => {
               if (!v.muted) {
@@ -29,26 +31,6 @@ export default function Home() {
                 v.play().catch(() => {});
               }
             });
-
-            // Injeta o link FERRAMENTAS no menu superior (depois de CURSOS)
-            if (!doc.querySelector('#injected-ferramentas')) {
-              const links = Array.from(doc.querySelectorAll('a'));
-              const cursosLink = links.find(a => a.textContent && a.textContent.toUpperCase().includes('CURSOS'));
-              
-              if (cursosLink && cursosLink.parentElement) {
-                const ferramentasLink = doc.createElement('a');
-                ferramentasLink.id = 'injected-ferramentas';
-                ferramentasLink.href = '/tools';
-                ferramentasLink.textContent = 'FERRAMENTAS';
-                ferramentasLink.className = cursosLink.className; 
-                // Dá um espaço à esquerda para não ficar colado
-                ferramentasLink.style.marginLeft = '20px'; 
-                ferramentasLink.target = '_parent'; // Abre na janela principal
-                
-                // Insere logo depois do botão CURSOS
-                cursosLink.parentElement.insertBefore(ferramentasLink, cursosLink.nextSibling);
-              }
-            }
           }
         } catch(e) {}
       }
@@ -61,7 +43,16 @@ export default function Home() {
   }, []);
 
   return (
-    <main className="min-h-screen w-full m-0 p-0 overflow-hidden bg-black">
+    <main className="relative min-h-screen w-full m-0 p-0 overflow-hidden bg-black">
+      {/* Botão de Ferramentas (Fixo sobre o iframe) */}
+      <div className="absolute top-8 right-8 lg:right-32 z-50">
+        <Link href="/tools">
+          <Button className="bg-black/40 hover:bg-primary hover:text-black border border-white/20 backdrop-blur-md text-white font-bold uppercase tracking-widest transition-all shadow-xl shadow-black/50 px-6 py-5 rounded-full">
+            Acessar Ferramentas
+          </Button>
+        </Link>
+      </div>
+
       <iframe 
         src="/isabella.html" 
         className="w-full h-screen border-0 block"
