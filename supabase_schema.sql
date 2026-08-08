@@ -213,3 +213,15 @@ CREATE TABLE IF NOT EXISTS live_chat_messages (
 
 -- Habilita o Realtime para a tabela do chat (usado para websockets)
 ALTER PUBLICATION supabase_realtime ADD TABLE live_chat_messages;
+
+-- ==========================================
+-- STORAGE (BUCKETS)
+-- ==========================================
+-- Criar bucket para imagens da comunidade
+INSERT INTO storage.buckets (id, name, public) VALUES ('community', 'community', true) ON CONFLICT DO NOTHING;
+
+-- Permitir leitura pblica para as imagens
+CREATE POLICY "Public Access" ON storage.objects FOR SELECT USING (bucket_id = 'community');
+
+-- Permitir que qualquer um faa upload (cuidado: no modo de produo, restrinja isso a usurios autenticados)
+CREATE POLICY "Upload Access" ON storage.objects FOR INSERT WITH CHECK (bucket_id = 'community');

@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion } from "motion/react";
-import { ImagePlus, MessageSquare, Heart, Send, MoreVertical, Edit2, Trash2 } from "lucide-react";
+import { ImagePlus, MessageSquare, Heart, Send, MoreVertical, Edit2, Trash2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
 import { useUser } from "@clerk/nextjs";
@@ -20,6 +20,11 @@ export default function CommunityPage() {
   const [posts, setPosts] = useState<any[]>([]);
   const [isPublishing, setIsPublishing] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+
+  // States for image upload
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // States for editing
   const [editingPostId, setEditingPostId] = useState<string | null>(null);
@@ -46,29 +51,79 @@ export default function CommunityPage() {
     setIsLoading(false);
   };
 
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setSelectedImage(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const removeSelectedImage = () => {
+    setSelectedImage(null);
+    setImagePreview(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
   const handlePublish = async () => {
-    if (!postText.trim() || !user) return;
+    if (!user || (!postText.trim() && !selectedImage)) return;
     setIsPublishing(true);
 
-    const newPost = {
-      clerk_user_id: user.id,
-      user_name: user.fullName || user.username || "Usuário",
-      user_avatar: user.imageUrl,
-      content: postText.trim(),
-      user_role: "Aluno",
-    };
+    let imageUrl = null;
 
-    const { error } = await supabase.from("posts").insert([newPost]);
-    
-    if (error) {
-      console.error("Erro completo ao publicar:", error);
-      alert(`Erro do banco de dados: ${error.message}\n\nIsso pode ser porque o seu usuário ainda não foi sincronizado pelo Webhook. Altere seu nome no Clerk e tente novamente!`);
-    } else {
-      setPostText("");
-      fetchPosts(); // Recarrega os posts
+    try {
+      // 1. Upload da imagem se existir
+      if (selectedImage) {
+        const fileExt = selectedImage.name.split('.').pop();
+        const fileName = `${Math.random()}.${fileExt}`;
+        const filePath = `${user.id}/${fileName}`;
+
+        const { error: uploadError, data } = await supabase.storage
+          .from('community')
+          .upload(filePath, selectedImage);
+
+        if (uploadError) {
+          throw uploadError;
+        }
+
+        const { data: { publicUrl } } = supabase.storage
+          .from('community')
+          .getPublicUrl(filePath);
+
+        imageUrl = publicUrl;
+      }
+
+      // 2. Inserir Post
+      const newPost = {
+        clerk_user_id: user.id,
+        user_name: user.fullName || user.username || "Usuário",
+        user_avatar: user.imageUrl,
+        content: postText.trim(),
+        user_role: "Aluno",
+        image_url: imageUrl
+      };
+
+      const { error } = await supabase.from("posts").insert([newPost]);
+      
+      if (error) {
+        console.error("Erro completo ao publicar:", error);
+        alert(`Erro do banco de dados: ${error.message}\n\nIsso pode ser porque o seu usuário ainda não foi sincronizado pelo Webhook. Altere seu nome no Clerk e tente novamente!`);
+      } else {
+        setPostText("");
+        removeSelectedImage();
+        fetchPosts(); // Recarrega os posts
+      }
+    } catch (error: any) {
+      alert("Erro ao fazer upload da imagem: " + error.message);
+    } finally {
+      setIsPublishing(false);
     }
-    
-    setIsPublishing(false);
   };
 
   const handleDelete = async (postId: string) => {
@@ -142,14 +197,36 @@ export default function CommunityPage() {
               className="w-full bg-transparent resize-none border-none focus:ring-0 text-sm placeholder:text-muted-foreground min-h-[80px]"
             />
             
+            {imagePreview && (
+              <div className="relative mt-2 mb-2 rounded-xl overflow-hidden bg-black/50 aspect-video max-w-sm">
+                <Image src={imagePreview} alt="Preview" fill className="object-contain" />
+                <button 
+                  onClick={removeSelectedImage}
+                  className="absolute top-2 right-2 p-1.5 bg-black/50 hover:bg-black/80 rounded-full text-white backdrop-blur-md transition-colors"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            )}
+            
             <div className="flex items-center justify-between border-t border-white/5 pt-3 mt-2">
-              <button className="flex items-center gap-2 text-xs text-muted-foreground hover:text-primary transition-colors">
+              <input 
+                type="file" 
+                accept="image/*" 
+                className="hidden" 
+                ref={fileInputRef} 
+                onChange={handleImageSelect}
+              />
+              <button 
+                onClick={() => fileInputRef.current?.click()}
+                className="flex items-center gap-2 text-xs text-muted-foreground hover:text-primary transition-colors"
+              >
                 <ImagePlus className="w-4 h-4" />
                 <span>Adicionar Foto</span>
               </button>
               
               <Button 
-                disabled={!postText.trim() || isPublishing}
+                disabled={(!postText.trim() && !selectedImage) || isPublishing}
                 onClick={handlePublish}
                 className="metallic-gradient text-black font-bold h-8 px-4 rounded-full text-xs"
               >
