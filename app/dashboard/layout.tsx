@@ -4,7 +4,7 @@ import { motion } from "motion/react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { BookOpen, Compass, Trophy, Download, History, Settings, User, Users, Bot } from "lucide-react";
+import { BookOpen, Compass, Trophy, Download, History, Settings, User, Users, Bot, Radio } from "lucide-react";
 import { useAuth, UserButton } from "@clerk/nextjs";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -13,6 +13,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   const menuItems = [
     { name: "Meu Aprendizado", path: "/dashboard", icon: <BookOpen className="w-5 h-5" /> },
+    { name: "Ao Vivo", path: "/dashboard/lives", icon: <Radio className="w-5 h-5" /> },
     { name: "Comunidade", path: "/dashboard/community", icon: <Users className="w-5 h-5" /> },
     { name: "Ferramentas IA", path: "/dashboard/tools", icon: <Bot className="w-5 h-5" /> },
     { name: "Meus Cursos", path: "/dashboard/courses", icon: <Compass className="w-5 h-5" /> },
