@@ -171,15 +171,27 @@ export function LoginModal({ isOpen, onClose, initialView = "login" }: LoginModa
 
     try {
       let result;
-      // Try both first and second factor attempt methods because Clerk's status mappings can vary
+      const s = signIn as any;
+      const errors = [];
+
       try {
-        result = await signIn.attemptFirstFactor({ strategy: "email_code", code });
-      } catch (e1: any) {
-        try {
-          result = await signIn.attemptSecondFactor({ strategy: "email_code", code });
-        } catch (e2: any) {
-          throw e1; // Throw the first error if both fail
+        if (typeof s.attemptFirstFactor === "function") {
+          result = await s.attemptFirstFactor({ strategy: "email_code", code });
+        } else if (typeof s.attemptSecondFactor === "function") {
+          result = await s.attemptSecondFactor({ strategy: "email_code", code });
+        } else if (typeof s.attemptVerification === "function") {
+          result = await s.attemptVerification({ strategy: "email_code", code });
+        } else if (s.emailCode && typeof s.emailCode.attempt === "function") {
+          result = await s.emailCode.attempt({ code });
+        } else if (s.emailCode && typeof s.emailCode.verify === "function") {
+          result = await s.emailCode.verify({ code });
+        } else if (s.verifications && typeof s.verifications.verifyEmailCode === "function") {
+          result = await s.verifications.verifyEmailCode({ code });
+        } else {
+          throw new Error(`Método de verificação não encontrado. Chaves do signIn: ${Object.keys(s).join(", ")}`);
         }
+      } catch (err: any) {
+        throw err; // throw to be caught by the outer catch
       }
 
       const status = result?.status || signIn.status;
