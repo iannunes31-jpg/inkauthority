@@ -16,14 +16,15 @@ export default function Home() {
     };
     window.addEventListener("message", handleMessage);
     
-    // Timer para garantir que o iframe carregou e mutar o vídeo
-    const muteTimer = setInterval(() => {
+    // Timer para garantir que o iframe carregou
+    const iframeTimer = setInterval(() => {
       const iframe = document.querySelector('iframe');
       if (iframe) {
         try {
           const doc = iframe.contentDocument || iframe.contentWindow?.document;
-          if (doc) {
-            // Garante que o vídeo toque nativamente sem scripts agressivos
+          if (doc && doc.body) {
+            
+            // 1. Mutar vídeos
             const vids = doc.querySelectorAll('video');
             vids.forEach(v => {
               if (!v.muted) {
@@ -31,31 +32,83 @@ export default function Home() {
                 v.play().catch(() => {});
               }
             });
+
+            // 2. Tornar fundo transparente para revelar o Next.js
+            if (!doc.getElementById('custom-bg-style')) {
+              const style = doc.createElement('style');
+              style.id = 'custom-bg-style';
+              style.textContent = `
+                html, body, section, div[style*="background:#08080a"], div[style*="background-color:#08080a"], div[style*="background: #08080a"] {
+                  background-color: transparent !important;
+                  background: transparent !important;
+                }
+              `;
+              doc.head.appendChild(style);
+            }
+
+            // 3. Injetar Botão FERRAMENTAS no Menu Nativo
+            if (!doc.getElementById('btn-ferramentas-injetado')) {
+              const allElements = Array.from(doc.querySelectorAll('*'));
+              const cursosElement = allElements.find(el => el.textContent?.trim() === 'CURSOS' && el.tagName !== 'SCRIPT' && el.children.length === 0);
+              
+              if (cursosElement && cursosElement.parentNode) {
+                const parent = cursosElement.parentNode;
+                const newBtn = doc.createElement('a');
+                newBtn.id = 'btn-ferramentas-injetado';
+                newBtn.textContent = 'FERRAMENTAS';
+                newBtn.href = '#';
+                
+                // Copiar estilos computados
+                const computed = window.getComputedStyle(cursosElement);
+                newBtn.style.cssText = cursosElement.style.cssText;
+                newBtn.style.color = computed.color || 'rgba(238, 238, 242, 0.66)';
+                newBtn.style.fontSize = computed.fontSize || '11px';
+                newBtn.style.fontFamily = computed.fontFamily || 'Jost, sans-serif';
+                newBtn.style.fontWeight = computed.fontWeight || '300';
+                newBtn.style.letterSpacing = computed.letterSpacing || '0.28em';
+                newBtn.style.textTransform = 'uppercase';
+                newBtn.style.textDecoration = 'none';
+                newBtn.style.cursor = 'pointer';
+                newBtn.style.marginLeft = '18px'; // Espaçamento natural
+                
+                newBtn.onmouseover = () => newBtn.style.color = '#ffffff';
+                newBtn.onmouseout = () => newBtn.style.color = computed.color || 'rgba(238, 238, 242, 0.66)';
+                
+                newBtn.onclick = (e) => {
+                  e.preventDefault();
+                  window.top.location.href = '/tools';
+                };
+                
+                parent.insertBefore(newBtn, cursosElement.nextSibling);
+              }
+            }
+
           }
         } catch(e) {}
       }
-    }, 1000);
+    }, 500);
 
     return () => {
       window.removeEventListener("message", handleMessage);
-      clearInterval(muteTimer);
+      clearInterval(iframeTimer);
     };
   }, []);
 
   return (
-    <main className="relative min-h-screen w-full m-0 p-0 overflow-hidden bg-gradient-to-br from-[#0a0a0a] via-black to-[#050505]">
-      {/* Efeito de Brilho no Fundo (por cima do iframe, para não ser escondido pelo fundo preto do Webflow) */}
-      <div className="fixed top-0 left-0 w-full h-full pointer-events-none z-[50] overflow-hidden">
-        <div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-primary/10 blur-[120px] rounded-full mix-blend-screen opacity-50" />
-        <div className="absolute top-[40%] right-[-10%] w-[600px] h-[600px] bg-primary/5 blur-[150px] rounded-full mix-blend-screen opacity-60" />
-        <div className="absolute bottom-[-20%] left-[20%] w-[800px] h-[800px] bg-white/5 blur-[120px] rounded-full mix-blend-screen opacity-30" />
-      </div>
+    <main className="relative min-h-screen w-full m-0 p-0 overflow-hidden bg-[#050505]">
       
-      {/* Botão de Ferramentas (Fixo próximo ao menu nativo) */}
-      <div className="fixed top-[32px] right-[300px] lg:right-[360px] z-[999999]">
-        <Link href="/tools" className="text-white/80 hover:text-white font-bold text-[11px] lg:text-[13px] uppercase tracking-[0.1em] transition-colors">
-          Ferramentas
-        </Link>
+      {/* NOVO FUNDO DE ALTA QUALIDADE */}
+      <div className="fixed inset-0 z-0 pointer-events-none">
+        {/* Gradiente Base */}
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-[#111] via-[#050505] to-black opacity-80" />
+        
+        {/* Malha/Grid Sutil */}
+        <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 mix-blend-overlay"></div>
+        
+        {/* Luzes de Estúdio (Orbs) */}
+        <div className="absolute top-[-20%] left-[-10%] w-[60vw] h-[60vw] bg-white/5 blur-[120px] rounded-full mix-blend-screen opacity-50 animate-pulse" style={{ animationDuration: '8s' }} />
+        <div className="absolute top-[30%] right-[-20%] w-[50vw] h-[50vw] bg-primary/10 blur-[150px] rounded-full mix-blend-screen opacity-40 animate-pulse" style={{ animationDuration: '12s' }} />
+        <div className="absolute bottom-[-20%] left-[20%] w-[70vw] h-[70vw] bg-white/5 blur-[130px] rounded-full mix-blend-screen opacity-40 animate-pulse" style={{ animationDuration: '10s' }} />
       </div>
 
       <iframe 

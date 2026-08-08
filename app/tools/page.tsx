@@ -60,6 +60,10 @@ export default function ToolsPage() {
                 </div>
               </div>
               <div className="w-full mt-auto">
+                <div className="mb-6">
+                  <span className="text-4xl font-black">R$ 57</span>
+                  <span className="text-muted-foreground">/mês</span>
+                </div>
                 <Button 
                   onClick={() => handleCheckout("Tutor IA Especialista")}
                   className="w-full metallic-gradient text-black font-bold py-8 text-lg rounded-xl hover:scale-105 transition-transform shadow-2xl shadow-primary/20"
@@ -100,6 +104,10 @@ export default function ToolsPage() {
                 </div>
               </div>
               <div className="w-full mt-auto">
+                <div className="mb-6">
+                  <span className="text-4xl font-black">R$ 357</span>
+                  <span className="text-muted-foreground">/mês</span>
+                </div>
                 <Button 
                   onClick={() => handleCheckout("Assistente WhatsApp")}
                   className="w-full bg-[#25D366] text-black hover:bg-[#25D366]/90 font-bold py-8 text-lg rounded-xl transition-colors shadow-2xl shadow-[#25D366]/20"
