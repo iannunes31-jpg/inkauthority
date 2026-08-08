@@ -4,12 +4,7 @@ import { Search, ChevronDown, User, ShieldAlert, MoreHorizontal } from "lucide-r
 import { Button } from "@/components/ui/button";
 
 export default function AdminUsers() {
-  const users = [
-    { id: 1, name: "Lucas Silva", email: "lucas@example.com", role: "Aluno", status: "Ativo", joinDate: "12/08/2026" },
-    { id: 2, name: "Mariana Costa", email: "mariana@example.com", role: "Aluno", status: "Inativo", joinDate: "05/08/2026" },
-    { id: 3, name: "Carlos Admin", email: "carlos@inkauthority.com", role: "Admin", status: "Ativo", joinDate: "01/01/2026" },
-    { id: 4, name: "João Pedro", email: "joao@example.com", role: "Afiliado", status: "Ativo", joinDate: "20/07/2026" },
-  ];
+  const users: any[] = [];
 
   return (
     <div className="space-y-6">
@@ -50,38 +45,47 @@ export default function AdminUsers() {
               </tr>
             </thead>
             <tbody>
-              {users.map((user) => (
-                <tr key={user.id} className="border-b border-white/5 hover:bg-white/5 transition-colors group">
-                  <td className="py-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center">
-                        <User className="w-4 h-4 text-white" />
-                      </div>
-                      <div>
-                        <div className="font-medium text-white">{user.name}</div>
-                        <div className="text-xs text-muted-foreground">{user.email}</div>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="py-4">
-                    <span className={`text-xs px-2 py-1 rounded-full ${user.role === 'Admin' ? 'bg-primary/20 text-white border border-white/20' : 'bg-white/5 text-muted-foreground'}`}>
-                      {user.role}
-                    </span>
-                  </td>
-                  <td className="py-4">
-                    <span className={`text-xs flex items-center gap-1 ${user.status === 'Ativo' ? 'text-green-400' : 'text-red-400'}`}>
-                      <span className={`w-1.5 h-1.5 rounded-full ${user.status === 'Ativo' ? 'bg-green-400' : 'bg-red-400'}`}></span>
-                      {user.status}
-                    </span>
-                  </td>
-                  <td className="py-4 text-muted-foreground text-sm">{user.joinDate}</td>
-                  <td className="py-4 text-right">
-                    <button className="p-2 hover:bg-white/10 rounded-lg text-muted-foreground hover:text-white transition-colors">
-                      <MoreHorizontal className="w-4 h-4" />
-                    </button>
+              {users.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="py-12 text-center text-muted-foreground">
+                    <User className="w-12 h-12 mx-auto mb-4 opacity-20" />
+                    <p>Nenhum usuário cadastrado ainda.</p>
                   </td>
                 </tr>
-              ))}
+              ) : (
+                users.map((user) => (
+                  <tr key={user.id} className="border-b border-white/5 hover:bg-white/5 transition-colors group">
+                    <td className="py-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center">
+                          <User className="w-4 h-4 text-white" />
+                        </div>
+                        <div>
+                          <div className="font-medium text-white">{user.name}</div>
+                          <div className="text-xs text-muted-foreground">{user.email}</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="py-4">
+                      <span className={`text-xs px-2 py-1 rounded-full ${user.role === 'Admin' ? 'bg-primary/20 text-white border border-white/20' : 'bg-white/5 text-muted-foreground'}`}>
+                        {user.role}
+                      </span>
+                    </td>
+                    <td className="py-4">
+                      <span className={`text-xs flex items-center gap-1 ${user.status === 'Ativo' ? 'text-green-400' : 'text-red-400'}`}>
+                        <span className={`w-1.5 h-1.5 rounded-full ${user.status === 'Ativo' ? 'bg-green-400' : 'bg-red-400'}`}></span>
+                        {user.status}
+                      </span>
+                    </td>
+                    <td className="py-4 text-muted-foreground text-sm">{user.joinDate}</td>
+                    <td className="py-4 text-right">
+                      <button className="p-2 hover:bg-white/10 rounded-lg text-muted-foreground hover:text-white transition-colors">
+                        <MoreHorizontal className="w-4 h-4" />
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>

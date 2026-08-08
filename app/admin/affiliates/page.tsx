@@ -4,11 +4,7 @@ import { Share2, DollarSign, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export default function AdminAffiliates() {
-  const affiliates = [
-    { id: 1, name: "João Pedro", code: "JOAO20", clicks: 1240, conversions: 45, commission: "R$ 4.500,00" },
-    { id: 2, name: "Studio Ink", code: "STUDIOINK", clicks: 890, conversions: 12, commission: "R$ 1.200,00" },
-    { id: 3, name: "Amanda Tattoos", code: "AMANDA_T", clicks: 350, conversions: 5, commission: "R$ 500,00" },
-  ];
+  const affiliates: any[] = [];
 
   return (
     <div className="space-y-6">
@@ -28,21 +24,21 @@ export default function AdminAffiliates() {
             <Share2 className="w-5 h-5 text-white" />
             <h3 className="text-sm text-muted-foreground">Cliques Totais</h3>
           </div>
-          <p className="text-3xl font-bold metallic-text">2,480</p>
+          <p className="text-3xl font-bold metallic-text">0</p>
         </div>
         <div className="glass p-6 rounded-2xl border border-white/10">
           <div className="flex items-center gap-4 mb-2">
             <TrendingUp className="w-5 h-5 text-white" />
             <h3 className="text-sm text-muted-foreground">Conversões</h3>
           </div>
-          <p className="text-3xl font-bold metallic-text">62</p>
+          <p className="text-3xl font-bold metallic-text">0</p>
         </div>
         <div className="glass p-6 rounded-2xl border border-white/10">
           <div className="flex items-center gap-4 mb-2">
             <DollarSign className="w-5 h-5 text-green-400" />
             <h3 className="text-sm text-muted-foreground">Comissões Pagas</h3>
           </div>
-          <p className="text-3xl font-bold text-green-400">R$ 6.200,00</p>
+          <p className="text-3xl font-bold text-green-400">R$ 0,00</p>
         </div>
       </div>
 
@@ -60,15 +56,24 @@ export default function AdminAffiliates() {
               </tr>
             </thead>
             <tbody>
-              {affiliates.map((aff) => (
-                <tr key={aff.id} className="border-b border-white/5 hover:bg-white/5 transition-colors">
-                  <td className="py-4 font-medium text-white">{aff.name}</td>
-                  <td className="py-4 text-muted-foreground font-mono">{aff.code}</td>
-                  <td className="py-4 text-white text-center">{aff.clicks}</td>
-                  <td className="py-4 text-white text-center">{aff.conversions}</td>
-                  <td className="py-4 text-right font-bold text-green-400">{aff.commission}</td>
+              {affiliates.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="py-12 text-center text-muted-foreground">
+                    <Share2 className="w-12 h-12 mx-auto mb-4 opacity-20" />
+                    <p>Nenhum afiliado cadastrado ainda.</p>
+                  </td>
                 </tr>
-              ))}
+              ) : (
+                affiliates.map((aff) => (
+                  <tr key={aff.id} className="border-b border-white/5 hover:bg-white/5 transition-colors">
+                    <td className="py-4 font-medium text-white">{aff.name}</td>
+                    <td className="py-4 text-muted-foreground font-mono">{aff.code}</td>
+                    <td className="py-4 text-white text-center">{aff.clicks}</td>
+                    <td className="py-4 text-white text-center">{aff.conversions}</td>
+                    <td className="py-4 text-right font-bold text-green-400">{aff.commission}</td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
