@@ -27,7 +27,6 @@ export function VideoPlayer({ videoId, poster, className = "" }: VideoPlayerProp
         poster={poster}
         responsive={false} // Mantemos false para o container pai controlar
         className="w-full h-full object-cover"
-        style={{ width: "100%", height: "100%" }}
       />
     </div>
   );
