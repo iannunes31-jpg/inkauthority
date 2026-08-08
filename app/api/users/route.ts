@@ -3,7 +3,8 @@ import { clerkClient } from "@clerk/nextjs/server";
 
 export async function GET() {
   try {
-    const response = await clerkClient().users.getUserList();
+    const client = await clerkClient();
+    const response = await client.users.getUserList();
     
     // Check if the response contains the data property (newer Clerk SDKs) or is the array itself
     const usersList = response.data ? response.data : response;
