@@ -12,7 +12,7 @@ export async function POST(req: Request) {
       apiVersion: '2025-06-30.basil' as any,
     });
 
-    const { productName, price, isSubscription = false } = await req.json();
+    const { productName, price, isSubscription = false, returnUrl = '/tools' } = await req.json();
     
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://inkauthority.com.br';
 
@@ -36,8 +36,8 @@ export async function POST(req: Request) {
         },
       ],
       mode: isSubscription ? 'subscription' : 'payment',
-      success_url: `${appUrl}/tools?success=true`,
-      cancel_url: `${appUrl}/tools?canceled=true`,
+      success_url: `${appUrl}${returnUrl}?success=true`,
+      cancel_url: `${appUrl}${returnUrl}?canceled=true`,
     };
 
     const session = await stripe.checkout.sessions.create(sessionParams);

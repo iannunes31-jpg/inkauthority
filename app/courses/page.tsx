@@ -8,6 +8,29 @@ import { LoginModal } from "@/components/LoginModal";
 
 export default function CoursesPage() {
   const [isLoginOpen, setIsLoginOpen] = useState(false);
+  const [isLoadingCheckout, setIsLoadingCheckout] = useState(false);
+
+  const handleCheckout = async (productName: string, price: number) => {
+    try {
+      setIsLoadingCheckout(true);
+      const response = await fetch('/api/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ productName, price, isSubscription: false, returnUrl: '/courses' }),
+      });
+      const data = await response.json();
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        alert('Erro ao iniciar checkout.');
+        setIsLoadingCheckout(false);
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Erro de conexão ao iniciar checkout.');
+      setIsLoadingCheckout(false);
+    }
+  };
 
   const features = [
     "Estratégias de atração de clientes High-Ticket",
@@ -77,12 +100,13 @@ export default function CoursesPage() {
               </div>
 
               <Button 
-                onClick={() => setIsLoginOpen(true)}
+                onClick={() => handleCheckout("Curso Marketing & Posicionamento", 997)}
+                disabled={isLoadingCheckout}
                 className="w-full md:w-auto metallic-gradient text-black font-bold uppercase tracking-[0.2em] text-[11px] h-14 px-8 rounded-xl hover:scale-105 transition-transform border-0 group"
                 style={{ boxShadow: '0 0 30px rgba(139, 122, 102, 0.3)' }}
               >
-                <span>Garantir Vaga</span>
-                <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
+                <span>{isLoadingCheckout ? "Processando..." : "Garantir Vaga"}</span>
+                {!isLoadingCheckout && <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />}
               </Button>
             </div>
             
