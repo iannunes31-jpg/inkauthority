@@ -3,15 +3,21 @@ import Stripe from 'stripe';
 
 export async function POST(req: Request) {
   try {
-    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-      apiVersion: '2026-07-29.dahlia' as any, // Ignorando verificação estrita para garantir compatibilidade
+    const secretKey = process.env.STRIPE_SECRET_KEY;
+    if (!secretKey) {
+      return NextResponse.json({ error: 'Stripe não configurado. Adicione STRIPE_SECRET_KEY nas variáveis de ambiente da Vercel.' }, { status: 500 });
+    }
+
+    const stripe = new Stripe(secretKey, {
+      apiVersion: '2025-06-30.basil' as any,
     });
 
     const { productName, price, isSubscription = false } = await req.json();
     
-    // Configura o checkout dinamicamente baseado no produto
-    const session = await stripe.checkout.sessions.create({
-      payment_method_types: ['card', 'boleto'],
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://inkauthority.com.br';
+
+    const sessionParams: Stripe.Checkout.SessionCreateParams = {
+      payment_method_types: ['card'],
       line_items: [
         {
           price_data: {
@@ -19,7 +25,7 @@ export async function POST(req: Request) {
             product_data: {
               name: productName,
             },
-            unit_amount: price * 100, // Stripe usa centavos
+            unit_amount: Math.round(price * 100), // Stripe usa centavos
             ...(isSubscription && {
               recurring: {
                 interval: 'month',
@@ -30,17 +36,15 @@ export async function POST(req: Request) {
         },
       ],
       mode: isSubscription ? 'subscription' : 'payment',
+      success_url: `${appUrl}/tools?success=true`,
+      cancel_url: `${appUrl}/tools?canceled=true`,
+    };
 
-      // Assumindo que o usuário quer subscription mensal, mode='subscription' exige usar um price_id existente do Stripe.
-      // Como não temos os Price IDs (ele só passou as chaves genéricas), 
-      // usaremos payment normal ou mode: 'subscription' mas criando price on the fly (exige recurring).
-      
-      success_url: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/tools?success=true`,
-      cancel_url: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/tools?canceled=true`,
-    });
+    const session = await stripe.checkout.sessions.create(sessionParams);
 
     return NextResponse.json({ id: session.id, url: session.url });
   } catch (err: any) {
+    console.error('Stripe error:', err.message);
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }
