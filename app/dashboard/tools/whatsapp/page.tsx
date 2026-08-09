@@ -140,33 +140,46 @@ export default function AssistantPage() {
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || e.target.files.length === 0) return;
-    const file = e.target.files[0];
-    const fileExt = file.name.split('.').pop();
-    const fileName = `${user?.id}-${Math.random()}.${fileExt}`;
-    const filePath = `style-references/${fileName}`;
-
+    
+    const files = Array.from(e.target.files).slice(0, 10); // Limita a 10 arquivos
     setIsUploadingImage(true);
-    try {
-      const { data, error } = await supabase.storage
-        .from('assets')
-        .upload(filePath, file);
+    
+    let currentUrls = formData.style_image_url ? formData.style_image_url.split(",").filter(u => u.trim() !== "") : [];
 
-      if (error) {
-        console.error("Erro no upload:", error);
-        setIsUploadingImage(false);
-        return;
+    try {
+      for (const file of files) {
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${user?.id}-${Math.random()}.${fileExt}`;
+        const filePath = `style-references/${fileName}`;
+
+        const { error } = await supabase.storage
+          .from('assets')
+          .upload(filePath, file);
+
+        if (error) {
+          console.error("Erro no upload do arquivo", file.name, ":", error);
+          continue; // Pula este arquivo se der erro
+        }
+
+        const { data: publicUrlData } = supabase.storage
+          .from('assets')
+          .getPublicUrl(filePath);
+
+        currentUrls.push(publicUrlData.publicUrl);
       }
 
-      const { data: publicUrlData } = supabase.storage
-        .from('assets')
-        .getPublicUrl(filePath);
-
-      setFormData(prev => ({ ...prev, style_image_url: publicUrlData.publicUrl }));
+      setFormData(prev => ({ ...prev, style_image_url: currentUrls.join(",") }));
     } catch (err) {
       console.error(err);
-      alert("Falha no upload.");
     }
+    
     setIsUploadingImage(false);
+  };
+
+  const removeImage = (indexToRemove: number) => {
+    let currentUrls = formData.style_image_url ? formData.style_image_url.split(",").filter(u => u.trim() !== "") : [];
+    currentUrls = currentUrls.filter((_, idx) => idx !== indexToRemove);
+    setFormData(prev => ({ ...prev, style_image_url: currentUrls.join(",") }));
   };
 
   const handleSave = async () => {
@@ -398,17 +411,21 @@ export default function AssistantPage() {
                     />
                   </div>
                   <div>
-                    <label className="text-xs font-semibold text-white/70 uppercase tracking-widest mb-1 block">Imagem de Referência do Seu Estilo</label>
+                    <label className="text-xs font-semibold text-white/70 uppercase tracking-widest mb-1 block">Imagens de Referência (Até 10 fotos)</label>
                     <div className="flex flex-col gap-2">
-                      {formData.style_image_url && (
-                        <div className="relative w-full max-w-[200px] aspect-square rounded-xl overflow-hidden border border-white/10 mb-2">
-                          <img src={formData.style_image_url} alt="Referência" className="w-full h-full object-cover" />
-                          <button 
-                            onClick={() => setFormData({...formData, style_image_url: ""})}
-                            className="absolute top-2 right-2 bg-black/60 p-1.5 rounded-lg hover:bg-red-500/80 transition-colors"
-                          >
-                            <span className="text-xs font-bold text-white">X</span>
-                          </button>
+                      {formData.style_image_url && formData.style_image_url.split(",").filter(u => u.trim() !== "").length > 0 && (
+                        <div className="flex flex-wrap gap-2 mb-2">
+                          {formData.style_image_url.split(",").filter(u => u.trim() !== "").map((url, idx) => (
+                            <div key={idx} className="relative w-24 h-24 rounded-xl overflow-hidden border border-white/10 shrink-0">
+                              <img src={url} alt={`Referência ${idx + 1}`} className="w-full h-full object-cover" />
+                              <button 
+                                onClick={() => removeImage(idx)}
+                                className="absolute top-1 right-1 bg-black/60 p-1 rounded-lg hover:bg-red-500/80 transition-colors"
+                              >
+                                <span className="text-[10px] font-bold text-white">X</span>
+                              </button>
+                            </div>
+                          ))}
                         </div>
                       )}
                       
@@ -416,6 +433,7 @@ export default function AssistantPage() {
                         <input 
                           type="file" 
                           accept="image/*"
+                          multiple
                           onChange={handleImageUpload}
                           disabled={isUploadingImage}
                           className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed"
@@ -427,9 +445,9 @@ export default function AssistantPage() {
                           {isUploadingImage ? (
                             <Loader2 className="w-5 h-5 text-primary animate-spin mb-1" />
                           ) : (
-                            <span className="text-white/70 font-semibold mb-1">Clique para fazer upload</span>
+                            <span className="text-white/70 font-semibold mb-1">Clique para fazer upload (Múltiplas Fotos)</span>
                           )}
-                          <span className="text-[10px] text-white/40">O robô usará essa imagem como padrão de qualidade.</span>
+                          <span className="text-[10px] text-white/40">O robô usará essas imagens como padrão de qualidade.</span>
                         </div>
                       </div>
                     </div>
