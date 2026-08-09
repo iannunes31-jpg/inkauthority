@@ -31,10 +31,6 @@ export default function WhatsAppConfigPage() {
       
       if (data.state === "open") {
         setStatus("connected");
-      } else if (data.state === "connecting") {
-        setStatus("connecting");
-        // Se está conectando mas não temos o QR na tela, talvez precise gerar de novo
-        // para exibir o QR, mas vamos manter simples por agora.
       } else {
         setStatus("disconnected");
       }
