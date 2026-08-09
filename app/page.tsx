@@ -38,19 +38,32 @@ export default function Home() {
           doc.head.appendChild(style);
         }
 
-        // 2. Injeção Nativa do Botão TOOLS
-        if (!doc.getElementById('btn-tools-injetado')) {
-          const allLinks = Array.from(doc.querySelectorAll('a'));
-          const cursosElement = allLinks.find(el => {
-            const text = (el.textContent || '').toUpperCase();
-            return text.includes('CURSOS');
-          });
+        // 2. Injeção Nativa do Botão TOOLS (em todos os menus: mobile e desktop)
+        const allLinks = Array.from(doc.querySelectorAll('a'));
+        
+        // Substituir logo do Webflow pelo Sparkle
+        const brand = doc.querySelector('.w-nav-brand');
+        if (brand && !brand.getAttribute('data-logo-updated')) {
+          brand.innerHTML = `
+            <div style="display:flex;align-items:center;gap:12px;">
+              <svg viewBox="0 0 24 24" fill="currentColor" style="width:28px;height:28px;color:#f9f9f9;">
+                <path d="M12 0C12 6.627 17.373 12 24 12C17.373 12 12 17.373 12 24C12 17.373 6.627 12 0 12C6.627 12 12 6.627 12 0Z" />
+              </svg>
+              <span style="font-weight:900;font-size:20px;letter-spacing:-1px;color:white;text-transform:uppercase;">Ink Authority</span>
+            </div>
+          `;
+          brand.setAttribute('data-logo-updated', 'true');
+        }
 
-          if (cursosElement && cursosElement.parentNode) {
+        const cursosElements = allLinks.filter(el => (el.textContent || '').toUpperCase().includes('CURSOS') && !el.getAttribute('data-tools-injected'));
+        
+        if (cursosElements.length > 0) {
+          cursosElements.forEach((cursosElement, index) => {
             const parent = cursosElement.parentNode;
-            
+            if (!parent) return;
+
             const newBtn = doc.createElement('a');
-            newBtn.id = 'btn-tools-injetado';
+            newBtn.id = 'btn-tools-injetado-' + index;
             newBtn.textContent = 'TOOLS';
             newBtn.href = '/tools';
             newBtn.target = '_top';
@@ -72,8 +85,10 @@ export default function Home() {
             newBtn.onmouseout = () => newBtn.style.color = computed.color || 'rgba(238, 238, 242, 0.66)';
             
             parent.insertBefore(newBtn, cursosElement.nextSibling);
-            clearInterval(injectInterval);
-          }
+            cursosElement.setAttribute('data-tools-injected', 'true');
+          });
+          
+          clearInterval(injectInterval);
         }
       } catch(e) {}
     }, 1000);
