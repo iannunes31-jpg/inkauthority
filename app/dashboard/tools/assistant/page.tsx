@@ -12,6 +12,7 @@ export default function AssistantPage() {
   const { user } = useUser();
   const [activeTab, setActiveTab] = useState<"settings" | "crm" | "agenda">("settings");
   const [isSaving, setIsSaving] = useState(false);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [qrCodeData, setQrCodeData] = useState<string | null>(null);
   const [connectionStatus, setConnectionStatus] = useState<string>("Carregando...");
   const [isGeneratingQr, setIsGeneratingQr] = useState(false);
@@ -122,6 +123,38 @@ export default function AssistantPage() {
         price_back: data.price_back || "",
       });
     }
+  };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || e.target.files.length === 0) return;
+    const file = e.target.files[0];
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${user?.id}-${Math.random()}.${fileExt}`;
+    const filePath = `style-references/${fileName}`;
+
+    setIsUploadingImage(true);
+    try {
+      const { data, error } = await supabase.storage
+        .from('assets')
+        .upload(filePath, file);
+
+      if (error) {
+        console.error("Erro no upload:", error);
+        alert("Erro no upload. Lembre-se de criar um bucket público chamado 'assets' no seu Supabase.");
+        setIsUploadingImage(false);
+        return;
+      }
+
+      const { data: publicUrlData } = supabase.storage
+        .from('assets')
+        .getPublicUrl(filePath);
+
+      setFormData(prev => ({ ...prev, style_image_url: publicUrlData.publicUrl }));
+    } catch (err) {
+      console.error(err);
+      alert("Falha no upload.");
+    }
+    setIsUploadingImage(false);
   };
 
   const handleSave = async () => {
@@ -344,15 +377,41 @@ export default function AssistantPage() {
                     />
                   </div>
                   <div>
-                    <label className="text-xs font-semibold text-white/70 uppercase tracking-widest mb-1 block">Imagem de Referência (URL da sua melhor arte)</label>
-                    <input 
-                      type="url" 
-                      value={formData.style_image_url}
-                      onChange={(e) => setFormData({...formData, style_image_url: e.target.value})}
-                      className="w-full bg-black/50 border border-white/10 rounded-lg py-2 px-3 text-sm focus:border-primary focus:outline-none transition-colors"
-                      placeholder="https://..."
-                    />
-                    <p className="text-[10px] text-white/40 mt-1">Coloque o link direto de uma imagem para o bot usar como base do seu estilo.</p>
+                    <label className="text-xs font-semibold text-white/70 uppercase tracking-widest mb-1 block">Imagem de Referência do Seu Estilo</label>
+                    <div className="flex flex-col gap-2">
+                      {formData.style_image_url && (
+                        <div className="relative w-full max-w-[200px] aspect-square rounded-xl overflow-hidden border border-white/10 mb-2">
+                          <img src={formData.style_image_url} alt="Referência" className="w-full h-full object-cover" />
+                          <button 
+                            onClick={() => setFormData({...formData, style_image_url: ""})}
+                            className="absolute top-2 right-2 bg-black/60 p-1.5 rounded-lg hover:bg-red-500/80 transition-colors"
+                          >
+                            <span className="text-xs font-bold text-white">X</span>
+                          </button>
+                        </div>
+                      )}
+                      
+                      <div className="relative">
+                        <input 
+                          type="file" 
+                          accept="image/*"
+                          onChange={handleImageUpload}
+                          disabled={isUploadingImage}
+                          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed"
+                        />
+                        <div className={cn(
+                          "w-full bg-black/50 border border-white/10 border-dashed rounded-lg py-4 px-3 text-sm flex flex-col items-center justify-center transition-colors hover:border-primary hover:bg-white/5",
+                          isUploadingImage && "opacity-50 border-primary"
+                        )}>
+                          {isUploadingImage ? (
+                            <Loader2 className="w-5 h-5 text-primary animate-spin mb-1" />
+                          ) : (
+                            <span className="text-white/70 font-semibold mb-1">Clique para fazer upload</span>
+                          )}
+                          <span className="text-[10px] text-white/40">O robô usará essa imagem como padrão de qualidade.</span>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                   <div>
                     <label className="text-xs font-semibold text-white/70 uppercase tracking-widest mb-1 block">Tom de Voz da IA</label>
