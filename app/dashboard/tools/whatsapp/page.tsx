@@ -204,7 +204,7 @@ export default function AssistantPage() {
 
     if (error) {
         console.error("Erro ao salvar configurações", error);
-        alert("⚠️ ATENÇÃO: Erro ao salvar! A tabela 'ai_settings' ainda não existe no seu banco de dados ou as permissões estão bloqueadas. Veja a resposta da Inteligência Artificial para pegar o código SQL e rodar no Supabase.");
+        alert(`⚠️ ATENÇÃO: Erro ao salvar! ${error.message} - ${error.details || ""}\n\nA tabela 'ai_settings' pode estar faltando colunas ou permissões.`);
     } else {
       alert("Configurações do Assistente salvas com sucesso!");
     }
