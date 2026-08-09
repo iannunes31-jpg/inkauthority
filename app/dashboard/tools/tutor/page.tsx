@@ -9,6 +9,9 @@ import { Button } from "@/components/ui/button";
 export default function AssistantPage() {
   const { messages, append, isLoading } = useChat({
     api: "/api/chat",
+    onError: (err) => {
+      alert("⚠️ Erro na IA: " + err.message + "\n\nVerifique se a GEMINI_API_KEY está configurada no seu painel da Vercel (ou arquivo .env).");
+    },
     initialMessages: [
       {
         id: "welcome",

@@ -43,6 +43,16 @@ export default function AssistantPage() {
     }
   }, [user?.id]);
 
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (connectionStatus === "Aguardando leitura do QR Code" || connectionStatus === "Carregando...") {
+      interval = setInterval(() => {
+        checkConnectionStatus();
+      }, 3000);
+    }
+    return () => clearInterval(interval);
+  }, [connectionStatus, user?.id]);
+
   const checkConnectionStatus = async () => {
     if (!user) return;
     try {
@@ -143,7 +153,6 @@ export default function AssistantPage() {
 
       if (error) {
         console.error("Erro no upload:", error);
-        alert("Erro no upload. Lembre-se de criar um bucket público chamado 'assets' no seu Supabase.");
         setIsUploadingImage(false);
         return;
       }
@@ -181,8 +190,8 @@ export default function AssistantPage() {
       .upsert(payload, { onConflict: "clerk_user_id" });
 
     if (error) {
-      console.error("Erro ao salvar configurações", error);
-      alert("Erro ao salvar! Certifique-se de que a tabela ai_settings existe.");
+        console.error("Erro ao salvar configurações", error);
+        alert("⚠️ ATENÇÃO: Erro ao salvar! A tabela 'ai_settings' ainda não existe no seu banco de dados ou as permissões estão bloqueadas. Veja a resposta da Inteligência Artificial para pegar o código SQL e rodar no Supabase.");
     } else {
       alert("Configurações do Assistente salvas com sucesso!");
     }
