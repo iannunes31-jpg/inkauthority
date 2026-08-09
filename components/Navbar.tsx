@@ -119,20 +119,22 @@ export function Navbar() {
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center gap-8 text-[12px] uppercase tracking-[0.28em] font-light">
-            <div className="flex items-center gap-8">
-              {navLinks.map((link) => (
-                <Link
-                  key={link.path}
-                  href={link.path}
-                  className={cn(
-                    "transition-colors hover:text-foreground relative py-2",
-                    pathname === link.path ? "text-foreground font-medium" : "text-foreground/70"
-                  )}
-                >
-                  {link.name}
-                </Link>
-              ))}
-            </div>
+            {!isLoggedIn && (
+              <div className="flex items-center gap-8">
+                {navLinks.map((link) => (
+                  <Link
+                    key={link.path}
+                    href={link.path}
+                    className={cn(
+                      "transition-colors hover:text-foreground relative py-2",
+                      pathname === link.path ? "text-foreground font-medium" : "text-foreground/70"
+                    )}
+                  >
+                    {link.name}
+                  </Link>
+                ))}
+              </div>
+            )}
             
             <div className="flex items-center gap-4 relative ml-4">
               {/* Search Bar & Notifications (Only for logged in users) */}
