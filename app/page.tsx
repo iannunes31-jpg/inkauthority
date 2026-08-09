@@ -5,10 +5,12 @@ import { LoginModal } from "@/components/LoginModal";
 
 export default function Home() {
   const [isLoginOpen, setIsLoginOpen] = useState(false);
+  const [loginView, setLoginView] = useState<"login" | "register">("login");
 
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
       if (event.data === "openLogin") {
+        setLoginView("login");
         setIsLoginOpen(true);
       }
     };
@@ -27,7 +29,8 @@ export default function Home() {
           s.id = 'ink-overrides';
           s.textContent = `
             /* Esconde o nav original do Webflow */
-            nav, .w-nav, [role="navigation"], header { display: none !important; }
+            nav, .w-nav, [role="navigation"], header, .navbar, .nav-container, .navigation { display: none !important; }
+            div[class*="nav"], div[class*="Nav"], div[class*="header"] { display: none !important; }
             /* Remove margem do topo que o Webflow adiciona */
             body { padding-top: 0 !important; margin-top: 0 !important; }
           `;
@@ -114,21 +117,25 @@ export default function Home() {
         {/* BOTÕES DA DIREITA */}
         <div className="flex items-center gap-3">
           <button
-            onClick={() => setIsLoginOpen(true)}
+            onClick={() => {
+              setLoginView("login");
+              setIsLoginOpen(true);
+            }}
             className="text-foreground/70 hover:text-foreground"
             style={{ background: 'none', border: 'none', fontSize: 13, fontWeight: 300, letterSpacing: '0.1em', cursor: 'pointer', padding: '8px 16px' }}
           >
             Entrar
           </button>
-          <a
-            href="https://pay.hotmart.com/ink-authority"
-            target="_blank"
-            rel="noopener noreferrer"
+          <button
+            onClick={() => {
+              setLoginView("register");
+              setIsLoginOpen(true);
+            }}
             className="bg-foreground text-background transition-opacity hover:opacity-85"
-            style={{ fontWeight: 700, fontSize: 13, letterSpacing: '0.05em', padding: '10px 22px', borderRadius: 9999, textDecoration: 'none' }}
+            style={{ fontWeight: 700, fontSize: 13, letterSpacing: '0.05em', padding: '10px 22px', borderRadius: 9999, textDecoration: 'none', border: 'none', cursor: 'pointer' }}
           >
             Matricule-se
-          </a>
+          </button>
         </div>
       </div>
 
@@ -144,6 +151,7 @@ export default function Home() {
       <LoginModal 
         isOpen={isLoginOpen} 
         onClose={() => setIsLoginOpen(false)} 
+        initialView={loginView}
       />
     </main>
   );
