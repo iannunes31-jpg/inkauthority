@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Bot, Save, Calendar, Users, MapPin, Instagram, CreditCard, Link as LinkIcon, MessageSquare, Clock, Power, QrCode, Zap, Edit3 } from "lucide-react";
+import { Bot, Save, Calendar, Users, MapPin, Instagram, CreditCard, Link as LinkIcon, MessageSquare, Clock, Power, QrCode, Zap, Edit3, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useUser } from "@clerk/nextjs";
 import { supabase } from "@/lib/supabase";
@@ -12,6 +12,10 @@ export default function AssistantPage() {
   const { user } = useUser();
   const [activeTab, setActiveTab] = useState<"settings" | "crm" | "agenda">("settings");
   const [isSaving, setIsSaving] = useState(false);
+  const [qrCodeData, setQrCodeData] = useState<string | null>(null);
+  const [connectionStatus, setConnectionStatus] = useState<string>("Carregando...");
+  const [isGeneratingQr, setIsGeneratingQr] = useState(false);
+
   const [formData, setFormData] = useState({
     studio_name: "",
     base_price: "",
@@ -32,8 +36,63 @@ export default function AssistantPage() {
   });
 
   useEffect(() => {
-    if (user?.id) fetchSettings();
+    if (user?.id) {
+      fetchSettings();
+      checkConnectionStatus();
+    }
   }, [user?.id]);
+
+  const checkConnectionStatus = async () => {
+    if (!user) return;
+    try {
+      const res = await fetch("/api/whatsapp/instance", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ instanceName: user.id, action: "status" })
+      });
+      const data = await res.json();
+      
+      if (data.state === "open") {
+        setConnectionStatus("Conectado");
+      } else if (data.state === "connecting") {
+        setConnectionStatus("Aguardando leitura do QR Code");
+      } else {
+        setConnectionStatus("Desconectado");
+      }
+    } catch (e) {
+      setConnectionStatus("Erro na conexão");
+    }
+  };
+
+  const handleGenerateQr = async () => {
+    if (!user) return;
+    setIsGeneratingQr(true);
+    try {
+      const res = await fetch("/api/whatsapp/instance", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ instanceName: user.id, action: "connect" })
+      });
+      const data = await res.json();
+      
+      if (data.qrcode) {
+        setQrCodeData(data.qrcode);
+        setConnectionStatus("Aguardando leitura do QR Code");
+      } else if (data.qrcode?.base64) {
+        setQrCodeData(data.qrcode.base64);
+        setConnectionStatus("Aguardando leitura do QR Code");
+      } else if (data.hash?.qrcode) {
+        setQrCodeData(data.hash.qrcode);
+        setConnectionStatus("Aguardando leitura do QR Code");
+      } else {
+        alert("Erro ao buscar QR Code. Verifique os logs.");
+      }
+    } catch (e) {
+      console.error(e);
+      alert("Erro ao gerar QR Code");
+    }
+    setIsGeneratingQr(false);
+  };
 
   const fetchSettings = async () => {
     if (!user) return;
@@ -203,21 +262,55 @@ export default function AssistantPage() {
                   <h3 className="text-sm font-bold flex items-center gap-2 mb-4">
                     <QrCode className="w-4 h-4 text-primary" /> Conectar WhatsApp
                   </h3>
-                  <div className="flex items-center gap-6">
-                    <div className="w-24 h-24 bg-white rounded-xl flex items-center justify-center p-2 opacity-50 relative overflow-hidden group">
-                      <div className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                        <span className="text-[10px] font-bold text-center">Gerar Novo</span>
-                      </div>
-                      {/* Mock do QR Code */}
-                      <div className="w-full h-full bg-[url('https://upload.wikimedia.org/wikipedia/commons/d/d0/QR_code_for_mobile_English_Wikipedia.svg')] bg-cover opacity-80"></div>
-                    </div>
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6">
+                    <button 
+                      onClick={handleGenerateQr}
+                      disabled={isGeneratingQr || connectionStatus === "Conectado"}
+                      className="w-32 h-32 bg-white rounded-xl flex items-center justify-center p-2 relative overflow-hidden group cursor-pointer border-2 border-transparent hover:border-primary transition-all disabled:cursor-not-allowed disabled:hover:border-transparent"
+                    >
+                      {isGeneratingQr ? (
+                        <div className="flex flex-col items-center">
+                          <Loader2 className="w-6 h-6 animate-spin text-black mb-2" />
+                          <span className="text-[10px] font-bold text-black text-center">Gerando...</span>
+                        </div>
+                      ) : qrCodeData ? (
+                        <img src={qrCodeData} alt="QR Code" className="w-full h-full object-contain" />
+                      ) : connectionStatus === "Conectado" ? (
+                        <div className="flex flex-col items-center">
+                          <Zap className="w-8 h-8 text-green-500 mb-2" />
+                          <span className="text-xs font-bold text-black text-center">Conectado!</span>
+                        </div>
+                      ) : (
+                        <>
+                          <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10 text-white">
+                            <QrCode className="w-6 h-6 mb-1" />
+                            <span className="text-[10px] font-bold text-center">Gerar QR Code</span>
+                          </div>
+                          {/* Placeholder Image */}
+                          <div className="w-full h-full bg-[url('https://upload.wikimedia.org/wikipedia/commons/d/d0/QR_code_for_mobile_English_Wikipedia.svg')] bg-cover opacity-20"></div>
+                        </>
+                      )}
+                    </button>
                     <div className="flex-1">
                       <p className="text-xs text-muted-foreground mb-3 leading-relaxed">
-                        Escaneie este QR Code com seu WhatsApp Business.
+                        {connectionStatus === "Conectado" 
+                          ? "Seu Assistente está conectado e pronto para responder clientes!"
+                          : "Clique no quadrado para gerar o QR Code. Depois, escaneie com seu WhatsApp Business (Aparelhos Conectados)."
+                        }
                       </p>
-                      <div className="flex items-center gap-2 text-xs font-semibold px-3 py-1.5 rounded-full bg-yellow-500/10 text-yellow-500 w-fit">
-                        <span className="w-2 h-2 rounded-full bg-yellow-500 animate-pulse"></span>
-                        Aguardando...
+                      <div className={cn(
+                        "flex items-center gap-2 text-xs font-semibold px-3 py-1.5 rounded-full w-fit",
+                        connectionStatus === "Conectado" ? "bg-green-500/10 text-green-500" : 
+                        connectionStatus === "Desconectado" ? "bg-red-500/10 text-red-500" :
+                        "bg-yellow-500/10 text-yellow-500"
+                      )}>
+                        <span className={cn(
+                          "w-2 h-2 rounded-full animate-pulse",
+                          connectionStatus === "Conectado" ? "bg-green-500" : 
+                          connectionStatus === "Desconectado" ? "bg-red-500" :
+                          "bg-yellow-500"
+                        )}></span>
+                        {connectionStatus}
                       </div>
                     </div>
                   </div>
