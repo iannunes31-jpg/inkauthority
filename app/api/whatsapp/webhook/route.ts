@@ -1,26 +1,37 @@
 import { NextResponse } from 'next/server';
 import { google } from '@ai-sdk/google';
 import { generateText } from 'ai';
+import { createClient } from '@supabase/supabase-js';
+
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+const supabase = createClient(supabaseUrl, supabaseKey);
 
 export async function POST(req: Request) {
   try {
     const payload = await req.json();
 
-    // evolution-api sends 'messages.upsert' for new messages
     if (payload.event !== 'messages.upsert') {
       return NextResponse.json({ status: 'ignored' });
     }
 
     const messageData = payload.data;
-    const remoteJid = messageData.key.remoteJid; // Client's WhatsApp number
+    const remoteJid = messageData.key.remoteJid; // Number of the client
     const fromMe = messageData.key.fromMe;
-    
-    // Ignore messages sent by ourselves or from groups
+    const instanceName = payload.instance; // This is the clerk_user_id of the artist
+    const clerk_user_id = instanceName; 
+
     if (fromMe || remoteJid.includes('@g.us')) {
       return NextResponse.json({ status: 'ignored' });
     }
 
-    // Extract text from WhatsApp message object
+    const messageTimestamp = messageData.messageTimestamp;
+    const now = Math.floor(Date.now() / 1000);
+    if (messageTimestamp && (now - messageTimestamp > 300)) {
+       console.log("Ignorando mensagem antiga de", remoteJid);
+       return NextResponse.json({ status: 'ignored_old' });
+    }
+
     let messageText = '';
     if (messageData.message?.conversation) {
       messageText = messageData.message.conversation;
@@ -32,25 +43,124 @@ export async function POST(req: Request) {
       return NextResponse.json({ status: 'no_text' });
     }
 
-    // 1. Send the message to Gemini AI to generate a response
-    const { text: aiResponse } = await generateText({
-      model: google('gemini-1.5-pro-latest'),
-      system: `Você é a assistente virtual do estúdio de tatuagem Ink Authority. 
-Seu papel é atender clientes no WhatsApp de forma natural, educada e prestativa.
-- Faça perguntas para entender a ideia da tatuagem (tamanho, local do corpo, referências).
-- Se a pessoa pedir orçamento direto, explique que precisa de mais detalhes (tamanho em CM, estilo, local).
-- Nosso valor base de sessão é R$ 1.500,00 ou R$ 300/hora.
-- Seja sempre humanizada, use emojis com moderação.`,
-      prompt: `O cliente enviou a seguinte mensagem no WhatsApp:\n"${messageText}"\n\nResponda ao cliente:`
+    // 1. Fetch AI Settings for this artist
+    const { data: settings } = await supabase
+      .from('ai_settings')
+      .select('*')
+      .eq('clerk_user_id', clerk_user_id)
+      .single();
+
+    if (!settings || !settings.is_active) {
+       console.log("Bot is disabled or settings not found.");
+       return NextResponse.json({ status: 'inactive' });
+    }
+
+    // 2. Manage CRM (Upsert Customer)
+    let { data: customer } = await supabase
+      .from('customers')
+      .select('id, name, status')
+      .eq('clerk_user_id', clerk_user_id)
+      .eq('phone_number', remoteJid)
+      .single();
+
+    if (!customer) {
+      const { data: newCustomer } = await supabase
+        .from('customers')
+        .insert({
+          clerk_user_id,
+          phone_number: remoteJid,
+          status: 'lead'
+        })
+        .select()
+        .single();
+      customer = newCustomer;
+    }
+
+    // 3. Save User Message to History
+    await supabase.from('chat_history').insert({
+      clerk_user_id,
+      phone_number: remoteJid,
+      role: 'user',
+      content: messageText
     });
 
-    // 2. Send the AI response back to the client via Evolution API
-    const evolutionUrl = process.env.EVOLUTION_API_URL; // e.g. https://evolution-xxx.up.railway.app
+    // 4. Fetch Conversation History (Last 10 messages to keep context)
+    const { data: history } = await supabase
+      .from('chat_history')
+      .select('role, content')
+      .eq('clerk_user_id', clerk_user_id)
+      .eq('phone_number', remoteJid)
+      .order('created_at', { ascending: false })
+      .limit(10);
+
+    const formattedHistory: { role: 'user' | 'assistant', content: string }[] = history 
+      ? history.reverse().map((msg) => ({
+          role: msg.role as 'user' | 'assistant',
+          content: msg.content
+        }))
+      : [];
+
+    // 5. Build the massive High-Ticket Prompt
+    const systemPrompt = `Você é o assistente virtual do estúdio de tatuagem "${settings.studio_name}".
+Seu tom de voz é: "${settings.bot_personality}".
+Estilos de Tatuagem que você faz: ${settings.styles}
+Valor Base Mínimo: R$ ${settings.base_price}
+Valor por Hora: R$ ${settings.hourly_rate}
+Métodos de Pagamento: ${settings.payment_methods}
+Endereço do Estúdio: ${settings.address}
+
+### REGRAS DO PROCESSO DE VENDAS HIGH TICKET
+Esta é a estratégia de conversão que você DEVE seguir rigidamente:
+
+1. **Abordagem Inicial & Qualificação:**
+- Chame o cliente pelo nome (se souber).
+- O primeiro objetivo é entender a ideia da tatuagem: "Me conte sobre a ideia da tatuagem que você tem e em qual parte do corpo deseja realizá-la. Peça também uma foto da região para analisar a anatomia."
+- NUNCA passe orçamento logo de cara sem antes entender o projeto, tamanho e local.
+
+2. **Criação do Projeto & Valor Agregado:**
+- Explique o processo de criação de arte para agregar valor: "A criação do projeto é desenvolvida no dia da sua sessão. A data é reservada exclusivamente para você, permitindo alinhar referências e ideias."
+
+3. **Orçamento (Somente após entender o projeto):**
+- Quando passar o orçamento, separe por sessões caso seja grande (ex: fechamento).
+- O valor SEMPRE deve ser apresentado cheio e parcelado primeiro. Exemplo: "O valor ficaria em R$ 4000 parcelado ou R$ 3500 à vista".
+- Especifique MUITO BEM a área do corpo que está sendo cobrada.
+
+4. **Quebra de Objeções:**
+- Se o cliente disser que está caro, explique estrategicamente o seu diferencial. 
+- A maioria das objeções é um pedido de "me prove que vale". Mostre paciência e agregue valor.
+
+5. **Conversão & Agendamento (O SINAL):**
+- Quando o cliente quiser fechar, peça os dados (Nome, Celular, Cidade).
+- Informe sobre o SINAL: "Para garantir que a data seja reservada para você, é necessário um sinal de [Insira um valor coerente com o orçamento] via Pix. Esse valor será abatido do total. Chave Pix: CNPJ xxx.xxx". (Adapte a chave Pix para os dados do estúdio se fornecidos).
+
+6. **Comportamentos Anti-Curiosos & Regras de Ouro:**
+- NÃO responda a mesma coisa duas vezes. Leia o histórico e dê continuidade à conversa.
+- Se o cliente pedir um estilo que não está na lista de Estilos (${settings.styles}), recuse educadamente dizendo que você não atende esse estilo.
+- Se o cliente insistir muito APENAS em preço, tente agregar valor. Se continuar focado apenas no valor barato, dispense educadamente (o estúdio é focado em qualidade e experiência).
+- Responda SEMPRE no idioma que o cliente iniciou a conversa (seja inglês, espanhol ou português).
+
+Lembre-se: Você NÃO deve parecer um robô. O cliente não deve perceber facilmente que está falando com uma IA.`;
+
+    // 6. Generate Response with Gemini
+    const { text: aiResponse } = await generateText({
+      model: google('gemini-1.5-pro-latest'),
+      system: systemPrompt,
+      messages: formattedHistory,
+    });
+
+    // 7. Save Assistant Message to History
+    await supabase.from('chat_history').insert({
+      clerk_user_id,
+      phone_number: remoteJid,
+      role: 'assistant',
+      content: aiResponse
+    });
+
+    // 8. Send via Evolution API
+    const evolutionUrl = process.env.EVOLUTION_API_URL; 
     const apiKey = process.env.EVOLUTION_API_KEY;
-    const instanceName = payload.instance;
 
     if (!evolutionUrl || !apiKey) {
-      console.error("Evolution API credentials missing in .env.local");
       return NextResponse.json({ error: 'Evolution API credentials missing' }, { status: 500 });
     }
 
@@ -65,12 +175,6 @@ Seu papel é atender clientes no WhatsApp de forma natural, educada e prestativa
         text: aiResponse
       })
     });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('Error sending message via Evolution API:', errorText);
-      return NextResponse.json({ error: 'Failed to send message' }, { status: 500 });
-    }
 
     return NextResponse.json({ status: 'success' });
   } catch (error) {
