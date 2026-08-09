@@ -17,6 +17,7 @@ export default function AssistantPage() {
     base_price: "",
     hourly_rate: "",
     styles: "",
+    style_image_url: "",
     address: "",
     instagram_url: "",
     google_review_url: "",
@@ -24,6 +25,10 @@ export default function AssistantPage() {
     bot_personality: "Profissional e educado",
     is_active: false,
     bot_mode: "copilot",
+    price_arm: "",
+    price_leg: "",
+    price_front: "",
+    price_back: "",
   });
 
   useEffect(() => {
@@ -44,6 +49,7 @@ export default function AssistantPage() {
         base_price: data.base_price || "",
         hourly_rate: data.hourly_rate || "",
         styles: data.styles || "",
+        style_image_url: data.style_image_url || "",
         address: data.address || "",
         instagram_url: data.instagram_url || "",
         google_review_url: data.google_review_url || "",
@@ -51,6 +57,10 @@ export default function AssistantPage() {
         bot_personality: data.bot_personality || "Profissional e educado",
         is_active: data.is_active || false,
         bot_mode: data.bot_mode || "copilot",
+        price_arm: data.price_arm || "",
+        price_leg: data.price_leg || "",
+        price_front: data.price_front || "",
+        price_back: data.price_back || "",
       });
     }
   };
@@ -64,6 +74,10 @@ export default function AssistantPage() {
       ...formData,
       base_price: Number(formData.base_price) || 0,
       hourly_rate: Number(formData.hourly_rate) || 0,
+      price_arm: Number(formData.price_arm) || null,
+      price_leg: Number(formData.price_leg) || null,
+      price_front: Number(formData.price_front) || null,
+      price_back: Number(formData.price_back) || null,
       updated_at: new Date().toISOString()
     };
 
@@ -237,6 +251,17 @@ export default function AssistantPage() {
                     />
                   </div>
                   <div>
+                    <label className="text-xs font-semibold text-white/70 uppercase tracking-widest mb-1 block">Imagem de Referência (URL da sua melhor arte)</label>
+                    <input 
+                      type="url" 
+                      value={formData.style_image_url}
+                      onChange={(e) => setFormData({...formData, style_image_url: e.target.value})}
+                      className="w-full bg-black/50 border border-white/10 rounded-lg py-2 px-3 text-sm focus:border-primary focus:outline-none transition-colors"
+                      placeholder="https://..."
+                    />
+                    <p className="text-[10px] text-white/40 mt-1">Coloque o link direto de uma imagem para o bot usar como base do seu estilo.</p>
+                  </div>
+                  <div>
                     <label className="text-xs font-semibold text-white/70 uppercase tracking-widest mb-1 block">Tom de Voz da IA</label>
                     <select 
                       value={formData.bot_personality}
@@ -277,6 +302,52 @@ export default function AssistantPage() {
                         className="w-full bg-black/50 border border-white/10 rounded-lg py-2 px-3 text-sm focus:border-primary focus:outline-none transition-colors"
                         placeholder="Ex: 400"
                       />
+                    </div>
+                  </div>
+
+                  <div className="pt-2 border-t border-white/5">
+                    <label className="text-xs font-semibold text-white/70 uppercase tracking-widest mb-3 block">Preços Fechados (Fechamentos)</label>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-[10px] text-white/50 block mb-1">Braço Completo (R$)</label>
+                        <input 
+                          type="number" 
+                          value={formData.price_arm}
+                          onChange={(e) => setFormData({...formData, price_arm: e.target.value})}
+                          className="w-full bg-black/50 border border-white/10 rounded-lg py-2 px-3 text-sm focus:border-primary focus:outline-none transition-colors"
+                          placeholder="Ex: 4000"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[10px] text-white/50 block mb-1">Perna Completa (R$)</label>
+                        <input 
+                          type="number" 
+                          value={formData.price_leg}
+                          onChange={(e) => setFormData({...formData, price_leg: e.target.value})}
+                          className="w-full bg-black/50 border border-white/10 rounded-lg py-2 px-3 text-sm focus:border-primary focus:outline-none transition-colors"
+                          placeholder="Ex: 5000"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[10px] text-white/50 block mb-1">Frente (Peito/Barriga) (R$)</label>
+                        <input 
+                          type="number" 
+                          value={formData.price_front}
+                          onChange={(e) => setFormData({...formData, price_front: e.target.value})}
+                          className="w-full bg-black/50 border border-white/10 rounded-lg py-2 px-3 text-sm focus:border-primary focus:outline-none transition-colors"
+                          placeholder="Ex: 6000"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[10px] text-white/50 block mb-1">Costas Completas (R$)</label>
+                        <input 
+                          type="number" 
+                          value={formData.price_back}
+                          onChange={(e) => setFormData({...formData, price_back: e.target.value})}
+                          className="w-full bg-black/50 border border-white/10 rounded-lg py-2 px-3 text-sm focus:border-primary focus:outline-none transition-colors"
+                          placeholder="Ex: 7000"
+                        />
+                      </div>
                     </div>
                   </div>
                   <div>
