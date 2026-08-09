@@ -37,7 +37,7 @@ export default function CoursesPage() {
               O Primeiro Passo Para o Topo
             </span>
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-black mb-4 uppercase tracking-tighter text-glow leading-tight">
-              Marketing & <span className="text-white">Posicionamento</span>
+              Marketing & <span className="text-foreground">Posicionamento</span>
             </h1>
             <p className="text-lg text-muted-foreground font-light leading-relaxed">
               Não basta ser o melhor tatuador se ninguém conhece o seu trabalho. Aprenda os segredos exatos para se posicionar como autoridade, atrair clientes que pagam caro e transformar sua arte num negócio altamente lucrativo.
@@ -52,8 +52,8 @@ export default function CoursesPage() {
           >
             {features.map((feature, i) => (
               <div key={i} className="flex items-center gap-3">
-                <CheckCircle2 className="w-5 h-5 text-white/50" />
-                <span className="text-sm font-medium text-white/80">{feature}</span>
+                <CheckCircle2 className="w-5 h-5 text-foreground/50" />
+                <span className="text-sm font-medium text-foreground/80">{feature}</span>
               </div>
             ))}
           </motion.div>
@@ -64,13 +64,13 @@ export default function CoursesPage() {
             transition={{ duration: 0.5, delay: 0.4 }}
             className="pt-6"
           >
-            <div className="glass p-6 rounded-2xl border border-white/10 mb-6 flex flex-col md:flex-row items-center justify-between gap-6 relative overflow-hidden">
-              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent skeleton-shimmer pointer-events-none" />
+            <div className="glass p-6 rounded-2xl border border-border/20 mb-6 flex flex-col md:flex-row items-center justify-between gap-6 relative overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-foreground/5 to-transparent skeleton-shimmer pointer-events-none" />
               
               <div>
                 <p className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground mb-1">Investimento</p>
                 <div className="flex items-baseline gap-2">
-                  <span className="text-3xl font-black text-white">R$ 997,00</span>
+                  <span className="text-3xl font-black text-foreground">R$ 997,00</span>
                   <span className="text-sm text-muted-foreground line-through">R$ 1.500,00</span>
                 </div>
                 <p className="text-xs text-primary mt-1">Ou 12x de R$ 99,70</p>
@@ -78,7 +78,8 @@ export default function CoursesPage() {
 
               <Button 
                 onClick={() => setIsLoginOpen(true)}
-                className="w-full md:w-auto metallic-gradient text-black font-bold uppercase tracking-[0.2em] text-[11px] h-14 px-8 rounded-xl hover:scale-105 transition-transform border-0 shadow-[0_0_30px_rgba(255,255,255,0.2)] group"
+                className="w-full md:w-auto metallic-gradient text-black font-bold uppercase tracking-[0.2em] text-[11px] h-14 px-8 rounded-xl hover:scale-105 transition-transform border-0 group"
+                style={{ boxShadow: '0 0 30px rgba(139, 122, 102, 0.3)' }}
               >
                 <span>Garantir Vaga</span>
                 <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
@@ -99,31 +100,31 @@ export default function CoursesPage() {
           transition={{ duration: 0.7, delay: 0.2 }}
           className="flex-1 w-full max-w-[500px] lg:max-w-none relative z-10"
         >
-          <div className="relative rounded-[2rem] overflow-hidden border border-white/10 shadow-2xl glass group aspect-[4/5] lg:aspect-auto lg:h-[700px]">
+          <div className="relative rounded-[2rem] overflow-hidden border border-border/20 shadow-2xl glass group aspect-[4/5] lg:aspect-auto lg:h-[700px]">
             <video 
               autoPlay 
               muted 
               loop 
               playsInline
               className="w-full h-full object-cover opacity-90 transition-opacity duration-500"
-              poster="/isabella_poster.jpg" // Optional poster if you have one
+              poster="/isabella_poster.jpg"
             >
               <source src="/video_badini.mp4" type="video/mp4" />
               Seu navegador não suporta vídeos.
             </video>
             
-            {/* Elegant overlay gradient to make it blend with the dark theme */}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent pointer-events-none" />
-            <div className="absolute inset-0 bg-gradient-to-r from-black/40 via-transparent to-black/40 pointer-events-none" />
+            {/* Elegant overlay gradient to make it blend with the theme */}
+            <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-background/20 to-transparent pointer-events-none" />
+            <div className="absolute inset-0 bg-gradient-to-r from-background/40 via-transparent to-background/40 pointer-events-none" />
             
             {/* Play overlay just for aesthetics (video is autoplaying) */}
             <div className="absolute bottom-8 left-8 right-8 flex items-center justify-between">
               <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-full bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center pointer-events-none">
-                  <Play className="w-5 h-5 text-white ml-1" />
+                <div className="w-12 h-12 rounded-full bg-foreground/10 backdrop-blur-md border border-border/20 flex items-center justify-center pointer-events-none">
+                  <Play className="w-5 h-5 text-foreground ml-1" />
                 </div>
                 <div>
-                  <p className="text-white font-bold text-sm uppercase tracking-wider">Assista ao Vídeo</p>
+                  <p className="text-foreground font-bold text-sm uppercase tracking-wider">Assista ao Vídeo</p>
                   <p className="text-muted-foreground text-xs">Aumente o som</p>
                 </div>
               </div>

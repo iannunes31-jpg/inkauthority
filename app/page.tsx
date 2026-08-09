@@ -88,50 +88,7 @@ export default function Home() {
         <div className="absolute bottom-[-20%] left-[20%] w-[70vw] h-[70vw] bg-white/5 blur-[130px] rounded-full mix-blend-screen opacity-40 animate-pulse" style={{ animationDuration: '10s' }} />
       </div>
 
-      {/* OVERLAY DO MENU — fica por cima do iframe, substitui o nav do Webflow */}
-      <div
-        className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-8 bg-background/85 backdrop-blur-md border-b border-border/20 text-foreground transition-colors"
-        style={{ height: '72px' }}
-      >
-        {/* LOGO */}
-        <a href="/" className="flex items-center gap-3" style={{ textDecoration: 'none' }}>
-          <svg viewBox="0 0 24 24" fill="currentColor" className="text-foreground" style={{ width: 28, height: 28 }}>
-            <path d="M12 0C12 6.627 17.373 12 24 12C17.373 12 12 17.373 12 24C12 17.373 6.627 12 0 12C6.627 12 12 6.627 12 0Z" />
-          </svg>
-          <span className="text-foreground" style={{ fontWeight: 900, fontSize: 18, letterSpacing: '-0.5px', textTransform: 'uppercase' }}>Ink Authority</span>
-        </a>
 
-        {/* LINKS DO MEIO */}
-        <div className="flex items-center gap-8">
-          <a href="/" style={navLinkStyle} className="text-foreground/70 hover:text-foreground">HOME</a>
-          <a href="/courses" style={navLinkStyle} className="text-foreground/70 hover:text-foreground">CURSOS</a>
-          <a href="/tools" style={navLinkStyle} className="text-foreground/70 hover:text-foreground">TOOLS</a>
-        </div>
-
-        {/* BOTÕES DA DIREITA */}
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => {
-              setLoginView("login");
-              setIsLoginOpen(true);
-            }}
-            className="text-foreground/70 hover:text-foreground"
-            style={{ background: 'none', border: 'none', fontSize: 13, fontWeight: 300, letterSpacing: '0.1em', cursor: 'pointer', padding: '8px 16px' }}
-          >
-            Entrar
-          </button>
-          <button
-            onClick={() => {
-              setLoginView("register");
-              setIsLoginOpen(true);
-            }}
-            className="bg-foreground text-background transition-opacity hover:opacity-85"
-            style={{ fontWeight: 700, fontSize: 13, letterSpacing: '0.05em', padding: '10px 22px', borderRadius: 9999, textDecoration: 'none', border: 'none', cursor: 'pointer' }}
-          >
-            Matricule-se
-          </button>
-        </div>
-      </div>
 
       {/* IFRAME — com paddingTop pra não ficar atrás do menu */}
       <iframe 
@@ -151,11 +108,4 @@ export default function Home() {
   );
 }
 
-const navLinkStyle: React.CSSProperties = {
-  fontSize: 12,
-  fontWeight: 300,
-  letterSpacing: '0.28em',
-  textTransform: 'uppercase',
-  textDecoration: 'none',
-  transition: 'color 0.2s',
-};
+

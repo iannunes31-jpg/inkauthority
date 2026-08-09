@@ -97,52 +97,44 @@ export function Navbar() {
   const { isSignedIn: isLoggedIn } = useAuth();
 
   const navLinks = [
-    { name: "Home", path: "/" },
-    { name: "Cursos", path: "/courses" },
-    ...(isLoggedIn ? [{ name: "Dashboard", path: "/dashboard" }] : []),
+    { name: "HOME", path: "/" },
+    { name: "CURSOS", path: "/courses" },
+    { name: "TOOLS", path: "/tools" },
+    ...(isLoggedIn ? [{ name: "DASHBOARD", path: "/dashboard" }] : []),
   ];
 
   return (
     <>
-      <LoginModal isOpen={isLoginOpen} onClose={() => setIsLoginOpen(false)} />
-      <nav className="fixed top-0 w-full z-50 glass border-b border-white/5">
-        <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2 relative group">
-            <div className="w-6 h-6 bg-primary rounded-sm rotate-45 flex items-center justify-center neon-glow group-hover:shadow-[0_0_30px_rgba(229,231,235,0.4)] transition-all duration-500">
-               <div className="w-2 h-2 bg-black rounded-full"></div>
-            </div>
-            <span className="font-bold text-[13px] uppercase tracking-[0.2em] text-white ml-2">
-              INK AUTHORITY
+      <LoginModal isOpen={isLoginOpen} onClose={() => setIsLoginOpen(false)} initialView="login" />
+      <nav className="fixed top-0 w-full z-50 glass border-b border-border/20 bg-background/80 backdrop-blur-md transition-colors h-[72px]">
+        <div className="max-w-7xl mx-auto px-6 h-full flex items-center justify-between">
+          <Link href="/" className="flex items-center gap-3" style={{ textDecoration: 'none' }}>
+            <svg viewBox="0 0 24 24" fill="currentColor" className="text-foreground" style={{ width: 28, height: 28 }}>
+              <path d="M12 0C12 6.627 17.373 12 24 12C17.373 12 12 17.373 12 24C12 17.373 6.627 12 0 12C6.627 12 12 6.627 12 0Z" />
+            </svg>
+            <span className="font-black text-[18px] tracking-[-0.5px] uppercase text-foreground">
+              Ink Authority
             </span>
           </Link>
 
           {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center gap-8 text-[11px] uppercase tracking-[0.2em] font-semibold">
-            <div className="flex items-center gap-6">
-              {!isLoggedIn && navLinks.map((link) => (
+          <div className="hidden md:flex items-center gap-8 text-[12px] uppercase tracking-[0.28em] font-light">
+            <div className="flex items-center gap-8">
+              {navLinks.map((link) => (
                 <Link
                   key={link.path}
                   href={link.path}
                   className={cn(
-                    "transition-colors hover:text-white relative py-2",
-                    pathname === link.path ? "text-white" : "text-muted-foreground"
+                    "transition-colors hover:text-foreground relative py-2",
+                    pathname === link.path ? "text-foreground font-medium" : "text-foreground/70"
                   )}
                 >
                   {link.name}
-                  {pathname === link.path && (
-                    <motion.div
-                      layoutId="navbar-indicator"
-                      className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-full neon-glow"
-                      transition={{ type: "spring", bounce: 0.25, stiffness: 130, damping: 9 }}
-                    />
-                  )}
                 </Link>
               ))}
             </div>
             
-            {!isLoggedIn && <div className="h-6 w-px bg-white/10" />}
-            
-            <div className="flex items-center gap-4 relative">
+            <div className="flex items-center gap-4 relative ml-4">
               {/* Search Bar & Notifications (Only for logged in users) */}
               {isLoggedIn && (
                 <>
@@ -195,21 +187,22 @@ export function Navbar() {
               <div className="h-4 w-px bg-white/10 mx-1" />
 
               {!isLoggedIn && (
-                <>
-                  <Button 
-                    variant="ghost" 
-                    className="text-muted-foreground hover:text-white"
+                <div className="flex items-center gap-3">
+                  <button 
+                    className="text-foreground/70 hover:text-foreground"
+                    style={{ background: 'none', border: 'none', fontSize: 13, fontWeight: 300, letterSpacing: '0.1em', cursor: 'pointer', padding: '8px 16px' }}
                     onClick={() => setIsLoginOpen(true)}
                   >
                     Entrar
-                  </Button>
-                  <Button 
-                    className="metallic-gradient text-black hover:opacity-90 border-0"
+                  </button>
+                  <button 
+                    className="bg-foreground text-background transition-opacity hover:opacity-85"
+                    style={{ fontWeight: 700, fontSize: 13, letterSpacing: '0.05em', padding: '10px 22px', borderRadius: 9999, textDecoration: 'none', border: 'none', cursor: 'pointer' }}
                     onClick={() => setIsLoginOpen(true)}
                   >
                     Matricule-se
-                  </Button>
-                </>
+                  </button>
+                </div>
               )}
             </div>
           </div>
