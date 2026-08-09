@@ -38,8 +38,8 @@ export default function Home() {
           doc.head.appendChild(style);
         }
 
-        // 2. Injeção Nativa do Botão FERRAMENTAS
-        if (!doc.getElementById('btn-ferramentas-injetado')) {
+        // 2. Injeção Nativa do Botão TOOLS
+        if (!doc.getElementById('btn-tools-injetado')) {
           const allLinks = Array.from(doc.querySelectorAll('a'));
           const cursosElement = allLinks.find(el => {
             const text = (el.textContent || '').toUpperCase();
@@ -50,8 +50,8 @@ export default function Home() {
             const parent = cursosElement.parentNode;
             
             const newBtn = doc.createElement('a');
-            newBtn.id = 'btn-ferramentas-injetado';
-            newBtn.textContent = 'FERRAMENTAS';
+            newBtn.id = 'btn-tools-injetado';
+            newBtn.textContent = 'TOOLS';
             newBtn.href = '/tools';
             newBtn.target = '_top';
             
@@ -74,7 +74,7 @@ export default function Home() {
             // Oculta qualquer lixo que o Webflow tenha deixado (divisores duplos)
             const lixo = allLinks.find(el => {
               const text = (el.textContent || '').toUpperCase();
-              return (text.includes('TOOLS') || text.includes('FERRAMENTA')) && el.id !== 'btn-ferramentas-injetado';
+              return (text.includes('TOOLS') || text.includes('FERRAMENTA')) && el.id !== 'btn-tools-injetado';
             });
             if (lixo) {
                lixo.style.display = 'none';
