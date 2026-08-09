@@ -302,25 +302,25 @@ export default function AssistantPage() {
                     <button 
                       onClick={handleGenerateQr}
                       disabled={isGeneratingQr || connectionStatus === "Conectado"}
-                      className="w-32 h-32 bg-white rounded-xl flex items-center justify-center p-2 relative overflow-hidden group cursor-pointer border-2 border-transparent hover:border-primary transition-all disabled:cursor-not-allowed disabled:hover:border-transparent"
+                      className="w-64 h-64 bg-white rounded-xl flex items-center justify-center p-2 relative overflow-hidden group cursor-pointer border-2 border-transparent hover:border-primary transition-all disabled:cursor-not-allowed disabled:hover:border-transparent shrink-0"
                     >
                       {isGeneratingQr ? (
                         <div className="flex flex-col items-center">
-                          <Loader2 className="w-6 h-6 animate-spin text-black mb-2" />
-                          <span className="text-[10px] font-bold text-black text-center">Gerando...</span>
+                          <Loader2 className="w-8 h-8 animate-spin text-black mb-2" />
+                          <span className="text-xs font-bold text-black text-center">Gerando...</span>
                         </div>
                       ) : qrCodeData ? (
                         <img src={qrCodeData} alt="QR Code" className="w-full h-full object-contain" />
                       ) : connectionStatus === "Conectado" ? (
                         <div className="flex flex-col items-center">
-                          <Zap className="w-8 h-8 text-green-500 mb-2" />
-                          <span className="text-xs font-bold text-black text-center">Conectado!</span>
+                          <Zap className="w-12 h-12 text-green-500 mb-2" />
+                          <span className="text-sm font-bold text-black text-center">Conectado!</span>
                         </div>
                       ) : (
                         <>
                           <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10 text-white">
-                            <QrCode className="w-6 h-6 mb-1" />
-                            <span className="text-[10px] font-bold text-center">Gerar QR Code</span>
+                            <QrCode className="w-8 h-8 mb-2" />
+                            <span className="text-xs font-bold text-center">Gerar QR Code</span>
                           </div>
                           {/* Placeholder Image */}
                           <div className="w-full h-full bg-[url('https://upload.wikimedia.org/wikipedia/commons/d/d0/QR_code_for_mobile_English_Wikipedia.svg')] bg-cover opacity-20"></div>
@@ -328,12 +328,21 @@ export default function AssistantPage() {
                       )}
                     </button>
                     <div className="flex-1">
-                      <p className="text-xs text-muted-foreground mb-3 leading-relaxed">
+                      <p className="text-sm text-muted-foreground mb-4 leading-relaxed">
                         {connectionStatus === "Conectado" 
                           ? "Seu Assistente está conectado e pronto para responder clientes!"
-                          : "Clique no quadrado para gerar o QR Code. Depois, escaneie com seu WhatsApp Business (Aparelhos Conectados)."
+                          : "Clique no quadrado para gerar o QR Code. Depois, escaneie com seu WhatsApp (Aparelhos Conectados)."
                         }
                       </p>
+                      
+                      {connectionStatus !== "Conectado" && (
+                        <div className="bg-yellow-500/10 border border-yellow-500/20 p-3 rounded-lg mb-4">
+                          <p className="text-[11px] text-yellow-500 font-medium">
+                            ⚠️ <strong>Atenção:</strong> O WhatsApp permite no máximo 4 aparelhos conectados simultaneamente (como WhatsApp Web e Desktop). Se der erro de "não é possível conectar mais dispositivos", desconecte um aparelho no seu celular antes de ler este QR.
+                          </p>
+                        </div>
+                      )}
+
                       <div className={cn(
                         "flex items-center gap-2 text-xs font-semibold px-3 py-1.5 rounded-full w-fit",
                         connectionStatus === "Conectado" ? "bg-green-500/10 text-green-500" : 
