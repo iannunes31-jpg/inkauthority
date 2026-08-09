@@ -29,9 +29,9 @@ export default function ToolsPage() {
       {/* Header Fixo */}
       <header className="fixed top-0 w-full z-50 glass border-b border-white/5 h-20 flex items-center justify-between px-6 lg:px-12 bg-black/80 backdrop-blur-md">
         <div className="flex items-center gap-3 cursor-pointer" onClick={() => window.location.href = "/"}>
-          <div className="w-8 h-8 bg-primary rounded-sm rotate-45 flex items-center justify-center neon-glow">
-             <div className="w-2 h-2 bg-black rounded-full"></div>
-          </div>
+          <svg viewBox="0 0 24 24" fill="currentColor" className="w-8 h-8 text-primary neon-glow">
+            <path d="M12 0C12 6.627 17.373 12 24 12C17.373 12 12 17.373 12 24C12 17.373 6.627 12 0 12C6.627 12 12 6.627 12 0Z" />
+          </svg>
           <span className="font-black text-xl tracking-tighter uppercase">Ink Authority</span>
         </div>
         <div className="flex items-center gap-4">
