@@ -104,13 +104,7 @@ export default function Home() {
         {/* LINKS DO MEIO */}
         <div className="flex items-center gap-8">
           <a href="/" style={navLinkStyle} className="text-foreground/70 hover:text-foreground">HOME</a>
-          <a href="#cursos" onClick={(e) => {
-            e.preventDefault();
-            const iframe = document.getElementById('landing-iframe') as HTMLIFrameElement;
-            if (iframe && iframe.contentWindow) {
-              iframe.contentWindow.postMessage('scrollToCursos', '*');
-            }
-          }} style={navLinkStyle} className="text-foreground/70 hover:text-foreground">CURSOS</a>
+          <a href="/courses" style={navLinkStyle} className="text-foreground/70 hover:text-foreground">CURSOS</a>
           <a href="/tools" style={navLinkStyle} className="text-foreground/70 hover:text-foreground">TOOLS</a>
         </div>
 
