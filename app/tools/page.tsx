@@ -4,12 +4,12 @@ import { CheckCircle, ArrowRight, Bot } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export default function ToolsPage() {
-  const handleCheckout = async (productName: string, price: number) => {
+  const handleCheckout = async (productName: string, price: number, isSubscription: boolean = true) => {
     try {
       const response = await fetch('/api/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ productName, price }),
+        body: JSON.stringify({ productName, price, isSubscription }),
       });
       const data = await response.json();
       if (data.url) {

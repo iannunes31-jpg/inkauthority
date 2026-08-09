@@ -7,7 +7,7 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
 
 export async function POST(req: Request) {
   try {
-    const { productName, price } = await req.json();
+    const { productName, price, isSubscription = false } = await req.json();
     
     // Configura o checkout dinamicamente baseado no produto
     const session = await stripe.checkout.sessions.create({
@@ -20,14 +20,16 @@ export async function POST(req: Request) {
               name: productName,
             },
             unit_amount: price * 100, // Stripe usa centavos
-            recurring: {
-              interval: 'month',
-            },
+            ...(isSubscription && {
+              recurring: {
+                interval: 'month',
+              },
+            }),
           },
           quantity: 1,
         },
       ],
-      mode: 'subscription',
+      mode: isSubscription ? 'subscription' : 'payment',
 
       // Assumindo que o usuário quer subscription mensal, mode='subscription' exige usar um price_id existente do Stripe.
       // Como não temos os Price IDs (ele só passou as chaves genéricas), 
