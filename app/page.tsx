@@ -71,15 +71,6 @@ export default function Home() {
             newBtn.onmouseover = () => newBtn.style.color = '#ffffff';
             newBtn.onmouseout = () => newBtn.style.color = computed.color || 'rgba(238, 238, 242, 0.66)';
             
-            // Oculta qualquer lixo que o Webflow tenha deixado (divisores duplos)
-            const lixo = allLinks.find(el => {
-              const text = (el.textContent || '').toUpperCase();
-              return (text.includes('TOOLS') || text.includes('FERRAMENTA')) && el.id !== 'btn-tools-injetado';
-            });
-            if (lixo) {
-               lixo.style.display = 'none';
-            }
-            
             parent.insertBefore(newBtn, cursosElement.nextSibling);
             clearInterval(injectInterval);
           }
