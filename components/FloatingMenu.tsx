@@ -42,28 +42,17 @@ export function FloatingMenu() {
 
   const applyTheme = (newTheme: string) => {
     const html = document.documentElement;
+    
     if (newTheme === "light") {
       html.classList.remove("dark");
       html.classList.add("light");
-      document.body.style.backgroundColor = "#f4f4f5";
-      document.body.style.color = "#000";
-      
-      // Tentar inverter o iframe
-      const iframe = document.querySelector('iframe');
-      if (iframe) {
-        iframe.style.filter = "invert(1) hue-rotate(180deg)";
-      }
+      document.body.style.backgroundColor = "#ffffff";
+      document.body.style.color = "#000000";
     } else {
       html.classList.remove("light");
       html.classList.add("dark");
-      document.body.style.backgroundColor = "#000";
-      document.body.style.color = "#fff";
-      
-      // Restaurar o iframe
-      const iframe = document.querySelector('iframe');
-      if (iframe) {
-        iframe.style.filter = "none";
-      }
+      document.body.style.backgroundColor = "#000000";
+      document.body.style.color = "#ffffff";
     }
   };
 
@@ -87,7 +76,7 @@ export function FloatingMenu() {
     <>
       <div id="google_translate_element" style={{ display: "none" }}></div>
       
-      <div className="fixed bottom-6 left-6 z-[9999] flex flex-col gap-3">
+      <div className="fixed bottom-6 left-6 z-[9999] flex flex-col gap-3 notranslate">
         {/* Dropdown de Idiomas */}
         {isTranslateOpen && (
           <div className="bg-black/90 backdrop-blur-md border border-white/10 rounded-2xl p-2 flex flex-col gap-1 mb-2 shadow-2xl animate-in fade-in slide-in-from-bottom-4">

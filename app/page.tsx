@@ -42,7 +42,14 @@ export default function Home() {
         const allLinks = Array.from(doc.querySelectorAll('a'));
         
         // Substituir logo do Webflow pelo Sparkle
-        const brand = doc.querySelector('.w-nav-brand');
+        // Substituir logo do Webflow pelo Sparkle
+        let brand = doc.querySelector('.w-nav-brand');
+        if (!brand) {
+          // Fallback: tenta achar o link da home que tem uma imagem
+          const homeLinks = Array.from(doc.querySelectorAll('a[href="/"], a[href="#"]'));
+          brand = homeLinks.find(el => el.querySelector('img') || el.querySelector('svg')) as Element;
+        }
+
         if (brand && !brand.getAttribute('data-logo-updated')) {
           brand.innerHTML = `
             <div style="display:flex;align-items:center;gap:12px;">
@@ -53,6 +60,29 @@ export default function Home() {
             </div>
           `;
           brand.setAttribute('data-logo-updated', 'true');
+        }
+
+        // Aplica o tema Light no iframe de forma resiliente
+        const currentTheme = localStorage.getItem("theme");
+        let themeStyle = doc.getElementById('theme-style');
+        
+        if (currentTheme === "light") {
+          if (!themeStyle) {
+            themeStyle = doc.createElement('style');
+            themeStyle.id = 'theme-style';
+            doc.head.appendChild(themeStyle);
+          }
+          themeStyle.textContent = `
+            html, body { 
+              filter: invert(1) hue-rotate(180deg) brightness(1.2) !important; 
+              background-color: #ffffff !important; 
+            }
+            img, video, iframe, [style*="background-image"], .w-background-video { 
+              filter: invert(1) hue-rotate(180deg) !important; 
+            }
+          `;
+        } else if (themeStyle) {
+          themeStyle.textContent = '';
         }
 
         const cursosElements = allLinks.filter(el => (el.textContent || '').toUpperCase().includes('CURSOS') && !el.getAttribute('data-tools-injected'));
@@ -87,8 +117,7 @@ export default function Home() {
             parent.insertBefore(newBtn, cursosElement.nextSibling);
             cursosElement.setAttribute('data-tools-injected', 'true');
           });
-          
-          clearInterval(injectInterval);
+          // Removido clearInterval para garantir que injete se o Webflow re-renderizar o menu
         }
       } catch(e) {}
     }, 1000);
