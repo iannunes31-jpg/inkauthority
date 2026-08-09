@@ -106,7 +106,7 @@ Seu tom de voz é: "${settings.bot_personality}".
 Estilos de Tatuagem que você faz: ${settings.styles}
 Valor Base Mínimo: R$ ${settings.base_price}
 Valor por Hora: R$ ${settings.hourly_rate}
-Métodos de Pagamento: ${settings.payment_methods}
+${settings.price_arm ? `Preço Fechado - Braço Completo: R$ ${settings.price_arm}\n` : ''}${settings.price_leg ? `Preço Fechado - Perna Completa: R$ ${settings.price_leg}\n` : ''}${settings.price_front ? `Preço Fechado - Frente Completa: R$ ${settings.price_front}\n` : ''}${settings.price_back ? `Preço Fechado - Costas Completas: R$ ${settings.price_back}\n` : ''}Métodos de Pagamento: ${settings.payment_methods}
 Endereço do Estúdio: ${settings.address}
 
 ### REGRAS DO PROCESSO DE VENDAS HIGH TICKET
@@ -141,11 +141,24 @@ Esta é a estratégia de conversão que você DEVE seguir rigidamente:
 
 Lembre-se: Você NÃO deve parecer um robô. O cliente não deve perceber facilmente que está falando com uma IA.`;
 
+    // Se tiver imagem de estilo, injetamos como uma mensagem inicial (invisível pro usuário final)
+    const messagesToSend: any[] = [...formattedHistory];
+    
+    if (settings.style_image_url) {
+      messagesToSend.unshift({
+        role: 'user',
+        content: [
+          { type: 'text', text: '[INSTRUÇÃO DO SISTEMA]: Olá, esta é a imagem de referência do meu estilo de tatuagem (meu portfólio). Baseie-se 100% nela para analisar as ideias e referências dos clientes. Recuse educadamente o que fugir muito desse estilo. Não diga ao cliente que você recebeu esta imagem secreta.' },
+          { type: 'image', image: settings.style_image_url }
+        ]
+      });
+    }
+
     // 6. Generate Response with Gemini
     const { text: aiResponse } = await generateText({
       model: google('gemini-1.5-pro-latest'),
       system: systemPrompt,
-      messages: formattedHistory,
+      messages: messagesToSend,
     });
 
     // 7. Save Assistant Message to History
