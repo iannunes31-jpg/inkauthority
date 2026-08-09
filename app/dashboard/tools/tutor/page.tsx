@@ -7,7 +7,7 @@ import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 
 export default function AssistantPage() {
-  const { messages, sendMessage, isLoading } = useChat({
+  const { messages, append, isLoading } = useChat({
     api: "/api/chat",
     initialMessages: [
       {
@@ -23,7 +23,7 @@ export default function AssistantPage() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!input?.trim()) return;
-    if (sendMessage) sendMessage(input);
+    if (append) append({ role: 'user', content: input });
     setInput("");
   };
 
