@@ -20,20 +20,20 @@ export default function CoursePlayer() {
   const modules = [
     {
       id: 1,
-      title: "Módulo 1: Fundamentos do Realismo",
+      title: "Módulo 1: Fundamentos de Marketing",
       lessons: [
-        { id: 1, title: "Equipamentos e Máquinas", duration: "15:20", completed: true },
-        { id: 2, title: "Compreendendo Valores Tonais", duration: "22:45", completed: false },
-        { id: 3, title: "Diluição e Preparações", duration: "18:10", completed: false },
+        { id: 1, title: "O que é Posicionamento High-Ticket", duration: "15:20", completed: true },
+        { id: 2, title: "Definindo seu Cliente Ideal", duration: "22:45", completed: false },
+        { id: 3, title: "Construindo sua Marca", duration: "18:10", completed: false },
       ]
     },
     {
       id: 2,
-      title: "Módulo 2: Técnicas de Aplicação",
+      title: "Módulo 2: Instagram para Tatuadores",
       lessons: [
-        { id: 4, title: "Movimentos de Mão e Pendulo", duration: "25:30", completed: false },
-        { id: 5, title: "Saturação Sólida", duration: "30:15", completed: false },
-        { id: 6, title: "Transições Suaves", duration: "28:40", completed: false },
+        { id: 4, title: "Estratégia de Conteúdo", duration: "25:30", completed: false },
+        { id: 5, title: "Fotografia e Edição", duration: "30:15", completed: false },
+        { id: 6, title: "Atração de Clientes no Direct", duration: "28:40", completed: false },
       ]
     }
   ];
@@ -49,8 +49,8 @@ export default function CoursePlayer() {
             </Button>
           </Link>
           <div>
-            <h1 className="font-bold text-sm tracking-tight">Mastering Realism: The Complete Guide</h1>
-            <p className="text-[11px] text-muted-foreground font-light uppercase tracking-wider">Understanding Tonal Values</p>
+            <h1 className="font-bold text-sm tracking-tight">Marketing & Posicionamento: O Guia Completo</h1>
+            <p className="text-[11px] text-muted-foreground font-light uppercase tracking-wider">Definindo seu Cliente Ideal</p>
           </div>
         </div>
         
@@ -111,7 +111,7 @@ export default function CoursePlayer() {
 
           {/* Video Metadata underneath */}
           <div className="p-6 md:p-10 flex-1 overflow-y-auto bg-background">
-            <h2 className="text-2xl md:text-3xl font-bold mb-4 tracking-tighter">Understanding Tonal Values</h2>
+            <h2 className="text-2xl md:text-3xl font-bold mb-4 tracking-tighter">Definindo seu Cliente Ideal</h2>
             
             <div className="flex items-center gap-6 pb-6 border-b border-white/5 mb-6">
               <div className="flex items-center gap-3">
@@ -131,8 +131,8 @@ export default function CoursePlayer() {
             </div>
             
             <div className="prose prose-invert max-w-none text-muted-foreground text-sm leading-relaxed">
-              <p>Nesta aula fundamental, vamos explorar a importância dos valores tonais na criação de tatuagens realistas que saltam da pele. Aprenderemos como identificar as áreas de luz e sombra em uma referência fotográfica e como traduzi-las para a pele.</p>
-              <p>Você entenderá a diferença entre contraste e valor tonal, e como construir profundidade usando apenas tinta preta e wash.</p>
+              <p>Nesta aula fundamental, vamos explorar a importância do posicionamento para atrair clientes high-ticket. Aprenderemos como identificar seu público alvo e como comunicar o valor da sua arte.</p>
+              <p>Você entenderá a diferença entre ser apenas mais um tatuador e se tornar uma autoridade no seu nicho, justificando orçamentos maiores.</p>
             </div>
           </div>
         </div>
@@ -228,9 +228,9 @@ export default function CoursePlayer() {
                   <p className="text-sm text-muted-foreground px-2 mb-4">Arquivos disponíveis para esta aula:</p>
                   
                   {[
-                    { name: "Guia de Valores Tonais.pdf", size: "2.4 MB" },
-                    { name: "Referência Alta Resolução.jpg", size: "5.1 MB" },
-                    { name: "Exercício Prático.pdf", size: "1.2 MB" }
+                    { name: "Guia de Posicionamento.pdf", size: "2.4 MB" },
+                    { name: "Templates de Bio do Instagram.pdf", size: "5.1 MB" },
+                    { name: "Exercício Prático de Precificação.pdf", size: "1.2 MB" }
                   ].map((file, i) => (
                     <div key={i} className="flex items-center justify-between p-4 rounded-xl border border-white/5 bg-white/5 hover:border-white/10 transition-colors group">
                       <div className="flex items-center gap-3">
