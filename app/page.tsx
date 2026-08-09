@@ -32,6 +32,20 @@ export default function Home() {
             body { padding-top: 0 !important; margin-top: 0 !important; }
           `;
           doc.head.appendChild(s);
+          
+          // Adiciona listener para scroll
+          iframe.contentWindow?.addEventListener('message', (e) => {
+            if (e.data === 'scrollToCursos') {
+              // Webflow usa IDs ou atributos para as seções
+              const section = doc.getElementById('cursos') || doc.querySelector('[data-scroll="cursos"]') || doc.querySelector('.section-cursos');
+              if (section) {
+                section.scrollIntoView({ behavior: 'smooth' });
+              } else {
+                // Fallback: rola um pouco para baixo
+                iframe.contentWindow?.scrollTo({ top: 800, behavior: 'smooth' });
+              }
+            }
+          });
         }
 
         // Aplica tema Light/Dark dentro do iframe
@@ -73,29 +87,36 @@ export default function Home() {
 
       {/* OVERLAY DO MENU — fica por cima do iframe, substitui o nav do Webflow */}
       <div
-        className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-8"
-        style={{ height: '72px', background: 'rgba(8,8,10,0.85)', backdropFilter: 'blur(12px)', borderBottom: '1px solid rgba(255,255,255,0.06)' }}
+        className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-8 bg-background/85 backdrop-blur-md border-b border-border/20 text-foreground transition-colors"
+        style={{ height: '72px' }}
       >
         {/* LOGO */}
         <a href="/" className="flex items-center gap-3" style={{ textDecoration: 'none' }}>
-          <svg viewBox="0 0 24 24" fill="currentColor" style={{ width: 28, height: 28, color: '#f9f9f9' }}>
+          <svg viewBox="0 0 24 24" fill="currentColor" className="text-foreground" style={{ width: 28, height: 28 }}>
             <path d="M12 0C12 6.627 17.373 12 24 12C17.373 12 12 17.373 12 24C12 17.373 6.627 12 0 12C6.627 12 12 6.627 12 0Z" />
           </svg>
-          <span style={{ fontWeight: 900, fontSize: 18, letterSpacing: '-0.5px', color: 'white', textTransform: 'uppercase' }}>Ink Authority</span>
+          <span className="text-foreground" style={{ fontWeight: 900, fontSize: 18, letterSpacing: '-0.5px', textTransform: 'uppercase' }}>Ink Authority</span>
         </a>
 
         {/* LINKS DO MEIO */}
         <div className="flex items-center gap-8">
-          <a href="/" style={navLinkStyle}>HOME</a>
-          <a href="/#cursos" style={navLinkStyle}>CURSOS</a>
-          <a href="/tools" style={navLinkStyle}>TOOLS</a>
+          <a href="/" style={navLinkStyle} className="text-foreground/70 hover:text-foreground">HOME</a>
+          <a href="#cursos" onClick={(e) => {
+            e.preventDefault();
+            const iframe = document.getElementById('landing-iframe') as HTMLIFrameElement;
+            if (iframe && iframe.contentWindow) {
+              iframe.contentWindow.postMessage('scrollToCursos', '*');
+            }
+          }} style={navLinkStyle} className="text-foreground/70 hover:text-foreground">CURSOS</a>
+          <a href="/tools" style={navLinkStyle} className="text-foreground/70 hover:text-foreground">TOOLS</a>
         </div>
 
         {/* BOTÕES DA DIREITA */}
         <div className="flex items-center gap-3">
           <button
             onClick={() => setIsLoginOpen(true)}
-            style={{ background: 'none', border: 'none', color: 'rgba(238,238,242,0.7)', fontSize: 13, fontWeight: 300, letterSpacing: '0.1em', cursor: 'pointer', padding: '8px 16px' }}
+            className="text-foreground/70 hover:text-foreground"
+            style={{ background: 'none', border: 'none', fontSize: 13, fontWeight: 300, letterSpacing: '0.1em', cursor: 'pointer', padding: '8px 16px' }}
           >
             Entrar
           </button>
@@ -103,9 +124,8 @@ export default function Home() {
             href="https://pay.hotmart.com/ink-authority"
             target="_blank"
             rel="noopener noreferrer"
-            style={{ background: 'white', color: 'black', fontWeight: 700, fontSize: 13, letterSpacing: '0.05em', padding: '10px 22px', borderRadius: 9999, textDecoration: 'none', transition: 'opacity 0.2s' }}
-            onMouseOver={e => (e.currentTarget.style.opacity = '0.85')}
-            onMouseOut={e => (e.currentTarget.style.opacity = '1')}
+            className="bg-foreground text-background transition-opacity hover:opacity-85"
+            style={{ fontWeight: 700, fontSize: 13, letterSpacing: '0.05em', padding: '10px 22px', borderRadius: 9999, textDecoration: 'none' }}
           >
             Matricule-se
           </a>
@@ -130,7 +150,6 @@ export default function Home() {
 }
 
 const navLinkStyle: React.CSSProperties = {
-  color: 'rgba(238, 238, 242, 0.7)',
   fontSize: 12,
   fontWeight: 300,
   letterSpacing: '0.28em',

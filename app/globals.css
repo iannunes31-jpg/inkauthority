@@ -28,6 +28,28 @@
 }
 
 @layer base {
+  .light {
+    --color-background: #FFFFFF;
+    --color-foreground: #000000;
+    --color-card: #F5F5F5;
+    --color-card-foreground: #000000;
+    --color-popover: #F5F5F5;
+    --color-popover-foreground: #000000;
+    --color-primary: #000000;
+    --color-primary-foreground: #FFFFFF;
+    --color-secondary: #E5E5E5;
+    --color-secondary-foreground: #171717;
+    --color-muted: #F5F5F5;
+    --color-muted-foreground: #737373;
+    --color-accent: #F5F5F5;
+    --color-accent-foreground: #171717;
+    --color-border: #E5E5E5;
+    --color-input: #E5E5E5;
+    --color-ring: #000000;
+  }
+}
+
+@layer base {
   * {
     border-color: var(--color-border);
   }

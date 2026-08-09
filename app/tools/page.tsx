@@ -24,18 +24,18 @@ export default function ToolsPage() {
   };
 
   return (
-    <main className="min-h-screen bg-black text-white selection:bg-primary selection:text-black">
+    <main className="min-h-screen bg-background text-foreground selection:bg-primary selection:text-background">
       
       {/* Header Fixo */}
-      <header className="fixed top-0 w-full z-50 glass border-b border-white/5 h-20 flex items-center justify-between px-6 lg:px-12 bg-black/80 backdrop-blur-md">
+      <header className="fixed top-0 w-full z-50 glass border-b border-border/20 h-20 flex items-center justify-between px-6 lg:px-12 bg-background/80 backdrop-blur-md transition-colors">
         <div className="flex items-center gap-3 cursor-pointer" onClick={() => window.location.href = "/"}>
           <svg viewBox="0 0 24 24" fill="currentColor" className="w-8 h-8 text-primary neon-glow">
             <path d="M12 0C12 6.627 17.373 12 24 12C17.373 12 12 17.373 12 24C12 17.373 6.627 12 0 12C6.627 12 12 6.627 12 0Z" />
           </svg>
-          <span className="font-black text-xl tracking-tighter uppercase">Ink Authority</span>
+          <span className="font-black text-xl tracking-tighter uppercase text-foreground">Ink Authority</span>
         </div>
         <div className="flex items-center gap-4">
-          <Button variant="ghost" className="hover:bg-white/5" onClick={() => window.location.href = "/"}>
+          <Button variant="ghost" className="hover:bg-foreground/5 text-foreground" onClick={() => window.location.href = "/"}>
             Voltar
           </Button>
         </div>
@@ -63,13 +63,13 @@ export default function ToolsPage() {
                   Seu mentor particular 24 horas por dia. Nossa IA sugere agulhas, pigmentos e ajuda no planejamento cirúrgico.
                 </p>
                 <div className="grid grid-cols-1 gap-4 mb-8 text-left max-w-xs mx-auto">
-                  <div className="flex items-center gap-2 text-sm text-white/80">
+                  <div className="flex items-center gap-2 text-sm text-foreground/80">
                     <CheckCircle className="w-4 h-4 text-primary" /> Planejamento de Sessão
                   </div>
-                  <div className="flex items-center gap-2 text-sm text-white/80">
+                  <div className="flex items-center gap-2 text-sm text-foreground/80">
                     <CheckCircle className="w-4 h-4 text-primary" /> Análise de Pigmentos
                   </div>
-                  <div className="flex items-center gap-2 text-sm text-white/80">
+                  <div className="flex items-center gap-2 text-sm text-foreground/80">
                     <CheckCircle className="w-4 h-4 text-primary" /> Mentoria Técnica 24h
                   </div>
                 </div>
@@ -90,7 +90,7 @@ export default function ToolsPage() {
           </div>
 
           {/* Assistente de WhatsApp */}
-          <div className="glass rounded-3xl border border-white/10 overflow-hidden flex flex-col group hover:border-[#25D366]/50 transition-colors bg-white/[0.02] relative">
+          <div className="glass rounded-3xl border border-border/20 overflow-hidden flex flex-col group hover:border-[#25D366]/50 transition-colors bg-foreground/[0.02] relative">
             <div className="absolute top-4 right-4 bg-[#25D366] text-black px-3 py-1 rounded-full text-xs font-bold uppercase tracking-widest shadow-lg shadow-[#25D366]/20">
               Novo
             </div>
@@ -107,13 +107,13 @@ export default function ToolsPage() {
                   Automatize seus orçamentos. A IA conversa com os clientes no WhatsApp, entende a ideia da tattoo e já sugere valores baseados na sua tabela.
                 </p>
                 <div className="grid grid-cols-1 gap-4 mb-8 text-left max-w-xs mx-auto">
-                  <div className="flex items-center gap-2 text-sm text-white/80">
+                  <div className="flex items-center gap-2 text-sm text-foreground/80">
                     <CheckCircle className="w-4 h-4 text-[#25D366]" /> Orçamentos Automáticos
                   </div>
-                  <div className="flex items-center gap-2 text-sm text-white/80">
+                  <div className="flex items-center gap-2 text-sm text-foreground/80">
                     <CheckCircle className="w-4 h-4 text-[#25D366]" /> Agendamento de Horários
                   </div>
-                  <div className="flex items-center gap-2 text-sm text-white/80">
+                  <div className="flex items-center gap-2 text-sm text-foreground/80">
                     <CheckCircle className="w-4 h-4 text-[#25D366]" /> Triagem de Clientes 24h
                   </div>
                 </div>
@@ -135,7 +135,7 @@ export default function ToolsPage() {
         </div>
       </section>
 
-      <footer className="py-10 border-t border-white/5 text-center text-sm text-muted-foreground">
+      <footer className="py-10 border-t border-border/20 text-center text-sm text-muted-foreground">
         <p>© 2026 Ink Authority. Todos os direitos reservados.</p>
         <p className="mt-2 text-xs">Desenvolvido para criadores e tatuadores profissionais.</p>
       </footer>
