@@ -4,8 +4,23 @@ import { CheckCircle, ArrowRight, Bot } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export default function ToolsPage() {
-  const handleCheckout = (productName: string) => {
-    alert(`Redirecionando para o checkout seguro de: ${productName}.`);
+  const handleCheckout = async (productName: string, price: number) => {
+    try {
+      const response = await fetch('/api/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ productName, price }),
+      });
+      const data = await response.json();
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        alert('Erro ao iniciar checkout.');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Erro de conexão ao iniciar checkout.');
+    }
   };
 
   return (
@@ -65,7 +80,7 @@ export default function ToolsPage() {
                   <span className="text-muted-foreground">/mês</span>
                 </div>
                 <Button 
-                  onClick={() => handleCheckout("Tutor IA Especialista")}
+                  onClick={() => handleCheckout("Tutor IA Especialista", 57)}
                   className="w-full metallic-gradient text-black font-bold py-8 text-lg rounded-xl hover:scale-105 transition-transform shadow-2xl shadow-primary/20"
                 >
                   Assinar Tutor <ArrowRight className="w-5 h-5 ml-2" />
@@ -109,7 +124,7 @@ export default function ToolsPage() {
                   <span className="text-muted-foreground">/mês</span>
                 </div>
                 <Button 
-                  onClick={() => handleCheckout("Assistente WhatsApp")}
+                  onClick={() => handleCheckout("Assistente WhatsApp", 357)}
                   className="w-full bg-[#25D366] text-black hover:bg-[#25D366]/90 font-bold py-8 text-lg rounded-xl transition-colors shadow-2xl shadow-[#25D366]/20"
                 >
                   Assinar Assistente <ArrowRight className="w-5 h-5 ml-2" />
