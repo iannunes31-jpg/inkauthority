@@ -76,13 +76,16 @@ export default function AssistantPage() {
       });
       const data = await res.json();
       
-      if (data.qrcode) {
+      if (data?.base64) {
+        setQrCodeData(data.base64);
+        setConnectionStatus("Aguardando leitura do QR Code");
+      } else if (data?.qrcode) {
         setQrCodeData(data.qrcode);
         setConnectionStatus("Aguardando leitura do QR Code");
-      } else if (data.qrcode?.base64) {
+      } else if (data?.qrcode?.base64) {
         setQrCodeData(data.qrcode.base64);
         setConnectionStatus("Aguardando leitura do QR Code");
-      } else if (data.hash?.qrcode) {
+      } else if (data?.hash?.qrcode) {
         setQrCodeData(data.hash.qrcode);
         setConnectionStatus("Aguardando leitura do QR Code");
       } else {
