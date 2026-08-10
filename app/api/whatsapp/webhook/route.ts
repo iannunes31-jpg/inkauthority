@@ -247,9 +247,6 @@ Lembre-se: Você NÃO deve parecer um robô. O cliente não deve perceber facilm
     ]);
 
     // 8. Send via Evolution API
-    const evolutionUrl = process.env.EVOLUTION_API_URL || 'https://evolution-api-production-fbfd.up.railway.app'; 
-    const apiKey = process.env.EVOLUTION_API_KEY || '42A5C9B31000-47F6-8B1E-F7C6656BE1D5';
-
     if (!evolutionUrl || !apiKey) {
       return NextResponse.json({ error: 'Evolution API credentials missing' }, { status: 500 });
     }
