@@ -33,14 +33,47 @@ export async function POST(req: Request) {
     }
 
     let messageText = '';
+    let hasImage = false;
+
     if (messageData.message?.conversation) {
       messageText = messageData.message.conversation;
     } else if (messageData.message?.extendedTextMessage?.text) {
       messageText = messageData.message.extendedTextMessage.text;
+    } else if (messageData.message?.imageMessage) {
+      hasImage = true;
+      messageText = messageData.message.imageMessage.caption || '';
     }
 
-    if (!messageText) {
-      return NextResponse.json({ status: 'no_text' });
+    if (!messageText && !hasImage) {
+      return NextResponse.json({ status: 'no_text_or_media' });
+    }
+
+    // Attempt to download Base64 image from Evolution API if present
+    let base64Image: string | null = null;
+    const evolutionUrl = process.env.EVOLUTION_API_URL || 'https://evolution-api-production-fbfd.up.railway.app'; 
+    const apiKey = process.env.EVOLUTION_API_KEY || '42A5C9B31000-47F6-8B1E-F7C6656BE1D5';
+
+    if (hasImage) {
+      try {
+        const mediaRes = await fetch(`${evolutionUrl}/chat/getBase64FromMediaMessage/${instanceName}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'apikey': apiKey
+          },
+          body: JSON.stringify({ message: messageData })
+        });
+        const mediaData = await mediaRes.json();
+        if (mediaData && mediaData.base64) {
+          base64Image = mediaData.base64;
+          // Clean base64 string if it includes data: prefix
+          if (base64Image.startsWith('data:')) {
+            base64Image = base64Image.split(',')[1];
+          }
+        }
+      } catch (err) {
+        console.error("Failed to fetch image base64:", err);
+      }
     }
 
     // 1. Fetch AI Settings for this artist
@@ -75,14 +108,6 @@ export async function POST(req: Request) {
         .single();
       customer = newCustomer;
     }
-
-    // 3. Save User Message to History
-    await supabase.from('chat_history').insert({
-      clerk_user_id,
-      phone_number: remoteJid,
-      role: 'user',
-      content: messageText
-    });
 
     // 4. Fetch Conversation History (Last 10 messages to keep context)
     const { data: history } = await supabase
@@ -135,6 +160,7 @@ Esta é a estratégia de conversão que você DEVE seguir rigidamente:
 
 6. **Comportamentos Anti-Curiosos & Regras de Ouro:**
 - NÃO responda a mesma coisa duas vezes. Leia o histórico e dê continuidade à conversa.
+- Se o cliente mandar uma foto (IMAGEM ENVIADA PELO CLIENTE), dedique atenção extra para elogiar ou fazer perguntas técnicas (tamanho, anatomia, local do corpo).
 - Se o cliente pedir um estilo que não está na lista de Estilos (${settings.styles}), recuse educadamente dizendo que você não atende esse estilo.
 - Se o cliente insistir muito APENAS em preço, tente agregar valor. Se continuar focado apenas no valor barato, dispense educadamente (o estúdio é focado em qualidade e experiência).
 - Responda SEMPRE no idioma que o cliente iniciou a conversa (seja inglês, espanhol ou português).
@@ -167,6 +193,21 @@ Lembre-se: Você NÃO deve parecer um robô. O cliente não deve perceber facilm
       }
     }
 
+    // Prepare current user message with image if present
+    const currentUserParts: any[] = [];
+    if (messageText) {
+      currentUserParts.push({ type: 'text', text: messageText });
+    }
+    if (base64Image) {
+      currentUserParts.push({ type: 'image', image: base64Image });
+    }
+    if (currentUserParts.length > 0) {
+      messagesToSend.push({
+        role: 'user',
+        content: currentUserParts
+      });
+    }
+
     // 6. Generate Response with Gemini
     let vertex;
     try {
@@ -188,13 +229,22 @@ Lembre-se: Você NÃO deve parecer um robô. O cliente não deve perceber facilm
       messages: messagesToSend,
     });
 
-    // 7. Save Assistant Message to History
-    await supabase.from('chat_history').insert({
-      clerk_user_id,
-      phone_number: remoteJid,
-      role: 'assistant',
-      content: aiResponse
-    });
+    // 7. Save Messages to History (User and Assistant)
+    const dbText = hasImage ? `[IMAGEM ENVIADA PELO CLIENTE] ${messageText}` : messageText;
+    await supabase.from('chat_history').insert([
+      {
+        clerk_user_id,
+        phone_number: remoteJid,
+        role: 'user',
+        content: dbText
+      },
+      {
+        clerk_user_id,
+        phone_number: remoteJid,
+        role: 'assistant',
+        content: aiResponse
+      }
+    ]);
 
     // 8. Send via Evolution API
     const evolutionUrl = process.env.EVOLUTION_API_URL || 'https://evolution-api-production-fbfd.up.railway.app'; 
