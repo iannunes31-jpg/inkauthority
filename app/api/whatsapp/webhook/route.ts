@@ -145,13 +145,20 @@ Lembre-se: Você NÃO deve parecer um robô. O cliente não deve perceber facilm
     const messagesToSend: any[] = [...formattedHistory];
     
     if (settings.style_image_url) {
-      messagesToSend.unshift({
-        role: 'user',
-        content: [
-          { type: 'text', text: '[INSTRUÇÃO DO SISTEMA]: Olá, esta é a imagem de referência do meu estilo de tatuagem (meu portfólio). Baseie-se 100% nela para analisar as ideias e referências dos clientes. Recuse educadamente o que fugir muito desse estilo. Não diga ao cliente que você recebeu esta imagem secreta.' },
-          { type: 'image', image: settings.style_image_url }
-        ]
-      });
+      const urls = settings.style_image_url.split(',').filter((u: string) => u.trim() !== '');
+      if (urls.length > 0) {
+        const contentParts: any[] = [
+          { type: 'text', text: '[INSTRUÇÃO DO SISTEMA]: Olá, estas são as imagens de referência do meu estilo de tatuagem (meu portfólio). Baseie-se 100% nelas para analisar as ideias e referências dos clientes. Recuse educadamente o que fugir muito desse estilo. Não diga ao cliente que você recebeu esta imagem secreta.' }
+        ];
+        urls.forEach((url: string) => {
+          contentParts.push({ type: 'image', image: url.trim() });
+        });
+        
+        messagesToSend.unshift({
+          role: 'user',
+          content: contentParts
+        });
+      }
     }
 
     // 6. Generate Response with Gemini
