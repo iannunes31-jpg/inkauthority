@@ -60,7 +60,7 @@ export async function POST(req: Request) {
     const evolutionUrl = process.env.EVOLUTION_API_URL || 'https://evolution-api-production-fbfd.up.railway.app'; 
     const apiKey = process.env.EVOLUTION_API_KEY || '42A5C9B31000-47F6-8B1E-F7C6656BE1D5';
 
-    if (hasImage || hasAudio) {
+    if (hasImage) {
       try {
         const mediaRes = await fetch(`${evolutionUrl}/chat/getBase64FromMediaMessage/${instanceName}`, {
           method: 'POST',
