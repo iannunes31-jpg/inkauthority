@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { createVertex } from '@ai-sdk/google-vertex';
 import { generateText } from 'ai';
 import { createClient } from '@supabase/supabase-js';
+import { GoogleAuth } from 'google-auth-library';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
@@ -34,6 +35,8 @@ export async function POST(req: Request) {
 
     let messageText = '';
     let hasImage = false;
+    let hasAudio = false;
+    let mimeType = '';
 
     if (messageData.message?.conversation) {
       messageText = messageData.message.conversation;
@@ -41,19 +44,23 @@ export async function POST(req: Request) {
       messageText = messageData.message.extendedTextMessage.text;
     } else if (messageData.message?.imageMessage) {
       hasImage = true;
+      mimeType = messageData.message.imageMessage.mimetype || 'image/jpeg';
       messageText = messageData.message.imageMessage.caption || '';
+    } else if (messageData.message?.audioMessage) {
+      hasAudio = true;
+      mimeType = messageData.message.audioMessage.mimetype || 'audio/ogg';
     }
 
-    if (!messageText && !hasImage) {
+    if (!messageText && !hasImage && !hasAudio) {
       return NextResponse.json({ status: 'no_text_or_media' });
     }
 
-    // Attempt to download Base64 image from Evolution API if present
-    let base64Image: string | null = null;
+    // Attempt to download Base64 image/audio from Evolution API if present
+    let base64Media: string | null = null;
     const evolutionUrl = process.env.EVOLUTION_API_URL || 'https://evolution-api-production-fbfd.up.railway.app'; 
     const apiKey = process.env.EVOLUTION_API_KEY || '42A5C9B31000-47F6-8B1E-F7C6656BE1D5';
 
-    if (hasImage) {
+    if (hasImage || hasAudio) {
       try {
         const mediaRes = await fetch(`${evolutionUrl}/chat/getBase64FromMediaMessage/${instanceName}`, {
           method: 'POST',
@@ -65,14 +72,14 @@ export async function POST(req: Request) {
         });
         const mediaData = await mediaRes.json();
         if (mediaData && mediaData.base64) {
-          base64Image = mediaData.base64 as string;
+          base64Media = mediaData.base64 as string;
           // Clean base64 string if it includes data: prefix
-          if (base64Image && base64Image.startsWith('data:')) {
-            base64Image = base64Image.split(',')[1];
+          if (base64Media && base64Media.startsWith('data:')) {
+            base64Media = base64Media.split(',')[1];
           }
         }
       } catch (err) {
-        console.error("Failed to fetch image base64:", err);
+        console.error("Failed to fetch media base64:", err);
       }
     }
 
@@ -161,6 +168,8 @@ Esta é a estratégia de conversão que você DEVE seguir rigidamente:
 6. **Comportamentos Anti-Curiosos & Regras de Ouro:**
 - NÃO responda a mesma coisa duas vezes. Leia o histórico e dê continuidade à conversa.
 - Se o cliente mandar uma foto (IMAGEM ENVIADA PELO CLIENTE), dedique atenção extra para elogiar ou fazer perguntas técnicas (tamanho, anatomia, local do corpo).
+- Se o cliente mandar um ÁUDIO (ÁUDIO RECEBIDO) que seja longo ou conte uma história, ou se a sua resposta for complexa e humanizada, responda também em formato de áudio.
+- PARA RESPONDER COM ÁUDIO DE VOZ, sua resposta DEVE obrigatoriamente começar exatamente com a tag [AUDIO], seguida do texto que será falado. Exemplo: "[AUDIO] Oi fulano, tudo bem? Olha, sobre a sua ideia..." (Apenas o texto após a tag será convertido em voz, não coloque emojis que não podem ser lidos).
 - Se o cliente pedir um estilo que não está na lista de Estilos (${settings.styles}), recuse educadamente dizendo que você não atende esse estilo.
 - Se o cliente insistir muito APENAS em preço, tente agregar valor. Se continuar focado apenas no valor barato, dispense educadamente (o estúdio é focado em qualidade e experiência).
 - Responda SEMPRE no idioma que o cliente iniciou a conversa (seja inglês, espanhol ou português).
@@ -193,13 +202,24 @@ Lembre-se: Você NÃO deve parecer um robô. O cliente não deve perceber facilm
       }
     }
 
-    // Prepare current user message with image if present
+    // Prepare current user message with image or audio if present
     const currentUserParts: any[] = [];
     if (messageText) {
       currentUserParts.push({ type: 'text', text: messageText });
+    } else if (hasAudio) {
+      currentUserParts.push({ type: 'text', text: '[ÁUDIO RECEBIDO DO CLIENTE]' });
     }
-    if (base64Image) {
-      currentUserParts.push({ type: 'image', image: base64Image });
+
+    if (base64Media) {
+      if (hasImage) {
+        currentUserParts.push({ type: 'image', image: base64Media });
+      } else if (hasAudio) {
+        currentUserParts.push({ 
+          type: 'file', 
+          data: base64Media, 
+          mimeType: mimeType.split(';')[0] || 'audio/ogg' 
+        });
+      }
     }
     if (currentUserParts.length > 0) {
       messagesToSend.push({
@@ -230,13 +250,16 @@ Lembre-se: Você NÃO deve parecer um robô. O cliente não deve perceber facilm
     });
 
     // 7. Save Messages to History (User and Assistant)
-    const dbText = hasImage ? `[IMAGEM ENVIADA PELO CLIENTE] ${messageText}` : messageText;
+    let dbUserText = messageText;
+    if (hasImage) dbUserText = `[IMAGEM ENVIADA PELO CLIENTE] ${messageText}`;
+    if (hasAudio) dbUserText = `[ÁUDIO ENVIADO PELO CLIENTE] ${messageText || ''}`;
+
     await supabase.from('chat_history').insert([
       {
         clerk_user_id,
         phone_number: remoteJid,
         role: 'user',
-        content: dbText
+        content: dbUserText
       },
       {
         clerk_user_id,
@@ -246,22 +269,94 @@ Lembre-se: Você NÃO deve parecer um robô. O cliente não deve perceber facilm
       }
     ]);
 
-    // 8. Send via Evolution API
+    // 8. Process Audio (TTS) & Prepare Evolution Request
+    let isAudioResponse = aiResponse.trim().startsWith('[AUDIO]');
+    let finalOutputText = isAudioResponse ? aiResponse.replace('[AUDIO]', '').trim() : aiResponse;
+    let base64TTS: string | null = null;
+
+    if (isAudioResponse) {
+      try {
+        const credentials = JSON.parse(process.env.GOOGLE_VERTEX_CREDENTIALS!);
+        const auth = new GoogleAuth({
+          credentials,
+          scopes: ['https://www.googleapis.com/auth/cloud-platform']
+        });
+        const client = await auth.getClient();
+        const tokenResponse = await client.getAccessToken();
+        const accessToken = tokenResponse.token;
+
+        const ttsRes = await fetch('https://texttospeech.googleapis.com/v1/text:synthesize', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${accessToken}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            input: { text: finalOutputText },
+            voice: { languageCode: 'pt-BR', name: 'pt-BR-Journey-D' }, // Realistic Journey Voice
+            audioConfig: { audioEncoding: 'OGG_OPUS', speakingRate: 1.1 }
+          })
+        });
+
+        const ttsData = await ttsRes.json();
+        if (ttsData.audioContent) {
+          base64TTS = ttsData.audioContent;
+        } else {
+          console.error("TTS Error:", ttsData);
+          isAudioResponse = false; // fallback to text
+        }
+      } catch (err) {
+        console.error("TTS generation failed:", err);
+        isAudioResponse = false;
+      }
+    }
+
     if (!evolutionUrl || !apiKey) {
       return NextResponse.json({ error: 'Evolution API credentials missing' }, { status: 500 });
     }
 
-    const response = await fetch(`${evolutionUrl}/message/sendText/${instanceName}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'apikey': apiKey
-      },
-      body: JSON.stringify({
-        number: remoteJid,
-        text: aiResponse
-      })
-    });
+    // Dynamic delay logic (simulating typing/recording speed)
+    // Avg typing speed: 4 chars/sec. Avg speaking: 2 chars/sec.
+    // Minimum 3000ms delay for humanization
+    let delayMs = 3000; 
+    if (isAudioResponse) {
+       delayMs += Math.min(finalOutputText.length * 75, 45000); 
+    } else {
+       delayMs += Math.min(finalOutputText.length * 35, 30000);
+    }
+    
+    // Fallback if Evolution doesn't support massive delay inline
+    // We send via Evolution API using the delay param
+    if (isAudioResponse && base64TTS) {
+      await fetch(`${evolutionUrl}/message/sendWhatsAppAudio/${instanceName}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': apiKey
+        },
+        body: JSON.stringify({
+          number: remoteJid,
+          audio: `data:audio/ogg;base64,${base64TTS}`,
+          encoding: true,
+          delay: delayMs,
+          presence: 'recording'
+        })
+      });
+    } else {
+      await fetch(`${evolutionUrl}/message/sendText/${instanceName}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': apiKey
+        },
+        body: JSON.stringify({
+          number: remoteJid,
+          text: finalOutputText,
+          delay: delayMs,
+          presence: 'typing'
+        })
+      });
+    }
 
     return NextResponse.json({ status: 'success' });
   } catch (error) {
