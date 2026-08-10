@@ -168,8 +168,7 @@ Esta é a estratégia de conversão que você DEVE seguir rigidamente:
 6. **Comportamentos Anti-Curiosos & Regras de Ouro:**
 - NÃO responda a mesma coisa duas vezes. Leia o histórico e dê continuidade à conversa.
 - Se o cliente mandar uma foto (IMAGEM ENVIADA PELO CLIENTE), dedique atenção extra para elogiar ou fazer perguntas técnicas (tamanho, anatomia, local do corpo).
-- Se o cliente mandar um ÁUDIO (ÁUDIO RECEBIDO) que seja longo ou conte uma história, ou se a sua resposta for complexa e humanizada, responda também em formato de áudio.
-- PARA RESPONDER COM ÁUDIO DE VOZ, sua resposta DEVE obrigatoriamente começar exatamente com a tag [AUDIO], seguida do texto que será falado. Exemplo: "[AUDIO] Oi fulano, tudo bem? Olha, sobre a sua ideia..." (Apenas o texto após a tag será convertido em voz, não coloque emojis que não podem ser lidos).
+- Se o cliente mandar um ÁUDIO (ÁUDIO RECEBIDO), aja normalmente e responda no texto abordando o que ele falou no áudio.
 - Se o cliente pedir um estilo que não está na lista de Estilos (${settings.styles}), recuse educadamente dizendo que você não atende esse estilo.
 - Se o cliente insistir muito APENAS em preço, tente agregar valor. Se continuar focado apenas no valor barato, dispense educadamente (o estúdio é focado em qualidade e experiência).
 - Responda SEMPRE no idioma que o cliente iniciou a conversa (seja inglês, espanhol ou português).
@@ -269,94 +268,28 @@ Lembre-se: Você NÃO deve parecer um robô. O cliente não deve perceber facilm
       }
     ]);
 
-    // 8. Process Audio (TTS) & Prepare Evolution Request
-    let isAudioResponse = aiResponse.trim().startsWith('[AUDIO]');
-    let finalOutputText = isAudioResponse ? aiResponse.replace('[AUDIO]', '').trim() : aiResponse;
-    let base64TTS: string | null = null;
-
-    if (isAudioResponse) {
-      try {
-        const credentials = JSON.parse(process.env.GOOGLE_VERTEX_CREDENTIALS!);
-        const auth = new GoogleAuth({
-          credentials,
-          scopes: ['https://www.googleapis.com/auth/cloud-platform']
-        });
-        const client = await auth.getClient();
-        const tokenResponse = await client.getAccessToken();
-        const accessToken = tokenResponse.token;
-
-        const ttsRes = await fetch('https://texttospeech.googleapis.com/v1/text:synthesize', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${accessToken}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            input: { text: finalOutputText },
-            voice: { languageCode: 'pt-BR', name: 'pt-BR-Journey-D' }, // Realistic Journey Voice
-            audioConfig: { audioEncoding: 'OGG_OPUS', speakingRate: 1.1 }
-          })
-        });
-
-        const ttsData = await ttsRes.json();
-        if (ttsData.audioContent) {
-          base64TTS = ttsData.audioContent;
-        } else {
-          console.error("TTS Error:", ttsData);
-          isAudioResponse = false; // fallback to text
-        }
-      } catch (err) {
-        console.error("TTS generation failed:", err);
-        isAudioResponse = false;
-      }
-    }
-
+    // 8. Dynamic delay logic (simulating typing speed)
+    // Vercel Serverless Functions timeout after 10s on Hobby plan.
+    // For text (Gemini 2-3s), we can afford a dynamic delay up to 4000ms.
+    let delayMs = 500 + Math.min(aiResponse.length * 15, 4000);
+    
     if (!evolutionUrl || !apiKey) {
       return NextResponse.json({ error: 'Evolution API credentials missing' }, { status: 500 });
     }
 
-    // Dynamic delay logic (simulating typing/recording speed)
-    // Vercel Serverless Functions timeout after 10s on Hobby plan.
-    // To prevent Vercel 504 Gateway Timeout, we MUST keep the total request time under 10s!
-    // Since Gemini (2-3s) + Google TTS (1-2s) already takes 5s, audio gets only 500ms delay.
-    // For text (Gemini 2-3s), we can afford a dynamic delay up to 4000ms.
-    let delayMs = 500;
-    if (!isAudioResponse) {
-       delayMs += Math.min(finalOutputText.length * 15, 4000);
-    }
-    
-    // Fallback if Evolution doesn't support massive delay inline
-    // We send via Evolution API using the delay param
-    if (isAudioResponse && base64TTS) {
-      await fetch(`${evolutionUrl}/message/sendWhatsAppAudio/${instanceName}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'apikey': apiKey
-        },
-        body: JSON.stringify({
-          number: remoteJid,
-          audio: `data:audio/ogg;base64,${base64TTS}`,
-          encoding: true,
-          delay: delayMs,
-          presence: 'recording'
-        })
-      });
-    } else {
-      await fetch(`${evolutionUrl}/message/sendText/${instanceName}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'apikey': apiKey
-        },
-        body: JSON.stringify({
-          number: remoteJid,
-          text: finalOutputText,
-          delay: delayMs,
-          presence: 'typing'
-        })
-      });
-    }
+    await fetch(`${evolutionUrl}/message/sendText/${instanceName}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': apiKey
+      },
+      body: JSON.stringify({
+        number: remoteJid,
+        text: aiResponse,
+        delay: delayMs,
+        presence: 'typing'
+      })
+    });
 
     return NextResponse.json({ status: 'success' });
   } catch (error) {
