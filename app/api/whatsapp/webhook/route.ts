@@ -163,7 +163,7 @@ Lembre-se: Você NÃO deve parecer um robô. O cliente não deve perceber facilm
 
     // 6. Generate Response with Gemini
     const { text: aiResponse } = await generateText({
-      model: google('gemini-1.5-pro-latest'),
+      model: google('gemini-1.5-flash'),
       system: systemPrompt,
       messages: messagesToSend,
     });

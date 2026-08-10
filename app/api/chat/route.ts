@@ -18,7 +18,7 @@ export async function POST(req: Request) {
 
     // Chamada para a API do Google Gemini com streaming (Vercel AI SDK)
     const result = streamText({
-      model: google('gemini-1.5-pro-latest'),
+      model: google('gemini-1.5-flash'),
       messages,
       system: `Você é o Tutor Oficial de Inteligência Artificial da "Ink Authority", uma plataforma online de cursos de tatuagem para tatuadores profissionais e iniciantes. 
       Seu tom deve ser amigável, direto, respeitoso e focado em arte e técnica de tatuagem. 
@@ -31,10 +31,10 @@ export async function POST(req: Request) {
     });
 
     return result.toTextStreamResponse();
-  } catch (error) {
+  } catch (error: any) {
     console.error("Erro no Chat API:", error);
     return new Response(
-      JSON.stringify({ error: "Erro interno no servidor." }), 
+      JSON.stringify({ error: error?.message || "Erro interno no servidor." }), 
       { status: 500, headers: { 'Content-Type': 'application/json' } }
     );
   }
