@@ -65,9 +65,9 @@ export async function POST(req: Request) {
         });
         const mediaData = await mediaRes.json();
         if (mediaData && mediaData.base64) {
-          base64Image = mediaData.base64;
+          base64Image = mediaData.base64 as string;
           // Clean base64 string if it includes data: prefix
-          if (base64Image.startsWith('data:')) {
+          if (base64Image && base64Image.startsWith('data:')) {
             base64Image = base64Image.split(',')[1];
           }
         }
