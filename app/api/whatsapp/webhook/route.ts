@@ -317,10 +317,13 @@ Lembre-se: Você NÃO deve parecer um robô. O cliente não deve perceber facilm
 
     // Dynamic delay logic (simulating typing/recording speed)
     // Vercel Serverless Functions timeout after 10s on Hobby plan.
-    // Evolution API blocks the HTTP request during the delay.
     // To prevent Vercel 504 Gateway Timeout, we MUST keep the total request time under 10s!
-    // Since Gemini (2-3s) + Google TTS (1-2s) already takes 5s, we can't add any significant delay.
+    // Since Gemini (2-3s) + Google TTS (1-2s) already takes 5s, audio gets only 500ms delay.
+    // For text (Gemini 2-3s), we can afford a dynamic delay up to 4000ms.
     let delayMs = 500;
+    if (!isAudioResponse) {
+       delayMs += Math.min(finalOutputText.length * 15, 4000);
+    }
     
     // Fallback if Evolution doesn't support massive delay inline
     // We send via Evolution API using the delay param
