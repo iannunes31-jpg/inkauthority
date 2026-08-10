@@ -175,26 +175,35 @@ Esta é a estratégia de conversão que você DEVE seguir rigidamente:
 
 Lembre-se: Você NÃO deve parecer um robô. O cliente não deve perceber facilmente que está falando com uma IA.`;
 
-    // Se tiver imagem de estilo, injetamos como uma mensagem inicial (invisível pro usuário final)
+    // Se o cliente enviou uma foto E o tatuador tem imagens de estilo, baixamos as imagens para o Gemini comparar
     const messagesToSend: any[] = [...formattedHistory];
     
-    if (settings.style_image_url) {
+    if (settings.style_image_url && hasImage) {
       const urls = settings.style_image_url.split(',').filter((u: string) => u.trim() !== '');
       if (urls.length > 0) {
-        const contentParts: any[] = [
-          { type: 'text', text: '[INSTRUÇÃO DO SISTEMA]: Olá, estas são as imagens de referência do meu estilo de tatuagem (meu portfólio). Baseie-se 100% nelas para analisar as ideias e referências dos clientes. Recuse educadamente o que fugir muito desse estilo. Não diga ao cliente que você recebeu esta imagem secreta. Links: ' + urls.join(', ') }
-        ];
-        
-        messagesToSend.unshift(
-          {
-            role: 'user',
-            content: contentParts
-          },
-          {
-            role: 'assistant',
-            content: 'Entendido. Usarei essas imagens como referência para o estilo do estúdio.'
-          }
-        );
+        try {
+          const contentParts: any[] = [
+            { type: 'text', text: '[INSTRUÇÃO DO SISTEMA]: O cliente acabou de enviar uma imagem de referência. Abaixo estão as imagens do meu portfólio. Analise se a referência do cliente se encaixa no meu estilo. Se fugir muito, recuse educadamente e explique o porquê baseado no meu portfólio.' }
+          ];
+          
+          // Fetch all images in parallel to save time
+          const base64Images = await Promise.all(urls.map(async (url: string) => {
+            const res = await fetch(url.trim());
+            const arrayBuffer = await res.arrayBuffer();
+            return Buffer.from(arrayBuffer).toString('base64');
+          }));
+          
+          base64Images.forEach(base64 => {
+            contentParts.push({ type: 'image', image: base64 });
+          });
+
+          messagesToSend.unshift(
+            { role: 'user', content: contentParts },
+            { role: 'assistant', content: 'Entendido. Compararei a referência do cliente com o portfólio.' }
+          );
+        } catch (e) {
+          console.error("Error fetching portfolio images:", e);
+        }
       }
     }
 
