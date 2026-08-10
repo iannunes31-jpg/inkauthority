@@ -1,4 +1,4 @@
-import { createGoogleGenerativeAI } from '@ai-sdk/google';
+import { createVertex } from '@ai-sdk/google-vertex';
 import { streamText } from 'ai';
 
 // Permitir tempo maior de execução no servidor (Edge)
@@ -9,20 +9,33 @@ export async function POST(req: Request) {
     const { messages } = await req.json();
 
     // Verificação de segurança (se o usuário não colocou a chave ainda)
-    if (!process.env.GEMINI_API_KEY) {
+    if (!process.env.GOOGLE_VERTEX_CREDENTIALS) {
       return new Response(
-        JSON.stringify({ error: "API Key do Gemini não configurada. Fale com o Administrador." }), 
+        JSON.stringify({ error: "Credenciais do Vertex AI não configuradas (GOOGLE_VERTEX_CREDENTIALS). Fale com o Administrador." }), 
         { status: 500, headers: { 'Content-Type': 'application/json' } }
       );
     }
 
-    const google = createGoogleGenerativeAI({
-      apiKey: process.env.GEMINI_API_KEY,
-    });
+    let vertex;
+    try {
+      const credentials = JSON.parse(process.env.GOOGLE_VERTEX_CREDENTIALS);
+      vertex = createVertex({
+        project: credentials.project_id,
+        location: 'us-central1', // Região padrão recomendada para Gemini no Vertex
+        googleAuthOptions: {
+          credentials
+        }
+      });
+    } catch (parseError: any) {
+      return new Response(
+        JSON.stringify({ error: "O JSON do Vertex AI (GOOGLE_VERTEX_CREDENTIALS) é inválido ou está mal formatado." }), 
+        { status: 500, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
 
-    // Chamada para a API do Google Gemini com streaming (Vercel AI SDK)
+    // Chamada para a API do Google Vertex AI com streaming (Vercel AI SDK)
     const result = streamText({
-      model: google('gemini-2.5-flash'),
+      model: vertex('gemini-1.5-flash'), // Usando 1.5-flash que é o padrão mais estável no Vertex
       messages,
       system: `Você é o Tutor Oficial de Inteligência Artificial da "Ink Authority", uma plataforma online de cursos de tatuagem para tatuadores profissionais e iniciantes. 
       Seu tom deve ser amigável, direto, respeitoso e focado em arte e técnica de tatuagem. 

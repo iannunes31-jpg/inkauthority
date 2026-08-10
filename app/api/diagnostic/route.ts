@@ -1,13 +1,12 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { createGoogleGenerativeAI } from '@ai-sdk/google';
+import { createVertex } from '@ai-sdk/google-vertex';
 import { generateText } from 'ai';
 
 export async function GET() {
   const diagnostics: any = {
     env: {
-      hasGeminiKey: !!process.env.GEMINI_API_KEY,
-      geminiKeyPrefix: process.env.GEMINI_API_KEY ? process.env.GEMINI_API_KEY.substring(0, 4) : null,
+      hasVertexCredentials: !!process.env.GOOGLE_VERTEX_CREDENTIALS,
       hasEvolutionUrl: !!process.env.EVOLUTION_API_URL,
       hasEvolutionKey: !!process.env.EVOLUTION_API_KEY,
       hasSupabaseUrl: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -34,17 +33,27 @@ export async function GET() {
       diagnostics.tests.supabase = 'skipped_missing_keys';
     }
 
-    // Test Gemini
-    if (process.env.GEMINI_API_KEY) {
-      const google = createGoogleGenerativeAI({ apiKey: process.env.GEMINI_API_KEY });
-      const { text } = await generateText({
-        model: google('gemini-2.5-flash'),
-        prompt: 'Say the word OK',
-      });
-      diagnostics.tests.gemini = 'success';
-      diagnostics.geminiResponse = text;
+    // Test Gemini (Vertex AI)
+    if (process.env.GOOGLE_VERTEX_CREDENTIALS) {
+      try {
+        const credentials = JSON.parse(process.env.GOOGLE_VERTEX_CREDENTIALS);
+        const vertex = createVertex({
+          project: credentials.project_id,
+          location: 'us-central1',
+          googleAuthOptions: { credentials }
+        });
+        const { text } = await generateText({
+          model: vertex('gemini-1.5-flash'),
+          prompt: 'Say the word OK',
+        });
+        diagnostics.tests.gemini = 'success';
+        diagnostics.geminiResponse = text;
+      } catch (e: any) {
+        diagnostics.tests.gemini = 'failed';
+        diagnostics.geminiError = e.message;
+      }
     } else {
-      diagnostics.tests.gemini = 'skipped_missing_key';
+      diagnostics.tests.gemini = 'skipped_missing_vertex_json';
     }
 
   } catch (err: any) {

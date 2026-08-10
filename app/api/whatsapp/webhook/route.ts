@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { createGoogleGenerativeAI } from '@ai-sdk/google';
+import { createVertex } from '@ai-sdk/google-vertex';
 import { generateText } from 'ai';
 import { createClient } from '@supabase/supabase-js';
 
@@ -168,9 +168,22 @@ Lembre-se: Você NÃO deve parecer um robô. O cliente não deve perceber facilm
     }
 
     // 6. Generate Response with Gemini
-    const google = createGoogleGenerativeAI({ apiKey: process.env.GEMINI_API_KEY });
+    let vertex;
+    try {
+      if (!process.env.GOOGLE_VERTEX_CREDENTIALS) throw new Error('Missing GOOGLE_VERTEX_CREDENTIALS');
+      const credentials = JSON.parse(process.env.GOOGLE_VERTEX_CREDENTIALS);
+      vertex = createVertex({
+        project: credentials.project_id,
+        location: 'us-central1',
+        googleAuthOptions: { credentials }
+      });
+    } catch (e: any) {
+      console.error("Vertex Auth Error:", e);
+      return NextResponse.json({ error: 'Vertex AI config error' }, { status: 500 });
+    }
+
     const { text: aiResponse } = await generateText({
-      model: google('gemini-2.5-flash'),
+      model: vertex('gemini-1.5-flash'),
       system: systemPrompt,
       messages: messagesToSend,
     });
