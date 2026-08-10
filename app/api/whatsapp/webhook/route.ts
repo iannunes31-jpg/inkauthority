@@ -182,11 +182,8 @@ Lembre-se: Você NÃO deve parecer um robô. O cliente não deve perceber facilm
       const urls = settings.style_image_url.split(',').filter((u: string) => u.trim() !== '');
       if (urls.length > 0) {
         const contentParts: any[] = [
-          { type: 'text', text: '[INSTRUÇÃO DO SISTEMA]: Olá, estas são as imagens de referência do meu estilo de tatuagem (meu portfólio). Baseie-se 100% nelas para analisar as ideias e referências dos clientes. Recuse educadamente o que fugir muito desse estilo. Não diga ao cliente que você recebeu esta imagem secreta.' }
+          { type: 'text', text: '[INSTRUÇÃO DO SISTEMA]: Olá, estas são as imagens de referência do meu estilo de tatuagem (meu portfólio). Baseie-se 100% nelas para analisar as ideias e referências dos clientes. Recuse educadamente o que fugir muito desse estilo. Não diga ao cliente que você recebeu esta imagem secreta. Links: ' + urls.join(', ') }
         ];
-        urls.forEach((url: string) => {
-          contentParts.push({ type: 'image', image: url.trim() });
-        });
         
         messagesToSend.unshift(
           {
