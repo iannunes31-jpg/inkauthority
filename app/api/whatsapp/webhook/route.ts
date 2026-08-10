@@ -183,7 +183,7 @@ Lembre-se: Você NÃO deve parecer um robô. O cliente não deve perceber facilm
     }
 
     const { text: aiResponse } = await generateText({
-      model: vertex('gemini-1.5-flash'),
+      model: vertex('gemini-2.5-flash'),
       system: systemPrompt,
       messages: messagesToSend,
     });

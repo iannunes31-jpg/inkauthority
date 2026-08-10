@@ -35,7 +35,7 @@ export async function POST(req: Request) {
 
     // Chamada para a API do Google Vertex AI com streaming (Vercel AI SDK)
     const result = streamText({
-      model: vertex('gemini-1.5-flash'), // Usando 1.5-flash que é o padrão mais estável no Vertex
+      model: vertex('gemini-2.5-flash'), // Usando 2.5-flash conforme solicitado
       messages,
       system: `Você é o Tutor Oficial de Inteligência Artificial da "Ink Authority", uma plataforma online de cursos de tatuagem para tatuadores profissionais e iniciantes. 
       Seu tom deve ser amigável, direto, respeitoso e focado em arte e técnica de tatuagem. 
