@@ -154,10 +154,16 @@ Lembre-se: Você NÃO deve parecer um robô. O cliente não deve perceber facilm
           contentParts.push({ type: 'image', image: url.trim() });
         });
         
-        messagesToSend.unshift({
-          role: 'user',
-          content: contentParts
-        });
+        messagesToSend.unshift(
+          {
+            role: 'user',
+            content: contentParts
+          },
+          {
+            role: 'assistant',
+            content: 'Entendido. Usarei essas imagens como referência para o estilo do estúdio.'
+          }
+        );
       }
     }
 
