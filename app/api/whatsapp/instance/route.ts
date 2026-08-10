@@ -47,21 +47,21 @@ export async function POST(req: Request) {
         });
         
         connectData = await createResponse.json();
-
-        // Logo após criar, seta o Webhook
-        await fetch(`${evolutionUrl}/webhook/set/${instanceName}`, {
-          method: 'POST',
-          headers: { 'apikey': apiKey, 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            webhook: {
-              url: webhookUrl,
-              webhook_by_events: false,
-              webhook_base64: false,
-              events: ["MESSAGES_UPSERT"]
-            }
-          })
-        });
       }
+
+      // Seta o Webhook sempre que conectar para garantir a URL correta
+      await fetch(`${evolutionUrl}/webhook/set/${instanceName}`, {
+        method: 'POST',
+        headers: { 'apikey': apiKey, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          webhook: {
+            url: webhookUrl,
+            webhook_by_events: false,
+            webhook_base64: false,
+            events: ["MESSAGES_UPSERT"]
+          }
+        })
+      });
 
       return NextResponse.json(connectData);
     }
