@@ -1,4 +1,4 @@
-import { google } from '@ai-sdk/google';
+import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import { streamText } from 'ai';
 
 // Permitir tempo maior de execução no servidor (Edge)
@@ -15,6 +15,10 @@ export async function POST(req: Request) {
         { status: 500, headers: { 'Content-Type': 'application/json' } }
       );
     }
+
+    const google = createGoogleGenerativeAI({
+      apiKey: process.env.GEMINI_API_KEY,
+    });
 
     // Chamada para a API do Google Gemini com streaming (Vercel AI SDK)
     const result = streamText({

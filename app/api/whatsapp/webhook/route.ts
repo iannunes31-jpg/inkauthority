@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { google } from '@ai-sdk/google';
+import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import { generateText } from 'ai';
 import { createClient } from '@supabase/supabase-js';
 
@@ -162,6 +162,7 @@ Lembre-se: Você NÃO deve parecer um robô. O cliente não deve perceber facilm
     }
 
     // 6. Generate Response with Gemini
+    const google = createGoogleGenerativeAI({ apiKey: process.env.GEMINI_API_KEY });
     const { text: aiResponse } = await generateText({
       model: google('gemini-1.5-flash'),
       system: systemPrompt,
