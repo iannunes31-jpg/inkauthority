@@ -22,7 +22,7 @@ export async function POST(req: Request) {
 
     // Chamada para a API do Google Gemini com streaming (Vercel AI SDK)
     const result = streamText({
-      model: google('gemini-1.5-flash'),
+      model: google('gemini-2.5-flash'),
       messages,
       system: `Você é o Tutor Oficial de Inteligência Artificial da "Ink Authority", uma plataforma online de cursos de tatuagem para tatuadores profissionais e iniciantes. 
       Seu tom deve ser amigável, direto, respeitoso e focado em arte e técnica de tatuagem. 
