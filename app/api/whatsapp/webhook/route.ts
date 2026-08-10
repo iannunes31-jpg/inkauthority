@@ -212,13 +212,8 @@ Lembre-se: Você NÃO deve parecer um robô. O cliente não deve perceber facilm
     if (base64Media) {
       if (hasImage) {
         currentUserParts.push({ type: 'image', image: base64Media });
-      } else if (hasAudio) {
-        currentUserParts.push({ 
-          type: 'file', 
-          data: base64Media, 
-          mimeType: mimeType.split(';')[0] || 'audio/ogg' 
-        });
-      }
+      } 
+      // Skip injecting the audio file directly into Gemini for now to avoid SDK crashes
     }
     if (currentUserParts.length > 0) {
       messagesToSend.push({
