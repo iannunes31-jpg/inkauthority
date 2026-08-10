@@ -11,7 +11,7 @@ export async function POST(req: Request) {
   try {
     const payload = await req.json();
 
-    if (payload.event !== 'messages.upsert') {
+    if (payload.event?.toLowerCase() !== 'messages.upsert') {
       return NextResponse.json({ status: 'ignored' });
     }
 
