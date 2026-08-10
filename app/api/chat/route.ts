@@ -30,7 +30,7 @@ export async function POST(req: Request) {
       Responda em português do Brasil.`
     });
 
-    return result.toDataStreamResponse();
+    return result.toTextStreamResponse();
   } catch (error) {
     console.error("Erro no Chat API:", error);
     return new Response(
