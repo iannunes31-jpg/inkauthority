@@ -234,6 +234,14 @@ Lembre-se: Você NÃO deve parecer um robô. O cliente não deve perceber facilm
       });
     } catch (e: any) {
       console.error("Vertex Auth Error:", e);
+      try {
+        await supabase.from('chat_history').insert([{
+          clerk_user_id: 'SYSTEM_ERROR',
+          phone_number: 'ERROR_LOG',
+          role: 'system',
+          content: 'Vertex Auth Error: ' + e.message
+        }]);
+      } catch(ignore) {}
       return NextResponse.json({ error: 'Vertex AI config error' }, { status: 500 });
     }
 
@@ -285,8 +293,16 @@ Lembre-se: Você NÃO deve parecer um robô. O cliente não deve perceber facilm
     });
 
     return NextResponse.json({ status: 'success' });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Webhook Error:', error);
+    try {
+      await supabase.from('chat_history').insert([{
+        clerk_user_id: 'SYSTEM_ERROR',
+        phone_number: 'ERROR_LOG',
+        role: 'system',
+        content: error.message || error.toString()
+      }]);
+    } catch(e) {}
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }
