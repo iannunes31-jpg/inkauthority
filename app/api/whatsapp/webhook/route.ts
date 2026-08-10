@@ -316,13 +316,14 @@ Lembre-se: Você NÃO deve parecer um robô. O cliente não deve perceber facilm
     }
 
     // Dynamic delay logic (simulating typing/recording speed)
-    // Avg typing speed: 4 chars/sec. Avg speaking: 2 chars/sec.
-    // Minimum 3000ms delay for humanization
-    let delayMs = 3000; 
+    // Vercel Serverless Functions timeout after 10-15s on Hobby plan.
+    // Evolution API blocks the HTTP request during the delay.
+    // To prevent Vercel 504 Gateway Timeout, we MUST keep the total request time under 10s!
+    let delayMs = 1500; 
     if (isAudioResponse) {
-       delayMs += Math.min(finalOutputText.length * 75, 45000); 
+       delayMs += Math.min(finalOutputText.length * 20, 6000); 
     } else {
-       delayMs += Math.min(finalOutputText.length * 35, 30000);
+       delayMs += Math.min(finalOutputText.length * 10, 4000);
     }
     
     // Fallback if Evolution doesn't support massive delay inline
