@@ -280,9 +280,7 @@ Lembre-se: Você NÃO deve parecer um robô. O cliente não deve perceber facilm
       },
       body: JSON.stringify({
         number: remoteJid,
-        text: aiResponse,
-        delay: delayMs,
-        presence: 'typing'
+        text: aiResponse
       })
     });
 
