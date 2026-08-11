@@ -1,17 +1,18 @@
 import { createVertex } from '@ai-sdk/google-vertex';
 import { streamText } from 'ai';
 
-// Permitir tempo maior de execução no servidor (Edge)
 export const maxDuration = 30;
 
 export async function POST(req: Request) {
   try {
-    const { messages } = await req.json();
+    const body = await req.json();
 
-    // Verificação de segurança (se o usuário não colocou a chave ainda)
+    // SDK v7: messages come inside a "messages" key
+    const messages = body.messages ?? [];
+
     if (!process.env.GOOGLE_VERTEX_CREDENTIALS) {
       return new Response(
-        JSON.stringify({ error: "Credenciais do Vertex AI não configuradas (GOOGLE_VERTEX_CREDENTIALS). Fale com o Administrador." }), 
+        JSON.stringify({ error: "Credenciais do Vertex AI nao configuradas (GOOGLE_VERTEX_CREDENTIALS)." }),
         { status: 500, headers: { 'Content-Type': 'application/json' } }
       );
     }
@@ -21,37 +22,48 @@ export async function POST(req: Request) {
       const credentials = JSON.parse(process.env.GOOGLE_VERTEX_CREDENTIALS);
       vertex = createVertex({
         project: credentials.project_id,
-        location: 'us-central1', // Região padrão recomendada para Gemini no Vertex
-        googleAuthOptions: {
-          credentials
-        }
+        location: 'us-central1',
+        googleAuthOptions: { credentials }
       });
-    } catch (parseError: any) {
+    } catch {
       return new Response(
-        JSON.stringify({ error: "O JSON do Vertex AI (GOOGLE_VERTEX_CREDENTIALS) é inválido ou está mal formatado." }), 
+        JSON.stringify({ error: "O JSON do Vertex AI e invalido ou mal formatado." }),
         { status: 500, headers: { 'Content-Type': 'application/json' } }
       );
     }
 
-    // Chamada para a API do Google Vertex AI com streaming (Vercel AI SDK)
-    const result = streamText({
-      model: vertex('gemini-2.5-flash'), // Usando 2.5-flash conforme solicitado
-      messages,
-      system: `Você é o Tutor Oficial de Inteligência Artificial da "Ink Authority", uma plataforma online de cursos de tatuagem para tatuadores profissionais e iniciantes. 
-      Seu tom deve ser amigável, direto, respeitoso e focado em arte e técnica de tatuagem. 
-      Nunca saia do personagem. Se alguém perguntar sobre algo não relacionado à arte, design, marketing para tatuadores ou tatuagem, responda educadamente que você foi treinado apenas para auxiliar no universo da tatuagem.
-      
-      REGRA IMPORTANTE SOBRE SUPORTE:
-      Embora você seja um tutor de tatuagem, se o aluno solicitar "suporte", "ajuda com a conta", "problemas na plataforma" ou pedir para falar com um atendente humano, você DEVE enviar o contato do WhatsApp de Suporte. Diga algo como: "Para problemas técnicos ou suporte, por favor chame nosso time no WhatsApp: [Insira o Link/Número do WhatsApp]".
-      
-      Responda em português do Brasil.`
+    // Convert SDK v7 UIMessage parts format to simple string messages
+    const formattedMessages = messages.map((m: any) => {
+      let content = '';
+      if (typeof m.content === 'string') {
+        content = m.content;
+      } else if (Array.isArray(m.parts)) {
+        content = m.parts
+          .filter((p: any) => p.type === 'text')
+          .map((p: any) => p.text)
+          .join('');
+      }
+      return { role: m.role, content };
     });
 
-    return result.toTextStreamResponse();
+    const result = streamText({
+      model: vertex('gemini-2.5-flash'),
+      messages: formattedMessages,
+      system: `Voce e o Tutor Oficial de Inteligencia Artificial da "Ink Authority", uma plataforma online de cursos de tatuagem para tatuadores profissionais e iniciantes.
+      Seu tom deve ser amigavel, direto, respeitoso e focado em arte e tecnica de tatuagem.
+      Nunca saia do personagem. Se alguem perguntar sobre algo nao relacionado a arte, design, marketing para tatuadores ou tatuagem, responda educadamente que voce foi treinado apenas para auxiliar no universo da tatuagem.
+      
+      REGRA IMPORTANTE SOBRE SUPORTE:
+      Se o aluno solicitar "suporte", "ajuda com a conta", "problemas na plataforma" ou pedir para falar com um atendente humano, diga: "Para problemas tecnicos ou suporte, por favor chame nosso time no WhatsApp."
+      
+      Responda em portugues do Brasil.`
+    });
+
+    return result.toUIMessageStreamResponse();
   } catch (error: any) {
     console.error("Erro no Chat API:", error);
     return new Response(
-      JSON.stringify({ error: error?.message || "Erro interno no servidor." }), 
+      JSON.stringify({ error: error?.message || "Erro interno no servidor." }),
       { status: 500, headers: { 'Content-Type': 'application/json' } }
     );
   }
