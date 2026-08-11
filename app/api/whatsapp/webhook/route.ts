@@ -164,6 +164,8 @@ Esta é a estratégia de conversão que você DEVE seguir rigidamente:
 5. **Conversão & Agendamento (O SINAL):**
 - Quando o cliente quiser fechar, peça os dados (Nome, Celular, Cidade).
 - Informe sobre o SINAL: "Para garantir que a data seja reservada para você, é necessário um sinal de [Insira um valor coerente com o orçamento] via Pix. Esse valor será abatido do total. Chave Pix: CNPJ xxx.xxx". (Adapte a chave Pix para os dados do estúdio se fornecidos).
+- ASSIM QUE o cliente escolher a data e o horário, e passar o Nome, Email, Insta e Telefone, você JÁ EFETUA O AGENDAMENTO. 
+- Para efetuar o agendamento no sistema, você DEVE retornar uma tag secreta no final da sua mensagem exatamente neste formato: \`[AGENDAMENTO CONFIRMADO: nome="..." email="..." insta="..." telefone="..." data="..." hora="..."]\`. Preencha os campos com os dados coletados.
 
 6. **Comportamentos Anti-Curiosos & Regras de Ouro:**
 - NÃO responda a mesma coisa duas vezes. Leia o histórico e dê continuidade à conversa.
@@ -277,6 +279,50 @@ Lembre-se: Você NÃO deve parecer um robô. O cliente não deve perceber facilm
       }
     ]);
 
+    // 7.5. Intercept Scheduling Tag
+    let finalAiResponse = aiResponse;
+    const schedulingRegex = /\\[AGENDAMENTO CONFIRMADO: (.*?)\\]/;
+    const match = finalAiResponse.match(schedulingRegex);
+    
+    if (match) {
+      finalAiResponse = finalAiResponse.replace(match[0], '').trim();
+      const rawData = match[1];
+      
+      // Basic manual extraction since eval is dangerous and JSON.parse won't work on raw attribute strings
+      const extractField = (field: string) => {
+        const regex = new RegExp(`${field}=\"([^\"]+)\"`);
+        const m = rawData.match(regex);
+        return m ? m[1] : '';
+      };
+      
+      const nome = extractField('nome');
+      const email = extractField('email');
+      const insta = extractField('insta');
+      const telefone = extractField('telefone');
+      const data = extractField('data');
+      const hora = extractField('hora');
+
+      // Save to Supabase (we can save it to the customer record or a new schedules table)
+      // For now, let's update the customer record with the email and insta, and we can log the schedule in chat history or a schedules table if it existed.
+      if (nome || email || insta) {
+        await supabase
+          .from('customers')
+          .update({
+             name: nome || customer.name,
+             status: 'scheduled',
+          })
+          .eq('id', customer.id);
+      }
+      
+      // Also log the scheduling event for the artist
+      await supabase.from('chat_history').insert([{
+        clerk_user_id,
+        phone_number: remoteJid,
+        role: 'system',
+        content: `NOVO AGENDAMENTO: O cliente ${nome} (Insta: ${insta}, Email: ${email}, Tel: ${telefone}) agendou para ${data} às ${hora}.`
+      }]);
+    }
+
     // 8. Dynamic delay logic (simulating typing speed)
     // Vercel Serverless Functions timeout after 10s on Hobby plan.
     // For text (Gemini 2-3s), we can afford a dynamic delay up to 4000ms.
@@ -294,7 +340,7 @@ Lembre-se: Você NÃO deve parecer um robô. O cliente não deve perceber facilm
       },
       body: JSON.stringify({
         number: remoteJid,
-        text: aiResponse
+        text: finalAiResponse
       })
     });
 

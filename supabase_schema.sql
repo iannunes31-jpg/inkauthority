@@ -225,3 +225,39 @@ CREATE POLICY "Public Access" ON storage.objects FOR SELECT USING (bucket_id = '
 
 -- Permitir que qualquer um faa upload (cuidado: no modo de produo, restrinja isso a usurios autenticados)
 CREATE POLICY "Upload Access" ON storage.objects FOR INSERT WITH CHECK (bucket_id = 'community');
+
+-- ==========================================
+-- FASE 4: PAGAMENTOS (STRIPE)
+-- ==========================================
+
+CREATE TABLE IF NOT EXISTS user_purchases (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
+    product_id TEXT NOT NULL,
+    product_type TEXT NOT NULL, -- 'course', 'library', 'tools', 'subscription'
+    payment_status TEXT DEFAULT 'paid',
+    stripe_session_id TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- ==========================================
+-- FASE 5: ASSISTENTE IA AVANÇADO (CUSTOMERS & HISTORY)
+-- ==========================================
+
+CREATE TABLE IF NOT EXISTS customers (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    clerk_user_id TEXT REFERENCES users(id) ON DELETE CASCADE, 
+    name TEXT,
+    phone_number TEXT NOT NULL,
+    status TEXT DEFAULT 'lead', 
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS chat_history (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    clerk_user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
+    phone_number TEXT NOT NULL,
+    role TEXT NOT NULL, -- 'user', 'assistant', 'system'
+    content TEXT NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);

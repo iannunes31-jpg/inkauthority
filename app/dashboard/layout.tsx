@@ -17,8 +17,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     { name: "Meu Aprendizado", path: "/dashboard", icon: <BookOpen className="w-5 h-5" /> },
     { name: "Ao Vivo", path: "/dashboard/lives", icon: <Radio className="w-5 h-5" /> },
     { name: "Comunidade", path: "/dashboard/community", icon: <Users className="w-5 h-5" /> },
-    { name: "Ferramentas IA", path: "/dashboard/tools", icon: <Bot className="w-5 h-5" /> },
-    { name: "Meus Cursos", path: "/dashboard/courses", icon: <Compass className="w-5 h-5" /> },
+    { name: "Especialistas", path: "/dashboard/tools", icon: <Bot className="w-5 h-5" /> },
+    { name: "Minhas Matérias", path: "/dashboard/courses", icon: <Compass className="w-5 h-5" /> },
     { name: "Biblioteca", path: "/dashboard/library", icon: <Download className="w-5 h-5" /> },
     { name: "Meu Perfil", path: "/dashboard/profile", icon: <User className="w-5 h-5" /> },
   ];

@@ -2,12 +2,14 @@
 "use client";
 
 import { useChat } from "@ai-sdk/react";
-import { Bot, User, Send, Loader2, Sparkles } from "lucide-react";
+import { Bot, User, Send, Loader2, Sparkles, Lock } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { useUser } from "@clerk/nextjs";
+import { supabase } from "@/lib/supabase";
 
 export default function AssistantPage() {
-  const { messages, append, isLoading } = useChat({
+  const { messages, input, handleInputChange, handleSubmit, isLoading } = useChat({
     api: "/api/chat",
     onError: (err) => {
       alert("⚠️ Erro na IA: " + err.message + "\n\nVerifique se a GEMINI_API_KEY está configurada no seu painel da Vercel (ou arquivo .env).");
@@ -21,14 +23,66 @@ export default function AssistantPage() {
     ]
   });
 
-  const [input, setInput] = useState("");
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => setInput(e.target.value);
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!input?.trim()) return;
-    if (append) append({ role: 'user', content: input });
-    setInput("");
+  const { user } = useUser();
+  const [hasAccess, setHasAccess] = useState<boolean | null>(null);
+
+  const isAdmin = 
+    user?.primaryEmailAddress?.emailAddress === "yurilojavirtual@gmail.com" || 
+    user?.primaryEmailAddress?.emailAddress === "o9.yuri@gmail.com";
+
+  useEffect(() => {
+    if (user?.id) {
+      checkAccess();
+    }
+  }, [user?.id]);
+
+  const checkAccess = async () => {
+    if (isAdmin) {
+      setHasAccess(true);
+      return;
+    }
+    try {
+      const { data, error } = await supabase
+        .from('user_purchases')
+        .select('*')
+        .eq('user_id', user!.id)
+        .in('product_type', ['subscription', 'tools']);
+      
+      if (data && data.length > 0) {
+        setHasAccess(true);
+      } else {
+        setHasAccess(false);
+      }
+    } catch (err) {
+      setHasAccess(false);
+    }
   };
+
+  const handleCheckout = async () => {
+    try {
+      const response = await fetch('/api/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          productName: 'Especialistas IA Premium', 
+          price: 97.00, 
+          productId: 'tools_premium',
+          productType: 'tools',
+          isSubscription: true, 
+          returnUrl: '/dashboard/tools/tutor' 
+        }),
+      });
+      const data = await response.json();
+      if (data.url) {
+        window.location.href = data.url;
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Erro ao carregar checkout.');
+    }
+  };
+
+
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -36,8 +90,31 @@ export default function AssistantPage() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  if (hasAccess === null) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
   return (
     <div className="h-[calc(100vh-80px)] flex flex-col bg-background relative">
+      {!hasAccess && (
+        <div className="absolute inset-0 z-50 flex items-center justify-center p-6 backdrop-blur-md bg-black/60">
+          <div className="glass p-8 max-w-lg text-center rounded-3xl border border-white/10 shadow-2xl">
+            <Lock className="w-16 h-16 text-primary mx-auto mb-6" />
+            <h2 className="text-3xl font-black uppercase tracking-tighter mb-4 text-white">Acesso Restrito</h2>
+            <p className="text-muted-foreground mb-8">
+              O Tutor IA Especialista é uma ferramenta exclusiva do plano Premium. Desbloqueie agora para tirar dúvidas avançadas 24h por dia.
+            </p>
+            <Button onClick={handleCheckout} className="w-full bg-primary hover:bg-primary/90 text-black font-bold h-12 text-lg">
+              Desbloquear Especialistas IA (R$ 97/mês)
+            </Button>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="px-8 py-6 border-b border-border/20 flex items-center justify-between bg-background/95 backdrop-blur-sm z-10 sticky top-0">
         <div className="flex items-center gap-4">

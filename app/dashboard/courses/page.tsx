@@ -59,16 +59,38 @@ export default function MyCoursesPage() {
     }
   };
 
-  const handleLockedClick = (e: React.MouseEvent, courseTitle: string) => {
+  const handleLockedClick = async (e: React.MouseEvent, course: any) => {
     e.preventDefault();
-    alert(`Você ainda não possui acesso ao curso: ${courseTitle}. Em breve você poderá comprá-arlo diretamente por aqui!`);
-    // Aqui no futuro entrará o link de checkout (Eduzz, Kiwify, etc)
+    try {
+      // alert(\`Redirecionando para o checkout da matéria: \${course.title}...\`);
+      const response = await fetch('/api/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          productName: course.title, 
+          price: course.price || 97.00, // Preço padrão caso não esteja cadastrado
+          productId: course.id,
+          productType: 'course',
+          isSubscription: false, 
+          returnUrl: '/dashboard/courses' 
+        }),
+      });
+      const data = await response.json();
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        alert('Erro ao iniciar checkout: ' + (data.error || 'Desconhecido'));
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Erro de conexão ao iniciar checkout.');
+    }
   };
 
   return (
     <div className="max-w-5xl mx-auto pb-20 p-6 lg:p-10">
       <div className="mb-10">
-        <h1 className="text-3xl font-black uppercase tracking-tighter mb-2">Cursos Disponíveis</h1>
+        <h1 className="text-3xl font-black uppercase tracking-tighter mb-2">Matérias Disponíveis</h1>
         <p className="text-muted-foreground">Acesse seus treinamentos ou descubra novos conteúdos para evoluir sua arte.</p>
       </div>
 
@@ -77,8 +99,8 @@ export default function MyCoursesPage() {
       ) : courses.length === 0 ? (
          <div className="text-center py-20 glass rounded-2xl border border-white/10">
             <Layers className="w-12 h-12 mx-auto mb-4 text-white/20" />
-            <h2 className="text-xl font-bold mb-2">Nenhum curso disponível</h2>
-            <p className="text-muted-foreground text-sm">O administrador ainda não publicou nenhum curso.</p>
+            <h2 className="text-xl font-bold mb-2">Nenhuma matéria disponível</h2>
+            <p className="text-muted-foreground text-sm">O administrador ainda não publicou nenhuma matéria.</p>
          </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -89,7 +111,7 @@ export default function MyCoursesPage() {
               <Link 
                 href={hasAccess ? `/dashboard/courses/${course.id}` : "#"} 
                 key={course.id}
-                onClick={hasAccess ? undefined : (e) => handleLockedClick(e, course.title)}
+                onClick={hasAccess ? undefined : (e) => handleLockedClick(e, course)}
               >
                 <div 
                   className={`glass rounded-2xl border ${hasAccess ? 'border-white/5 hover:border-primary/50' : 'border-white/5 opacity-80'} overflow-hidden group cursor-pointer h-full flex flex-col hover:-translate-y-1 transition-all duration-300 relative`}
@@ -142,7 +164,7 @@ export default function MyCoursesPage() {
                       <div className="mt-auto pt-4 border-t border-white/5">
                         <div className="flex items-center justify-center gap-2 text-primary text-sm font-bold bg-primary/10 py-2 rounded-lg group-hover:bg-primary group-hover:text-black transition-colors">
                           <ShoppingCart className="w-4 h-4" />
-                          <span>Desbloquear Curso</span>
+                          <span>Desbloquear Matéria</span>
                         </div>
                       </div>
                     )}

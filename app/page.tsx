@@ -93,7 +93,7 @@ export default function Home() {
       {/* IFRAME — com paddingTop pra não ficar atrás do menu */}
       <iframe 
         id="landing-iframe"
-        src="/isabella.html" 
+        src="/isabela.html" 
         className="w-full border-0 block relative z-10"
         style={{ height: 'calc(100vh)', marginTop: 72 }}
         title="Landing Page"

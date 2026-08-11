@@ -16,6 +16,11 @@ export default function AssistantPage() {
   const [qrCodeData, setQrCodeData] = useState<string | null>(null);
   const [connectionStatus, setConnectionStatus] = useState<string>("Carregando...");
   const [isGeneratingQr, setIsGeneratingQr] = useState(false);
+  const [hasAccess, setHasAccess] = useState<boolean | null>(null);
+
+  const isAdmin = 
+    user?.primaryEmailAddress?.emailAddress === "yurilojavirtual@gmail.com" || 
+    user?.primaryEmailAddress?.emailAddress === "o9.yuri@gmail.com";
 
   const [formData, setFormData] = useState({
     studio_name: "",
@@ -38,10 +43,33 @@ export default function AssistantPage() {
 
   useEffect(() => {
     if (user?.id) {
+      checkAccess();
       fetchSettings();
       checkConnectionStatus();
     }
   }, [user?.id]);
+
+  const checkAccess = async () => {
+    if (isAdmin) {
+      setHasAccess(true);
+      return;
+    }
+    try {
+      const { data, error } = await supabase
+        .from('user_purchases')
+        .select('*')
+        .eq('user_id', user!.id)
+        .in('product_type', ['subscription', 'tools']);
+      
+      if (data && data.length > 0) {
+        setHasAccess(true);
+      } else {
+        setHasAccess(false);
+      }
+    } catch (err) {
+      setHasAccess(false);
+    }
+  };
 
   useEffect(() => {
     let interval: NodeJS.Timeout;
@@ -202,18 +230,85 @@ export default function AssistantPage() {
       .from("ai_settings")
       .upsert(payload, { onConflict: "clerk_user_id" });
 
-    if (error) {
+    try {
+      const payload = {
+        clerk_user_id: user.id,
+        ...formData,
+        base_price: Number(formData.base_price) || 0,
+        hourly_rate: Number(formData.hourly_rate) || 0,
+        price_arm: Number(formData.price_arm) || null,
+        price_leg: Number(formData.price_leg) || null,
+        price_front: Number(formData.price_front) || null,
+        price_back: Number(formData.price_back) || null,
+        updated_at: new Date().toISOString()
+      };
+
+      const { error } = await supabase
+        .from("ai_settings")
+        .upsert(payload, { onConflict: "clerk_user_id" });
+
+      if (error) {
         console.error("Erro ao salvar configurações", error);
         alert(`⚠️ ATENÇÃO: Erro ao salvar! ${error.message} - ${error.details || ""}\n\nA tabela 'ai_settings' pode estar faltando colunas ou permissões.`);
-    } else {
-      alert("Configurações do Assistente salvas com sucesso!");
+      } else {
+        alert("Configurações do Assistente salvas com sucesso!");
+      }
+    } catch (error: any) {
+      alert(`Erro: ${error.message}`);
+    } finally {
+      setIsSaving(false);
     }
-    
-    setIsSaving(false);
   };
 
+  const handleCheckout = async () => {
+    try {
+      const response = await fetch('/api/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          productName: 'Especialistas IA Premium', 
+          price: 97.00, 
+          productId: 'tools_premium',
+          productType: 'tools',
+          isSubscription: true, 
+          returnUrl: '/dashboard/tools/whatsapp' 
+        }),
+      });
+      const data = await response.json();
+      if (data.url) {
+        window.location.href = data.url;
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Erro ao carregar checkout.');
+    }
+  };
+
+  if (hasAccess === null) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
   return (
-    <div className="max-w-4xl mx-auto pb-20">
+    <div className="max-w-6xl mx-auto pb-20 p-6 lg:p-10 relative">
+      {!hasAccess && (
+        <div className="absolute inset-0 z-50 flex items-center justify-center p-6 backdrop-blur-md bg-black/60 rounded-3xl">
+          <div className="glass p-8 max-w-lg text-center rounded-3xl border border-white/10 shadow-2xl">
+            <Lock className="w-16 h-16 text-primary mx-auto mb-6" />
+            <h2 className="text-3xl font-black uppercase tracking-tighter mb-4 text-white">Acesso Restrito</h2>
+            <p className="text-muted-foreground mb-8">
+              Para desbloquear a IA que agenda tatuagens automaticamente e fecha orçamentos enquanto você trabalha, faça o upgrade para o Premium.
+            </p>
+            <Button onClick={handleCheckout} className="w-full bg-primary hover:bg-primary/90 text-black font-bold h-12 text-lg">
+              Desbloquear Especialistas IA (R$ 97/mês)
+            </Button>
+          </div>
+        </div>
+      )}
+
       <div className="mb-8 flex items-center gap-4">
         <div className="w-16 h-16 rounded-2xl bg-primary/20 flex items-center justify-center">
           <Bot className="w-8 h-8 text-primary" />

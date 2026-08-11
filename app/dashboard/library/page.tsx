@@ -76,10 +76,31 @@ export default function LibraryPage() {
     window.open(url, '_blank');
   };
 
-  const handleLockedClick = (e: React.MouseEvent, title: string) => {
+  const handleLockedClick = async (e: React.MouseEvent, item: any) => {
     e.preventDefault();
-    alert(`Você ainda não possui acesso ao material: ${title}. Em breve você poderá comprá-lo diretamente por aqui!`);
-    // Aqui no futuro entrará o link de checkout
+    try {
+      const response = await fetch('/api/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          productName: item.title, 
+          price: item.price || 47.00, // Preço padrão para biblioteca caso não tenha
+          productId: item.id,
+          productType: 'library',
+          isSubscription: false, 
+          returnUrl: '/dashboard/library' 
+        }),
+      });
+      const data = await response.json();
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        alert('Erro ao iniciar checkout: ' + (data.error || 'Desconhecido'));
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Erro de conexão ao iniciar checkout.');
+    }
   };
 
   return (
@@ -169,7 +190,7 @@ export default function LibraryPage() {
                   ) : (
                     <Button 
                       size="sm" 
-                      onClick={(e) => handleLockedClick(e, item.title)}
+                      onClick={(e) => handleLockedClick(e, item)}
                       className="bg-white/5 text-muted-foreground hover:bg-primary/20 hover:text-primary transition-colors rounded-full px-4 text-xs font-bold border border-white/5"
                     >
                       <ShoppingCart className="w-3 h-3 mr-2" /> Comprar

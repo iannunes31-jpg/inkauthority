@@ -43,7 +43,7 @@ export default function ToolsPage() {
 
       <section className="pt-40 pb-24 px-6 lg:px-12 max-w-7xl mx-auto relative z-10">
         <div className="mb-16 text-center">
-          <h1 className="text-4xl lg:text-6xl font-black uppercase tracking-tighter mb-4 metallic-text">Ferramentas IA</h1>
+          <h1 className="text-4xl lg:text-6xl font-black uppercase tracking-tighter mb-4 metallic-text">Especialistas</h1>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">Evolua sua arte com inteligência artificial. Nossa ferramenta foi treinada exclusivamente com técnicas avançadas de tatuagem.</p>
         </div>
 
@@ -76,14 +76,13 @@ export default function ToolsPage() {
               </div>
               <div className="w-full mt-auto">
                 <div className="mb-6">
-                  <span className="text-4xl font-black">R$ 57</span>
-                  <span className="text-muted-foreground">/mês</span>
+                  <span className="text-4xl font-black">Gratuito</span>
                 </div>
                 <Button 
-                  onClick={() => handleCheckout("Tutor IA Especialista", 57)}
+                  onClick={() => window.location.href = "/dashboard/tools/tutor"}
                   className="w-full metallic-gradient text-black font-bold py-8 text-lg rounded-xl hover:scale-105 transition-transform shadow-2xl shadow-primary/20"
                 >
-                  Assinar Tutor <ArrowRight className="w-5 h-5 ml-2" />
+                  Acessar Tutor <ArrowRight className="w-5 h-5 ml-2" />
                 </Button>
               </div>
             </div>

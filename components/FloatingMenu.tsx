@@ -76,7 +76,7 @@ export function FloatingMenu() {
     <>
       <div id="google_translate_element" style={{ display: "none" }}></div>
       
-      <div className="fixed bottom-6 left-6 z-[9999] flex flex-col gap-3 notranslate">
+      <div className="fixed bottom-6 right-6 z-[9999] flex flex-col gap-3 notranslate items-end">
         {/* Dropdown de Idiomas */}
         {isTranslateOpen && (
           <div className="bg-black/90 backdrop-blur-md border border-white/10 rounded-2xl p-2 flex flex-col gap-1 mb-2 shadow-2xl animate-in fade-in slide-in-from-bottom-4">
@@ -84,7 +84,7 @@ export function FloatingMenu() {
               <button
                 key={lang.code}
                 onClick={() => changeLanguage(lang.code)}
-                className="text-left px-4 py-2 hover:bg-white/10 rounded-xl text-sm font-medium transition-colors"
+                className="text-right px-4 py-2 hover:bg-white/10 rounded-xl text-sm font-medium transition-colors"
               >
                 {lang.name}
               </button>

@@ -1,50 +1,58 @@
 import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
+import { getAuth } from '@clerk/nextjs/server';
+import { NextRequest } from 'next/server';
 
-export async function POST(req: Request) {
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
+  apiVersion: '2024-06-20' as any,
+});
+
+export async function POST(req: NextRequest) {
   try {
-    const secretKey = process.env.STRIPE_SECRET_KEY;
-    if (!secretKey) {
-      return NextResponse.json({ error: 'Stripe não configurado. Adicione STRIPE_SECRET_KEY nas variáveis de ambiente da Vercel.' }, { status: 500 });
+    const { userId } = getAuth(req);
+    
+    if (!userId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const stripe = new Stripe(secretKey, {
-      apiVersion: '2025-06-30.basil' as any,
-    });
+    const { productName, price, productId, productType, isSubscription, returnUrl } = await req.json();
 
-    const { productName, price, isSubscription = false, returnUrl = '/tools' } = await req.json();
-    
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://inkauthority.com.br';
+    if (!productName || !price) {
+      return NextResponse.json({ error: 'Missing product details' }, { status: 400 });
+    }
 
-    const sessionParams: Stripe.Checkout.SessionCreateParams = {
-      payment_method_types: ['card'],
+    const session = await stripe.checkout.sessions.create({
+      payment_method_types: ['card', 'boleto'],
+      mode: isSubscription ? 'subscription' : 'payment',
       line_items: [
         {
           price_data: {
             currency: 'brl',
             product_data: {
               name: productName,
+              metadata: {
+                productId: productId || 'unknown',
+                productType: productType || 'general',
+              }
             },
-            unit_amount: Math.round(price * 100), // Stripe usa centavos
-            ...(isSubscription && {
-              recurring: {
-                interval: 'month',
-              },
-            }),
+            unit_amount: Math.round(price * 100),
+            ...(isSubscription ? { recurring: { interval: 'month' } } : {})
           },
           quantity: 1,
         },
       ],
-      mode: isSubscription ? 'subscription' : 'payment',
-      success_url: `${appUrl}${returnUrl}?success=true`,
-      cancel_url: `${appUrl}${returnUrl}?canceled=true`,
-    };
+      metadata: {
+        userId,
+        productId: String(productId || 'unknown'),
+        productType: String(productType || 'general'),
+      },
+      success_url: \\\?success=true\,
+      cancel_url: \\\?canceled=true\,
+    });
 
-    const session = await stripe.checkout.sessions.create(sessionParams);
-
-    return NextResponse.json({ id: session.id, url: session.url });
-  } catch (err: any) {
-    console.error('Stripe error:', err.message);
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    return NextResponse.json({ url: session.url });
+  } catch (error: any) {
+    console.error('Stripe Checkout Error:', error);
+    return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }

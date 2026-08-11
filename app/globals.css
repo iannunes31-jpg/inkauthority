@@ -25,27 +25,31 @@
 
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-jetbrains), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  --glass-bg: rgba(22, 22, 22, 0.7);
+  --glass-border: rgba(200, 200, 200, 0.1);
 }
 
 @layer base {
   .light {
     --color-background: #FFFFFF;
-    --color-foreground: #000000;
-    --color-card: #F5F5F5;
-    --color-card-foreground: #000000;
-    --color-popover: #F5F5F5;
-    --color-popover-foreground: #000000;
-    --color-primary: #000000;
+    --color-foreground: #09090B;
+    --color-card: #FFFFFF;
+    --color-card-foreground: #09090B;
+    --color-popover: #FFFFFF;
+    --color-popover-foreground: #09090B;
+    --color-primary: #18181B;
     --color-primary-foreground: #FFFFFF;
-    --color-secondary: #E5E5E5;
-    --color-secondary-foreground: #171717;
-    --color-muted: #F5F5F5;
-    --color-muted-foreground: #737373;
-    --color-accent: #F5F5F5;
-    --color-accent-foreground: #171717;
-    --color-border: #E5E5E5;
-    --color-input: #E5E5E5;
-    --color-ring: #000000;
+    --color-secondary: #E5E7EB;
+    --color-secondary-foreground: #18181B;
+    --color-muted: #F3F4F6;
+    --color-muted-foreground: #71717A;
+    --color-accent: #F4F4F5;
+    --color-accent-foreground: #18181B;
+    --color-border: #E5E7EB;
+    --color-input: #E5E7EB;
+    --color-ring: #09090B;
+    --glass-bg: rgba(255, 255, 255, 0.7);
+    --glass-border: rgba(0, 0, 0, 0.05);
   }
 }
 
@@ -79,10 +83,10 @@
 
 @layer utilities {
   .glass {
-    background: rgba(22, 22, 22, 0.7);
+    background: var(--glass-bg);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
-    border: 1px solid rgba(200, 200, 200, 0.1);
+    border: 1px solid var(--glass-border);
   }
   .neon-glow {
     box-shadow: 0 0 25px rgba(163, 163, 163, 0.2);

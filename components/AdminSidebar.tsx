@@ -20,7 +20,7 @@ export function AdminSidebar() {
 
   const links = [
     { name: "Dashboard", path: "/admin", icon: <LayoutDashboard className="w-4 h-4" /> },
-    { name: "Cursos", path: "/admin/courses", icon: <Video className="w-4 h-4" /> },
+    { name: "Matérias", path: "/admin/courses", icon: <Video className="w-4 h-4" /> },
     { name: "Biblioteca", path: "/admin/library", icon: <Share2 className="w-4 h-4" /> },
     { name: "Lives", path: "/admin/lives", icon: <Activity className="w-4 h-4" /> },
     { name: "Usuários", path: "/admin/users", icon: <Users className="w-4 h-4" /> },
