@@ -308,10 +308,10 @@ Lembre-se: Você NÃO deve parecer um robô. O cliente não deve perceber facilm
         await supabase
           .from('customers')
           .update({
-             name: nome || customer.name,
+             name: nome || customer?.name,
              status: 'scheduled',
           })
-          .eq('id', customer.id);
+          .eq('id', customer!.id);
       }
       
       // Also log the scheduling event for the artist

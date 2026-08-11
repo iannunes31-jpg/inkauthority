@@ -46,8 +46,8 @@ export async function POST(req: NextRequest) {
         productId: String(productId || 'unknown'),
         productType: String(productType || 'general'),
       },
-      success_url: \\\?success=true\,
-      cancel_url: \\\?canceled=true\,
+      success_url: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}${returnUrl || '/dashboard'}?success=true`,
+      cancel_url: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}${returnUrl || '/dashboard'}?canceled=true`,
     });
 
     return NextResponse.json({ url: session.url });

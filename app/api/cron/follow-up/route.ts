@@ -1,92 +1,108 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { supabase } from '@/lib/supabase';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-const supabase = createClient(supabaseUrl, supabaseKey);
+// Função auxiliar para enviar mensagem via Evolution API
+async function sendWhatsAppMessage(phone: string, text: string) {
+  const evolutionUrl = process.env.EVOLUTION_API_URL;
+  const evolutionKey = process.env.EVOLUTION_API_KEY;
 
-const evolutionUrl = process.env.EVOLUTION_API_URL || 'https://evolution-api-production-fbfd.up.railway.app';
-const apiKey = process.env.EVOLUTION_API_KEY!;
+  if (!evolutionUrl || !evolutionKey) {
+    console.error("Evolution API credenciais ausentes.");
+    return;
+  }
+
+  // Remove caracteres não numéricos do telefone e adiciona código do país se faltar
+  let cleanPhone = phone.replace(/\D/g, '');
+  if (!cleanPhone.startsWith('55')) {
+    cleanPhone = `55${cleanPhone}`;
+  }
+
+  try {
+    const url = `${evolutionUrl}/message/sendText/wpp_bot_default`;
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': evolutionKey
+      },
+      body: JSON.stringify({
+        number: cleanPhone,
+        options: { delay: 1200, presence: 'composing' },
+        textMessage: { text: text }
+      })
+    });
+
+    if (!response.ok) {
+      console.error(`Falha ao enviar WPP para ${cleanPhone}: ${response.statusText}`);
+    }
+  } catch (error) {
+    console.error(`Erro ao disparar WPP para ${cleanPhone}:`, error);
+  }
+}
 
 export async function GET(req: Request) {
-  try {
-    // 1. Check Authorization for Cron (Vercel Cron sends a Bearer token)
-    const authHeader = req.headers.get('authorization');
-    if (process.env.CRON_SECRET && authHeader !== \Bearer \\) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+  // Verifica secret do Vercel Cron
+  const authHeader = req.headers.get('authorization');
+  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+    return new Response('Unauthorized', { status: 401 });
+  }
 
-    // 2. Fetch leads (not scheduled)
-    const { data: leads, error } = await supabase
+  try {
+    // Busca todos os clientes
+    const { data: customers, error } = await supabase
       .from('customers')
-      .select('*')
-      .eq('status', 'lead');
+      .select('*');
 
     if (error) throw error;
-    if (!leads || leads.length === 0) return NextResponse.json({ status: 'no_leads' });
+    if (!customers || customers.length === 0) {
+      return NextResponse.json({ message: 'Nenhum cliente para verificar' });
+    }
 
     const now = new Date();
-    let followedUpCount = 0;
+    let sentCount = 0;
 
-    for (const lead of leads) {
-      const createdAt = new Date(lead.created_at);
-      const diffTime = Math.abs(now.getTime() - createdAt.getTime());
-      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    for (const customer of customers) {
+      if (!customer.phone) continue;
 
-      // Fetch AI Settings for the artist to get the instanceName and customized follow-up texts if any
-      const { data: settings } = await supabase
-        .from('ai_settings')
-        .select('*')
-        .eq('clerk_user_id', lead.clerk_user_id)
-        .single();
+      const createdAt = new Date(customer.created_at);
+      const diffMs = now.getTime() - createdAt.getTime();
+      const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
 
-      if (!settings || !settings.is_active) continue;
-
-      let messageToSend = '';
-
-      // Regras de Follow Up:
-      // Exatamente 1 dia depois
-      if (diffDays === 1) {
-        messageToSend = \Oi \! Estou passando para saber se voc� conseguiu pensar melhor sobre a sua ideia de tatuagem. Qualquer d�vida, estou por aqui!\;
-      } 
-      // Exatamente 15 dias depois
-      else if (diffDays === 15) {
-        messageToSend = \Oi \! Faz um tempinho que n�o nos falamos. Ainda tem interesse em realizar aquele projeto conosco?\;
+      // Follow-up Dia 1 (Welcome / Dúvidas)
+      if (diffDays === 1 && !customer.followup_day1_sent) {
+        await sendWhatsAppMessage(
+          customer.phone,
+          `Opa ${customer.name || 'tudo bem'}! Aqui é do estúdio. Passando só pra agradecer o seu contato ontem. Conseguimos esclarecer todas as suas dúvidas sobre a sua tattoo? Qualquer coisa estou por aqui!`
+        );
+        
+        await supabase
+          .from('customers')
+          .update({ followup_day1_sent: true })
+          .eq('id', customer.id);
+          
+        sentCount++;
       }
-
-      if (messageToSend) {
-        // Disparar via Evolution API
-        try {
-          await fetch(\\/message/sendText/\\, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'apikey': apiKey
-            },
-            body: JSON.stringify({
-              number: lead.phone_number,
-              text: messageToSend
-            })
-          });
-
-          // Register in chat history
-          await supabase.from('chat_history').insert([{
-            clerk_user_id: lead.clerk_user_id,
-            phone_number: lead.phone_number,
-            role: 'assistant',
-            content: \[AUTOMATED FOLLOW-UP]: \\
-          }]);
-
-          followedUpCount++;
-        } catch (err) {
-          console.error(\Failed to send follow-up to \\, err);
-        }
+      
+      // Follow-up Dia 15 (Re-engajamento / Desconto)
+      else if (diffDays === 15 && !customer.followup_day15_sent) {
+        await sendWhatsAppMessage(
+          customer.phone,
+          `Fala ${customer.name || 'beleza'}! Faz uns dias que nos falamos sobre a sua tattoo. Abriu um horário na minha agenda para a semana que vem, quer aproveitar pra gente já deixar o seu projeto no jeito?`
+        );
+        
+        await supabase
+          .from('customers')
+          .update({ followup_day15_sent: true })
+          .eq('id', customer.id);
+          
+        sentCount++;
       }
     }
 
-    return NextResponse.json({ status: 'success', followedUpCount });
-  } catch (error: any) {
-    console.error('Cron Error:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ success: true, messagesSent: sentCount });
+
+  } catch (err: any) {
+    console.error("Cron Error:", err);
+    return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }
