@@ -2,7 +2,6 @@ import { NextResponse } from 'next/server';
 import { createVertex } from '@ai-sdk/google-vertex';
 import { generateText } from 'ai';
 import { createClient } from '@supabase/supabase-js';
-import { GoogleAuth } from 'google-auth-library';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
@@ -55,7 +54,6 @@ export async function POST(req: Request) {
       return NextResponse.json({ status: 'no_text_or_media' });
     }
 
-    // Attempt to download Base64 image/audio from Evolution API if present
     let base64Media: string | null = null;
     const evolutionUrl = process.env.EVOLUTION_API_URL || 'https://evolution-api-production-fbfd.up.railway.app'; 
     const apiKey = process.env.EVOLUTION_API_KEY || '42A5C9B31000-47F6-8B1E-F7C6656BE1D5';
@@ -73,7 +71,6 @@ export async function POST(req: Request) {
         const mediaData = await mediaRes.json();
         if (mediaData && mediaData.base64) {
           base64Media = mediaData.base64 as string;
-          // Clean base64 string if it includes data: prefix
           if (base64Media && base64Media.startsWith('data:')) {
             base64Media = base64Media.split(',')[1];
           }
@@ -116,7 +113,10 @@ export async function POST(req: Request) {
       customer = newCustomer;
     }
 
-    // 4. Fetch Conversation History (Last 10 messages to keep context)
+    // Determine if it's a foreign number
+    const isForeign = !remoteJid.startsWith('55');
+
+    // 4. Fetch Conversation History
     const { data: history } = await supabase
       .from('chat_history')
       .select('role, content')
@@ -132,96 +132,65 @@ export async function POST(req: Request) {
         }))
       : [];
 
-    // 5. Build the massive High-Ticket Prompt
-    const systemPrompt = `Você é o assistente virtual do estúdio de tatuagem "${settings.studio_name}".
-Seu tom de voz é: "${settings.bot_personality}".
-Estilos de Tatuagem que você faz: ${settings.styles}
-Valor Base Mínimo: R$ ${settings.base_price}
-Valor por Hora: R$ ${settings.hourly_rate}
-${settings.price_arm ? `Preço Fechado - Braço Completo: R$ ${settings.price_arm}\n` : ''}${settings.price_leg ? `Preço Fechado - Perna Completa: R$ ${settings.price_leg}\n` : ''}${settings.price_front ? `Preço Fechado - Frente Completa: R$ ${settings.price_front}\n` : ''}${settings.price_back ? `Preço Fechado - Costas Completas: R$ ${settings.price_back}\n` : ''}Métodos de Pagamento: ${settings.payment_methods}
-Endereço do Estúdio: ${settings.address}
+    // 5. Build the massive High-Ticket Prompt with the new Rules
+    const systemPrompt = `Voce e o assistente virtual do estudio de tatuagem "${settings.studio_name}".
+Seu tom de voz e: "${settings.bot_personality}".
+Estilos de Tatuagem que voce faz: ${settings.styles}
+Valor Base Minimo: ${settings.base_price ? `R$ ${settings.base_price}` : 'N/A'}
+Valor por Hora: ${settings.hourly_rate ? `R$ ${settings.hourly_rate}` : 'N/A'}
+Metodos de Pagamento: ${settings.payment_methods}
+Endereco do Estudio: ${settings.address}
+
+### IDIOMA E INTERNACIONALIZACAO
+- Identifique o idioma da mensagem do usuario e responda EXATAMENTE no mesmo idioma.
+- O numero de telefone deste cliente ${isForeign ? 'E ESTRANGEIRO (Fora do Brasil)' : 'E DO BRASIL'}.
+- Se o cliente iniciar a conversa em Ingles, responda em Ingles. Se o numero for estrangeiro e iniciar sem texto, inicie em Ingles.
 
 ### REGRAS DO PROCESSO DE VENDAS HIGH TICKET
-Esta é a estratégia de conversão que você DEVE seguir rigidamente:
+Esta e a estrategia de conversao que voce DEVE seguir rigidamente:
 
-1. **Abordagem Inicial & Qualificação:**
+1. **Abordagem Inicial & Qualificacao:**
 - Chame o cliente pelo nome (se souber).
-- O primeiro objetivo é entender a ideia da tatuagem: "Me conte sobre a ideia da tatuagem que você tem e em qual parte do corpo deseja realizá-la. Peça também uma foto da região para analisar a anatomia."
-- NUNCA passe orçamento logo de cara sem antes entender o projeto, tamanho e local.
+- Entenda a ideia da tatuagem e a area do corpo. 
+- Se precisar de uma foto da regiao do corpo para analisar a anatomia, peca a foto e inclua OBRIGATORIAMENTE a tag [ENVIAR_EXEMPLO_FOTO] no final da sua resposta. O sistema vera essa tag e mandara uma imagem de exemplo pro cliente.
 
-2. **Criação do Projeto & Valor Agregado:**
-- Explique o processo de criação de arte para agregar valor: "A criação do projeto é desenvolvida no dia da sua sessão. A data é reservada exclusivamente para você, permitindo alinhar referências e ideias."
+2. **Criacao do Projeto & Regra Estrangeira:**
+- Se for um cliente ESTRANGEIRO ou que fala ingles, informe que a arte e feita em 2 sessoes. Exemplo de como abordar (traduza se necessario): "In this case, this piece would be done in 2 sessions to achieve the best possible quality and level of detail. Each session is dedicated 100% to you, giving us enough time to talk in person, go over all the details, and develop the project carefully. Since we are already discussing the tattoo here, once the appointment is confirmed, I can already start researching references and developing ideas for the project. This way, when we meet, I will already have a few options to show you, and we can work together on any adjustments needed until we reach the ideal result. This allows me to give your artwork my full attention and make sure the project is developed in a completely personalized and thoughtful way! ☺️"
+- Se for cliente Brasileiro, apenas explique que a criacao do projeto e personalizada e desenvolvida no dia ou dias antes da sessao.
 
-3. **Orçamento (Somente após entender o projeto):**
-- Quando passar o orçamento, separe por sessões caso seja grande (ex: fechamento).
-- O valor SEMPRE deve ser apresentado cheio e parcelado primeiro. Exemplo: "O valor ficaria em R$ 4000 parcelado ou R$ 3500 à vista".
-- Especifique MUITO BEM a área do corpo que está sendo cobrada.
+3. **Orcamento & Precos (REGRA ABSOLUTA):**
+- SE OS VALORES ACIMA (Valor Base Minimo ou Valor por Hora) ESTIVEREM COMO "N/A" OU ZERADOS, VOCE ESTA EXPRESSAMENTE PROIBIDO DE PASSAR VALORES, ESTIMATIVAS OU FAIXAS DE PRECO. Diga educadamente que o artista fara o orcamento exato apos avaliar o projeto e a anatomia pessoalmente ou no envio das fotos.
+- Se houver valor configurado, use-o como base. O valor SEMPRE deve ser apresentado cheio e parcelado primeiro.
 
-4. **Quebra de Objeções:**
-- Se o cliente disser que está caro, explique estrategicamente o seu diferencial. 
-- A maioria das objeções é um pedido de "me prove que vale". Mostre paciência e agregue valor.
+4. **Conversao & Agendamento (O SINAL):**
+- Quando o cliente decidir agendar, voce DEVE pedir as seguintes informacoes para prosseguir com o agendamento:
+  * Nome completo
+  * Numero de celular (com codigo do pais)
+  * Cidade de residencia
+- Informe que para garantir a data (ou horario) seja exclusivamente reservada, e necessario um sinal financeiro para CADA sessao. 
+- O valor do sinal sera abatido do total da tatuagem no dia da sessao.
+- Informe que o pagamento pode ser realizado via Pix para: "CNPJ: [Inserir o CNPJ do estudio ou chave Pix informada pelo artista. Se nao souber, diga que o artista enviara a chave]".
+- ASSIM QUE o cliente passar os dados, voce DEVE retornar uma tag secreta no final da sua mensagem exatamente neste formato: \`[AGENDAMENTO CONFIRMADO: nome="..." email="..." insta="..." telefone="..." data="..." hora="..."]\`. Preencha os campos.
 
-5. **Conversão & Agendamento (O SINAL):**
-- Quando o cliente quiser fechar, peça os dados (Nome, Celular, Cidade).
-- Informe sobre o SINAL: "Para garantir que a data seja reservada para você, é necessário um sinal de [Insira um valor coerente com o orçamento] via Pix. Esse valor será abatido do total. Chave Pix: CNPJ xxx.xxx". (Adapte a chave Pix para os dados do estúdio se fornecidos).
-- ASSIM QUE o cliente escolher a data e o horário, e passar o Nome, Email, Insta e Telefone, você JÁ EFETUA O AGENDAMENTO. 
-- Para efetuar o agendamento no sistema, você DEVE retornar uma tag secreta no final da sua mensagem exatamente neste formato: \`[AGENDAMENTO CONFIRMADO: nome="..." email="..." insta="..." telefone="..." data="..." hora="..."]\`. Preencha os campos com os dados coletados.
+5. **Comportamentos Anti-Curiosos:**
+- NAO responda a mesma coisa duas vezes. Leia o historico.
+- Se o cliente mandar uma foto, dedique atencao extra para elogiar ou fazer perguntas tecnicas (tamanho, anatomia, local do corpo).
+- Lembre-se: Voce NAO deve parecer um robo. O cliente nao deve perceber facilmente que esta falando com uma IA.`;
 
-6. **Comportamentos Anti-Curiosos & Regras de Ouro:**
-- NÃO responda a mesma coisa duas vezes. Leia o histórico e dê continuidade à conversa.
-- Se o cliente mandar uma foto (IMAGEM ENVIADA PELO CLIENTE), dedique atenção extra para elogiar ou fazer perguntas técnicas (tamanho, anatomia, local do corpo).
-- Se o cliente mandar um ÁUDIO (ÁUDIO RECEBIDO), aja normalmente e responda no texto abordando o que ele falou no áudio.
-- Se o cliente pedir um estilo que não está na lista de Estilos (${settings.styles}), recuse educadamente dizendo que você não atende esse estilo.
-- Se o cliente insistir muito APENAS em preço, tente agregar valor. Se continuar focado apenas no valor barato, dispense educadamente (o estúdio é focado em qualidade e experiência).
-- Responda SEMPRE no idioma que o cliente iniciou a conversa (seja inglês, espanhol ou português).
-
-Lembre-se: Você NÃO deve parecer um robô. O cliente não deve perceber facilmente que está falando com uma IA.`;
-
-    // Se o cliente enviou uma foto E o tatuador tem imagens de estilo, baixamos as imagens para o Gemini comparar
     const messagesToSend: any[] = [...formattedHistory];
     
-    if (settings.style_image_url && hasImage) {
-      const urls = settings.style_image_url.split(',').filter((u: string) => u.trim() !== '');
-      if (urls.length > 0) {
-        try {
-          const contentParts: any[] = [
-            { type: 'text', text: '[INSTRUÇÃO DO SISTEMA]: O cliente acabou de enviar uma imagem de referência. Abaixo estão as imagens do meu portfólio. Analise se a referência do cliente se encaixa no meu estilo. Se fugir muito, recuse educadamente e explique o porquê baseado no meu portfólio.' }
-          ];
-          
-          // Fetch all images in parallel to save time
-          const base64Images = await Promise.all(urls.map(async (url: string) => {
-            const res = await fetch(url.trim());
-            const arrayBuffer = await res.arrayBuffer();
-            return Buffer.from(arrayBuffer).toString('base64');
-          }));
-          
-          base64Images.forEach(base64 => {
-            contentParts.push({ type: 'image', image: base64 });
-          });
-
-          messagesToSend.unshift(
-            { role: 'user', content: contentParts },
-            { role: 'assistant', content: 'Entendido. Compararei a referência do cliente com o portfólio.' }
-          );
-        } catch (e) {
-          console.error("Error fetching portfolio images:", e);
-        }
-      }
-    }
-
-    // Prepare current user message with image or audio if present
+    // Prepare current user message
     const currentUserParts: any[] = [];
     if (messageText) {
       currentUserParts.push({ type: 'text', text: messageText });
     } else if (hasAudio) {
-      currentUserParts.push({ type: 'text', text: '[ÁUDIO RECEBIDO DO CLIENTE]' });
+      currentUserParts.push({ type: 'text', text: '[AUDIO RECEBIDO DO CLIENTE]' });
     }
 
     if (base64Media) {
       if (hasImage) {
         currentUserParts.push({ type: 'image', image: base64Media });
       } 
-      // Skip injecting the audio file directly into Gemini for now to avoid SDK crashes
     }
     if (currentUserParts.length > 0) {
       messagesToSend.push({
@@ -241,15 +210,6 @@ Lembre-se: Você NÃO deve parecer um robô. O cliente não deve perceber facilm
         googleAuthOptions: { credentials }
       });
     } catch (e: any) {
-      console.error("Vertex Auth Error:", e);
-      try {
-        await supabase.from('chat_history').insert([{
-          clerk_user_id: 'SYSTEM_ERROR',
-          phone_number: 'ERROR_LOG',
-          role: 'system',
-          content: 'Vertex Auth Error: ' + e.message
-        }]);
-      } catch(ignore) {}
       return NextResponse.json({ error: 'Vertex AI config error' }, { status: 500 });
     }
 
@@ -259,102 +219,71 @@ Lembre-se: Você NÃO deve parecer um robô. O cliente não deve perceber facilm
       messages: messagesToSend,
     });
 
-    // 7. Save Messages to History (User and Assistant)
-    let dbUserText = messageText;
-    if (hasImage) dbUserText = `[IMAGEM ENVIADA PELO CLIENTE] ${messageText}`;
-    if (hasAudio) dbUserText = `[ÁUDIO ENVIADO PELO CLIENTE] ${messageText || ''}`;
+    let finalResponse = aiResponse;
 
+    // Check for Scheduling Tag
+    const agendamentoMatch = finalResponse.match(/\[AGENDAMENTO CONFIRMADO:(.*?)\]/);
+    if (agendamentoMatch) {
+      finalResponse = finalResponse.replace(agendamentoMatch[0], '').trim();
+      
+      await supabase.from('appointments').insert({
+        tatuador_id: clerk_user_id,
+        client_id: customer!.id,
+        appointment_date: new Date(Date.now() + 86400000 * 7).toISOString(), 
+        status: 'Confirmado',
+        description: agendamentoMatch[1].trim()
+      });
+    }
+
+    // Check for Photo Example Tag
+    const needsExamplePhoto = finalResponse.includes('[ENVIAR_EXEMPLO_FOTO]');
+    if (needsExamplePhoto) {
+      finalResponse = finalResponse.replace('[ENVIAR_EXEMPLO_FOTO]', '').trim();
+    }
+
+    // Save interaction to history
     await supabase.from('chat_history').insert([
-      {
-        clerk_user_id,
-        phone_number: remoteJid,
-        role: 'user',
-        content: dbUserText
-      },
-      {
-        clerk_user_id,
-        phone_number: remoteJid,
-        role: 'assistant',
-        content: aiResponse
-      }
+      { clerk_user_id, phone_number: remoteJid, role: 'user', content: messageText || '[Midia enviada]' },
+      { clerk_user_id, phone_number: remoteJid, role: 'assistant', content: finalResponse }
     ]);
 
-    // 7.5. Intercept Scheduling Tag
-    let finalAiResponse = aiResponse;
-    const schedulingRegex = /\\[AGENDAMENTO CONFIRMADO: (.*?)\\]/;
-    const match = finalAiResponse.match(schedulingRegex);
-    
-    if (match) {
-      finalAiResponse = finalAiResponse.replace(match[0], '').trim();
-      const rawData = match[1];
-      
-      // Basic manual extraction since eval is dangerous and JSON.parse won't work on raw attribute strings
-      const extractField = (field: string) => {
-        const regex = new RegExp(`${field}=\"([^\"]+)\"`);
-        const m = rawData.match(regex);
-        return m ? m[1] : '';
-      };
-      
-      const nome = extractField('nome');
-      const email = extractField('email');
-      const insta = extractField('insta');
-      const telefone = extractField('telefone');
-      const data = extractField('data');
-      const hora = extractField('hora');
-
-      // Save to Supabase (we can save it to the customer record or a new schedules table)
-      // For now, let's update the customer record with the email and insta, and we can log the schedule in chat history or a schedules table if it existed.
-      if (nome || email || insta) {
-        await supabase
-          .from('customers')
-          .update({
-             name: nome || customer?.name,
-             status: 'scheduled',
-          })
-          .eq('id', customer!.id);
-      }
-      
-      // Also log the scheduling event for the artist
-      await supabase.from('chat_history').insert([{
-        clerk_user_id,
-        phone_number: remoteJid,
-        role: 'system',
-        content: `NOVO AGENDAMENTO: O cliente ${nome} (Insta: ${insta}, Email: ${email}, Tel: ${telefone}) agendou para ${data} às ${hora}.`
-      }]);
-    }
-
-    // 8. Dynamic delay logic (simulating typing speed)
-    // Vercel Serverless Functions timeout after 10s on Hobby plan.
-    // For text (Gemini 2-3s), we can afford a dynamic delay up to 4000ms.
-    let delayMs = 500 + Math.min(aiResponse.length * 15, 4000);
-    
-    if (!evolutionUrl || !apiKey) {
-      return NextResponse.json({ error: 'Evolution API credentials missing' }, { status: 500 });
-    }
-
-    await fetch(`${evolutionUrl}/message/sendText/${instanceName}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'apikey': apiKey
-      },
-      body: JSON.stringify({
-        number: remoteJid,
-        text: finalAiResponse
-      })
-    });
-
-    return NextResponse.json({ status: 'success' });
-  } catch (error: any) {
-    console.error('Webhook Error:', error);
+    // Send text response via Evolution API
     try {
-      await supabase.from('chat_history').insert([{
-        clerk_user_id: 'SYSTEM_ERROR',
-        phone_number: 'ERROR_LOG',
-        role: 'system',
-        content: error.message || error.toString()
-      }]);
-    } catch(e) {}
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+      await fetch(`${evolutionUrl}/message/sendText/${instanceName}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'apikey': apiKey },
+        body: JSON.stringify({
+          number: remoteJid,
+          options: { delay: 1500, presence: 'composing' },
+          textMessage: { text: finalResponse }
+        })
+      });
+
+      // Send photo example if tag was present
+      if (needsExamplePhoto) {
+        await fetch(`${evolutionUrl}/message/sendMedia/${instanceName}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'apikey': apiKey },
+          body: JSON.stringify({
+            number: remoteJid,
+            options: { delay: 3000, presence: 'composing' },
+            mediaMessage: {
+              mediatype: "image",
+              caption: "Exemplo de como tirar a foto do local:",
+              media: "https://plataforma-infinita-seven.vercel.app/example_arm.jpg" // REPLACE WITH ACTUAL PUBLIC URL
+            }
+          })
+        });
+      }
+
+    } catch (err) {
+      console.error("Failed to send response via Evolution:", err);
+    }
+
+    return NextResponse.json({ status: 'replied' });
+
+  } catch (error: any) {
+    console.error("Erro no webhook:", error);
+    return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
