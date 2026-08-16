@@ -270,7 +270,7 @@ Esta e a estrategia de conversao que voce DEVE seguir rigidamente:
             mediaMessage: {
               mediatype: "image",
               caption: "Exemplo de como tirar a foto do local:",
-              media: "https://plataforma-infinita-seven.vercel.app/example_arm.jpg" // REPLACE WITH ACTUAL PUBLIC URL
+              media: `https://${req.headers.get('host')}/exemplo-foto.jpg`
             }
           })
         });

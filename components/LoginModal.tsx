@@ -326,8 +326,8 @@ export function LoginModal({ isOpen, onClose, initialView = "login" }: LoginModa
                 </div>
               )}
 
-              {/* TELA DE VERIFICAÇÃO DE CÓDIGO */}
-              {pendingVerification ? (
+              {/* TELA DE VERIFICACAO DE CODIGO (SIGN IN / SIGN UP) */}
+              {pendingVerification && view !== "forgot" ? (
                 <form onSubmit={verificationType === "signup" ? handleVerifySignUp : handleVerifySignIn} className="space-y-4 relative z-10">
                   <div className="relative">
                     <ShieldCheck className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
@@ -351,6 +351,102 @@ export function LoginModal({ isOpen, onClose, initialView = "login" }: LoginModa
                       className="text-xs text-muted-foreground hover:text-white"
                     >
                       Voltar
+                    </button>
+                  </div>
+                </form>
+
+              ) : view === "forgot" ? (
+                /* TELA DE ESQUECI A SENHA */
+                <form className="space-y-4 relative z-10" onSubmit={async (e) => {
+                  e.preventDefault();
+                  if (!email) { setErrorMsg("Digite seu e-mail."); return; }
+                  setIsLoading(true); setErrorMsg("");
+                  try {
+                    await signIn?.create({
+                      strategy: "reset_password_email_code",
+                      identifier: email,
+                    });
+                    setPendingVerification(true); // Usado aqui para mostrar a tela de codigo do reset
+                  } catch (err: any) {
+                    setErrorMsg(err.errors?.[0]?.message || "Erro ao solicitar reset.");
+                  } finally {
+                    setIsLoading(false);
+                  }
+                }}>
+                  {!pendingVerification ? (
+                    <>
+                      <p className="text-sm text-center text-muted-foreground mb-4">Enviaremos um codigo para o seu e-mail para redefinir a senha.</p>
+                      <div className="relative">
+                        <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                        <input
+                          type="email"
+                          value={email}
+                          onChange={(e) => setEmail(e.target.value)}
+                          placeholder="Seu E-mail"
+                          className="w-full bg-black/50 border border-white/10 rounded-xl py-3 pl-10 pr-4 text-sm text-white placeholder:text-muted-foreground focus:outline-none focus:border-white/30 transition-colors"
+                        />
+                      </div>
+                      <Button type="submit" disabled={isLoading} className="w-full group h-12 uppercase font-bold tracking-widest text-[11px] rounded-xl mt-6 neon-glow metallic-gradient text-black hover:opacity-90 border-0">
+                        <span>{isLoading ? "Enviando..." : "Enviar Código"}</span>
+                        <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
+                      </Button>
+                    </>
+                  ) : (
+                    <>
+                      <div className="relative mb-4">
+                        <ShieldCheck className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                        <input
+                          type="text"
+                          value={code}
+                          onChange={(e) => setCode(e.target.value)}
+                          placeholder="Código de 6 dígitos"
+                          className="w-full bg-black/50 border border-white/10 rounded-xl py-3 pl-10 pr-4 text-center tracking-[0.5em] text-lg text-white focus:outline-none focus:border-white/30 transition-colors"
+                          maxLength={6}
+                        />
+                      </div>
+                      <div className="relative mb-4">
+                        <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                        <input
+                          type="password"
+                          value={password}
+                          onChange={(e) => setPassword(e.target.value)}
+                          placeholder="Nova Senha"
+                          className="w-full bg-black/50 border border-white/10 rounded-xl py-3 pl-10 pr-12 text-sm text-white placeholder:text-muted-foreground focus:outline-none focus:border-white/30 transition-colors"
+                        />
+                      </div>
+                      <Button 
+                        type="button" 
+                        onClick={async () => {
+                          if (!code || !password) { setErrorMsg("Preencha o código e a nova senha."); return; }
+                          setIsLoading(true); setErrorMsg("");
+                          try {
+                            const result = await signIn?.attemptFirstFactor({
+                              strategy: "reset_password_email_code",
+                              code,
+                              password,
+                            });
+                            if (result?.status === "complete") {
+                              setActive({ session: result.createdSessionId });
+                              onClose();
+                              window.location.href = "/dashboard";
+                            }
+                          } catch (err: any) {
+                            setErrorMsg(err.errors?.[0]?.message || "Código inválido ou erro ao redefinir.");
+                          } finally {
+                            setIsLoading(false);
+                          }
+                        }}
+                        disabled={isLoading} 
+                        className="w-full group h-12 uppercase font-bold tracking-widest text-[11px] rounded-xl mt-2 neon-glow metallic-gradient text-black hover:opacity-90 border-0"
+                      >
+                        <span>{isLoading ? "Salvando..." : "Redefinir Senha"}</span>
+                        <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
+                      </Button>
+                    </>
+                  )}
+                  <div className="text-center mt-4">
+                    <button type="button" onClick={() => { setView("login"); setPendingVerification(false); }} className="text-xs text-muted-foreground hover:text-white">
+                      Voltar para o Login
                     </button>
                   </div>
                 </form>
@@ -387,6 +483,12 @@ export function LoginModal({ isOpen, onClose, initialView = "login" }: LoginModa
                     </button>
                   </div>
 
+                  <div className="flex justify-end">
+                    <button type="button" onClick={() => { setView("forgot"); setPendingVerification(false); }} className="text-xs text-muted-foreground hover:text-primary transition-colors">
+                      Esqueceu a senha?
+                    </button>
+                  </div>
+
                   <Button type="submit" disabled={isLoading} className="w-full group h-12 uppercase font-bold tracking-widest text-[11px] rounded-xl mt-6 neon-glow metallic-gradient text-black hover:opacity-90 border-0">
                     <span>{isLoading ? "Entrando..." : "Acessar Plataforma"}</span>
                     <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
@@ -419,7 +521,7 @@ export function LoginModal({ isOpen, onClose, initialView = "login" }: LoginModa
                         </>
                       )}
                       
-                      {/* Overlay para trocar foto se já houver uma */}
+                      {/* Overlay para trocar foto se ja houver uma */}
                       {fotoPreview && (
                         <div className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                            <Upload className="w-5 h-5 text-white" />
@@ -478,7 +580,7 @@ export function LoginModal({ isOpen, onClose, initialView = "login" }: LoginModa
                       type={showPassword ? "text" : "password"}
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      placeholder="Crie uma Senha (mínimo 8 caracteres)"
+                      placeholder="Crie uma Senha (minimo 8 caracteres)"
                       className="w-full bg-black/50 border border-white/10 rounded-xl py-3 pl-10 pr-12 text-sm text-white placeholder:text-muted-foreground focus:outline-none focus:border-white/30 transition-colors"
                     />
                     <button
@@ -497,10 +599,10 @@ export function LoginModal({ isOpen, onClose, initialView = "login" }: LoginModa
                 </form>
               )}
 
-              {!pendingVerification && (
+              {view !== "forgot" && !pendingVerification && (
                 <div className="mt-8 pt-6 border-t border-white/5 text-center relative z-10">
                   <p className="text-sm text-muted-foreground font-light">
-                    {view === "login" ? "Ainda não tem uma conta? " : "Já possui uma conta? "}
+                    {view === "login" ? "Ainda nao tem uma conta? " : "Ja possui uma conta? "}
                     <button 
                       onClick={() => setView(view === "login" ? "register" : "login")}
                       className="text-white hover:underline font-medium"
