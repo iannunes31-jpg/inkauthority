@@ -1,9 +1,22 @@
+"use client";
+
 import Image from "next/image";
 import Link from "next/link";
+import { useState } from "react";
 import { FloatingMenu } from "@/components/FloatingMenu";
 import { ChatWidget } from "@/components/ChatWidget";
 
 export default function LandingPage() {
+  const [formStatus, setFormStatus] = useState<'idle' | 'loading' | 'success'>('idle');
+
+  const handleFormSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setFormStatus('loading');
+    setTimeout(() => {
+      setFormStatus('success');
+    }, 2000);
+  };
+
   return (
     <>
       <main className="bg-[#faf9f5] min-h-screen text-black w-full overflow-hidden font-sans">
@@ -65,7 +78,8 @@ export default function LandingPage() {
       <span data-reveal="" style={{"fontSize":"11px","letterSpacing":".34em","textTransform":"uppercase","color":"rgba(238,238,242,.45)"}}>Entre na comunidade</span>
       <h2 data-reveal="" data-delay="80" style={{"margin":"18px 0 0","fontFamily":"'Jost',sans-serif","fontWeight":"200","fontSize":"clamp(24px,5.4vw,42px)","lineHeight":"1.12","color":"#f4f4f7"}}>Seu acesso ao grupo</h2>
       
-        <form   style={{"width":"100%","marginTop":"clamp(28px,5vh,44px)","display":"flex","flexDirection":"column","gap":"16px","textAlign":"left"}}>
+      {formStatus === 'idle' && (
+        <form onSubmit={handleFormSubmit} style={{"width":"100%","marginTop":"clamp(28px,5vh,44px)","display":"flex","flexDirection":"column","gap":"16px","textAlign":"left"}}>
           <input name="nome" required placeholder="Nome" style={{"background":"rgba(255,255,255,.03)","border":"1px solid rgba(255,255,255,.13)","borderRadius":"11px","color":"#f3f3f6","fontSize":"16px","padding":"15px 16px","outline":"none","transition":"border-color .4s,background .4s"}}  />
           <input name="whatsapp" required inputMode="tel" placeholder="WhatsApp com DDD" style={{"background":"rgba(255,255,255,.03)","border":"1px solid rgba(255,255,255,.13)","borderRadius":"11px","color":"#f3f3f6","fontSize":"16px","padding":"15px 16px","outline":"none","transition":"border-color .4s,background .4s"}}  />
           <input name="email" type="email" required placeholder="E-mail" style={{"background":"rgba(255,255,255,.03)","border":"1px solid rgba(255,255,255,.13)","borderRadius":"11px","color":"#f3f3f6","fontSize":"16px","padding":"15px 16px","outline":"none","transition":"border-color .4s,background .4s"}}  />
@@ -75,9 +89,9 @@ export default function LandingPage() {
             <span>Posicionamento</span><span style={{"color":"rgba(200,200,210,.4)","fontSize":"10px"}}>✦</span><span>Técnica</span><span style={{"color":"rgba(200,200,210,.4)","fontSize":"10px"}}>✦</span><span>Estratégia</span>
           </div>
         </form>
-      
+      )}
 
-      
+      {formStatus === 'loading' && (
         <div style={{"width":"100%","marginTop":"clamp(28px,5vh,44px)","textAlign":"center"}}>
           <div style={{"position":"relative","height":"3px","borderRadius":"100px","background":"rgba(255,255,255,.08)","overflow":"hidden"}}>
             <div style={{"width":"100%", "height":"100%", "background":"#fff", "borderRadius":"100px"}}></div>
@@ -85,16 +99,16 @@ export default function LandingPage() {
           </div>
           <p style={{"margin":"18px 0 0","fontFamily":"'Jost',sans-serif","fontWeight":"300","fontSize":"12px","letterSpacing":".3em","textTransform":"uppercase","color":"rgba(238,238,242,.5)"}}>Confirmando</p>
         </div>
-      
+      )}
 
-      
+      {formStatus === 'success' && (
         <div style={{"width":"100%","marginTop":"clamp(28px,5vh,44px)","textAlign":"center"}}>
           <span style={{"display":"inline-flex","alignItems":"center","justifyContent":"center","width":"64px","height":"64px","border":"1px solid rgba(255,255,255,.28)","borderRadius":"100px","fontSize":"22px","background":"linear-gradient(180deg,#fff,#9a9aa0)","WebkitBackgroundClip":"text","backgroundClip":"text","color":"transparent"}}>✦</span>
           <h3 style={{"margin":"22px 0 10px","fontFamily":"'Jost',sans-serif","fontWeight":"300","fontSize":"clamp(21px,4vw,30px)","color":"#f3f3f6"}}>Cadastro confirmado</h3>
           <p style={{"margin":"0 auto 24px","maxWidth":"360px","fontWeight":"300","fontSize":"15px","lineHeight":"1.6","color":"rgba(238,238,242,.6)"}}>Toque no botão abaixo para entrar no grupo de WhatsApp agora.</p>
           <a href="https://chat.whatsapp.com/G35Z5P4p73n6sD2E2zR8yV" target="_blank" rel="noopener" style={{"display":"inline-block","fontSize":"13px","letterSpacing":".18em","textTransform":"uppercase","color":"#0a0a0c","background":"linear-gradient(180deg,#f4f4f6,#c8c8ce)","padding":"17px 32px","borderRadius":"100px","fontWeight":"700"}}>Acessar o grupo</a>
         </div>
-      
+      )}
     </div>
   </section>
 
