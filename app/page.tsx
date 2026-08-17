@@ -19,11 +19,11 @@ export default function LandingPage() {
 
   return (
     <>
-      <main className="bg-[#faf9f5] min-h-screen text-black w-full overflow-hidden font-sans">
+      <main className="bg-[#faf9f5] pt-[72px] min-h-screen text-black w-full overflow-hidden font-sans">
         <div style={{"position":"relative","width":"100%","overflow":"hidden"}}>
 
   {/* HERO + FORM */}
-  <section style={{"position":"relative","minHeight":"100svh","display":"flex","flexDirection":"column","alignItems":"center","justifyContent":"flex-start","padding":"clamp(72px,15vh,150px) 22px clamp(24px,4vh,44px)"}}>
+  <section style={{"position":"relative","minHeight":"calc(100svh - 72px)","display":"flex","flexDirection":"column","alignItems":"center","justifyContent":"flex-start","padding":"clamp(72px,15vh,150px) 22px clamp(24px,4vh,44px)"}}>
     <div data-parallax={0.14} style={{"position":"absolute","inset":"-12% -20%","zIndex":"0","backgroundImage":"url('/ipad-mockup.jpeg')","backgroundSize":"190%","backgroundPosition":"center 12%","filter":"blur(14px) brightness(.5) grayscale(.35)","opacity":".42"}}></div>
     <div style={{"position":"absolute","inset":"0","zIndex":"1","background":"radial-gradient(120% 75% at 50% -10%,rgba(120,120,128,.26),transparent 55%),radial-gradient(100% 90% at 50% 118%,rgba(0,0,0,.78),transparent 60%)"}}></div>
     <div aria-hidden="true" style={{"position":"absolute","inset":"0","zIndex":"1","display":"flex","alignItems":"center","justifyContent":"center","pointerEvents":"none","overflow":"hidden"}}><span style={{"fontFamily":"'Jost',sans-serif","fontWeight":"200","fontSize":"clamp(112px,34vw,400px)","letterSpacing":".16em","whiteSpace":"nowrap","transform":"scale(1.5) translateY(-6%)","filter":"blur(9px)","opacity":".055","background":"linear-gradient(180deg,#ffffff,#c9c9cf 55%,#8f9096 72%,#f0f0f4)","WebkitBackgroundClip":"text","backgroundClip":"text","color":"transparent"}}>INK AUTHORITY</span></div>
@@ -116,18 +116,6 @@ export default function LandingPage() {
   <section style={{"position":"relative","background":"#08080a","borderTop":"1px solid rgba(255,255,255,.06)","padding":"clamp(56px,9vh,110px) 22px"}}>
     <p data-reveal="" style={{"margin":"0 auto","maxWidth":"520px","textAlign":"center","fontFamily":"'Jost',sans-serif","fontWeight":"300","fontStyle":"italic","fontSize":"clamp(18px,3vw,26px)","lineHeight":"1.4","color":"#e8e8ec"}}>"O cliente compra o artista antes da arte."</p>
     <p data-reveal="" data-delay="160" style={{"margin":"14px auto 0","textAlign":"center","fontSize":"12px","letterSpacing":".24em","textTransform":"uppercase","color":"rgba(238,238,242,.42)"}}>Isabella Badini</p>
-
-    <div className="flex flex-wrap justify-center gap-6 mt-16 max-w-4xl mx-auto">
-      <div className="relative w-full max-w-[280px] h-[550px] rounded-2xl overflow-hidden border border-white/10 shadow-2xl">
-        <Image src="/print-whatsapp-1.jpeg" alt="Depoimento WhatsApp 1" fill style={{ objectFit: 'cover' }} className="hover:scale-105 transition-transform duration-500" />
-      </div>
-      <div className="relative w-full max-w-[280px] h-[550px] rounded-2xl overflow-hidden border border-white/10 shadow-2xl md:mt-8">
-        <Image src="/print-whatsapp-2.jpeg" alt="Depoimento WhatsApp 2" fill style={{ objectFit: 'cover' }} className="hover:scale-105 transition-transform duration-500" />
-      </div>
-      <div className="relative w-full max-w-[280px] h-[550px] rounded-2xl overflow-hidden border border-white/10 shadow-2xl">
-        <Image src="/print-whatsapp-3.jpeg" alt="Depoimento WhatsApp 3" fill style={{ objectFit: 'cover' }} className="hover:scale-105 transition-transform duration-500" />
-      </div>
-    </div>
   </section>
 
   {/* FOOTER */}
