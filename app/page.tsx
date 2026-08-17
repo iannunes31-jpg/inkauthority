@@ -102,6 +102,18 @@ export default function LandingPage() {
   <section style={{"position":"relative","background":"#08080a","borderTop":"1px solid rgba(255,255,255,.06)","padding":"clamp(56px,9vh,110px) 22px"}}>
     <p data-reveal="" style={{"margin":"0 auto","maxWidth":"520px","textAlign":"center","fontFamily":"'Jost',sans-serif","fontWeight":"300","fontStyle":"italic","fontSize":"clamp(18px,3vw,26px)","lineHeight":"1.4","color":"#e8e8ec"}}>"O cliente compra o artista antes da arte."</p>
     <p data-reveal="" data-delay="160" style={{"margin":"14px auto 0","textAlign":"center","fontSize":"12px","letterSpacing":".24em","textTransform":"uppercase","color":"rgba(238,238,242,.42)"}}>Isabella Badini</p>
+
+    <div className="flex flex-wrap justify-center gap-6 mt-16 max-w-4xl mx-auto">
+      <div className="relative w-full max-w-[280px] h-[550px] rounded-2xl overflow-hidden border border-white/10 shadow-2xl">
+        <Image src="/print-whatsapp-1.jpeg" alt="Depoimento WhatsApp 1" fill style={{ objectFit: 'cover' }} className="hover:scale-105 transition-transform duration-500" />
+      </div>
+      <div className="relative w-full max-w-[280px] h-[550px] rounded-2xl overflow-hidden border border-white/10 shadow-2xl md:mt-8">
+        <Image src="/print-whatsapp-2.jpeg" alt="Depoimento WhatsApp 2" fill style={{ objectFit: 'cover' }} className="hover:scale-105 transition-transform duration-500" />
+      </div>
+      <div className="relative w-full max-w-[280px] h-[550px] rounded-2xl overflow-hidden border border-white/10 shadow-2xl">
+        <Image src="/print-whatsapp-3.jpeg" alt="Depoimento WhatsApp 3" fill style={{ objectFit: 'cover' }} className="hover:scale-105 transition-transform duration-500" />
+      </div>
+    </div>
   </section>
 
   {/* FOOTER */}
