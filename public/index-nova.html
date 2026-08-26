@@ -47,23 +47,67 @@
   </script>
   <script src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
 
+
 <style id="master-light-css">
-  html.light {
-    filter: invert(1) hue-rotate(180deg) contrast(0.95) !important;
-    background-color: #f7f7f7 !important;
-  }
+  /* REAL LIGHT MODE - CLEAN LIGHT BACKGROUNDS & DARK TEXT - NO INVERSION FILTERS ON PHOTOS */
+  html.light, 
   html.light body {
-    filter: none !important;
-    background-color: transparent !important;
+    background-color: #ffffff !important;
+    color: #111116 !important;
   }
+  
+  html.light section,
+  html.light main,
+  html.light footer,
+  html.light nav,
+  html.light div[style*="background"] {
+    background-color: #ffffff !important;
+    background-image: none !important;
+    color: #111116 !important;
+  }
+
+  html.light h1, 
+  html.light h2, 
+  html.light h3, 
+  html.light h4, 
+  html.light h5, 
+  html.light h6, 
+  html.light p, 
+  html.light span, 
+  html.light a, 
+  html.light li, 
+  html.light td, 
+  html.light th, 
+  html.light label {
+    color: #111116 !important;
+    background-clip: initial !important;
+    -webkit-background-clip: initial !important;
+    -webkit-text-fill-color: initial !important;
+  }
+
+  html.light a {
+    color: #000000 !important;
+  }
+
+  html.light .notranslate {
+    color: #000000 !important;
+  }
+
+  /* Cards and borders in Light Mode */
+  html.light div[style*="border"],
+  html.light section[style*="border"] {
+    border-color: rgba(0, 0, 0, 0.12) !important;
+    background-color: #f8f8fa !important;
+  }
+
+  /* Keep images, videos, canvas, svgs completely normal */
   html.light img,
   html.light video,
   html.light iframe,
-  html.light canvas,
   html.light svg,
-  html.light image-slot,
-  html.light .is-media-bg {
-    filter: invert(1) hue-rotate(180deg) !important;
+  html.light canvas {
+    filter: none !important;
+    opacity: 1 !important;
   }
 </style>
 </head>
