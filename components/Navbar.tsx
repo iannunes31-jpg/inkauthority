@@ -5,7 +5,7 @@ import { Button } from "./ui/button";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "motion/react";
 import { Menu, X, Search, Bell } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { NotificationPanel } from "./NotificationPanel";
 import { useAuth, useUser, useClerk } from "@clerk/nextjs";
@@ -96,6 +96,18 @@ export function Navbar() {
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const { isSignedIn: isLoggedIn } = useAuth();
+
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      if (event.data && event.data.type === 'OPEN_REGISTER') {
+        setAuthView('register');
+        setIsLoginOpen(true);
+      }
+    };
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, []);
+
 
   const navLinks = [
     { name: "HOME", path: "/" },

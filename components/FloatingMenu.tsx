@@ -38,55 +38,13 @@ export function FloatingMenu() {
     setTheme(savedTheme);
     applyTheme(savedTheme);
 
-    const setupIframe = () => {
+    // Initial theme sync with iframe
+    setTimeout(() => {
       const iframe = document.querySelector('iframe');
-      if (iframe) {
-        const doc = iframe.contentDocument;
-        if (!doc) return;
-        
-        if (doc.getElementById('google_translate_element_iframe')) return;
-
-        applyTheme(savedTheme);
-        
-        const tDiv = doc.createElement('div');
-        tDiv.id = "google_translate_element_iframe";
-        tDiv.style.display = "none";
-        doc.body.appendChild(tDiv);
-
-        const s1 = doc.createElement('script');
-        s1.innerHTML = `
-            window.googleTranslateElementInit = function() {
-                new google.translate.TranslateElement(
-                    { pageLanguage: "pt", autoDisplay: false },
-                    "google_translate_element_iframe"
-                );
-            }
-        `;
-        doc.head.appendChild(s1);
-
-        const s2 = doc.createElement('script');
-        s2.src = "//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit";
-        doc.head.appendChild(s2);
-
-        const style = doc.createElement('style');
-        style.innerHTML = `
-            .skiptranslate { display: none !important; }
-            body { top: 0px !important; }
-            html.light body { filter: invert(1) hue-rotate(180deg) contrast(0.95); background-color: #f7f7f7 !important; }
-            html.light img, html.light video, html.light iframe { filter: invert(1) hue-rotate(180deg) !important; }
-        `;
-        doc.head.appendChild(style);
+      if (iframe && iframe.contentWindow) {
+        iframe.contentWindow.postMessage({ type: 'SET_THEME', theme: savedTheme }, '*');
       }
-    };
-
-    const iframe = document.querySelector('iframe');
-    if (iframe) {
-        iframe.addEventListener('load', setupIframe);
-        // Em caso de o iframe já ter carregado rápido
-        if (iframe.contentDocument && iframe.contentDocument.readyState === 'complete') {
-            setupIframe();
-        }
-    }
+    }, 1000);
   }, []);
 
   const applyTheme = (newTheme: string) => {
@@ -105,15 +63,8 @@ export function FloatingMenu() {
     }
 
     const iframe = document.querySelector('iframe');
-    if (iframe && iframe.contentDocument) {
-        const iHtml = iframe.contentDocument.documentElement;
-        if (newTheme === "light") {
-            iHtml.classList.remove("dark");
-            iHtml.classList.add("light");
-        } else {
-            iHtml.classList.remove("light");
-            iHtml.classList.add("dark");
-        }
+    if (iframe && iframe.contentWindow) {
+        iframe.contentWindow.postMessage({ type: 'SET_THEME', theme: newTheme }, '*');
     }
   };
 
@@ -132,12 +83,8 @@ export function FloatingMenu() {
     }
     
     const iframe = document.querySelector('iframe');
-    if (iframe && iframe.contentDocument) {
-        const iSelect = iframe.contentDocument.querySelector(".goog-te-combo") as HTMLSelectElement;
-        if (iSelect) {
-            iSelect.value = langCode;
-            iSelect.dispatchEvent(new Event("change"));
-        }
+    if (iframe && iframe.contentWindow) {
+        iframe.contentWindow.postMessage({ type: 'SET_LANG', lang: langCode }, '*');
     }
     
     setIsTranslateOpen(false);
