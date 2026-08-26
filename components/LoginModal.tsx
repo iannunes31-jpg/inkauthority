@@ -75,14 +75,14 @@ export function LoginModal({ isOpen, onClose, initialView = "login" }: LoginModa
 
       if (result && result.status === "complete") {
         onClose();
-        window.location.href = "/dashboard";
+        window.location.reload();
         return;
       }
       
       // Fallback para caso o signUp já esteja completo
       if (signUp.status === "complete") {
         onClose();
-        window.location.href = "/dashboard";
+        window.location.reload();
         return;
       }
 
@@ -144,10 +144,10 @@ export function LoginModal({ isOpen, onClose, initialView = "login" }: LoginModa
       
       if (result && result.status === "complete") {
         onClose();
-        window.location.href = "/dashboard";
+        window.location.reload();
       } else if (signUp.status === "complete") {
         onClose();
-        window.location.href = "/dashboard";
+        window.location.reload();
       } else if (result && result.status === "missing_requirements") {
         setErrorMsg(`Quase lá! Faltam os campos obrigatórios no painel do Clerk: ${result.missingFields?.join(", ") || "desconhecidos"}`);
       } else if (signUp.status === "missing_requirements") {
@@ -199,7 +199,7 @@ export function LoginModal({ isOpen, onClose, initialView = "login" }: LoginModa
       const status = result?.status || signIn.status;
       if (status === "complete") {
         onClose();
-        window.location.href = "/dashboard";
+        window.location.reload();
       } else {
         setErrorMsg(`Status inesperado: ${status}`);
       }
@@ -239,7 +239,7 @@ export function LoginModal({ isOpen, onClose, initialView = "login" }: LoginModa
 
       if (status === "complete") {
         onClose();
-        window.location.href = "/dashboard";
+        window.location.reload();
       } else if (status === "needs_first_factor" || status === "needs_second_factor" || status === "needs_client_trust") {
         // Envia o código para o email do usuário
         try {
@@ -428,7 +428,7 @@ export function LoginModal({ isOpen, onClose, initialView = "login" }: LoginModa
                             if (result?.status === "complete") {
                               setActive({ session: result.createdSessionId });
                               onClose();
-                              window.location.href = "/dashboard";
+                              window.location.reload();
                             }
                           } catch (err: any) {
                             setErrorMsg(err.errors?.[0]?.message || "Código inválido ou erro ao redefinir.");
