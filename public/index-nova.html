@@ -522,6 +522,29 @@ document.addEventListener('DOMContentLoaded', async function() {
 `);
         }
       }
+        // Swap testimonial images
+        if (sections.length > 5) {
+          const testSection = sections[5];
+          if (!testSection.dataset.imagesSwapped) {
+            testSection.dataset.imagesSwapped = 'true';
+            
+            // Try to find image tags first
+            const imgs = testSection.querySelectorAll('img');
+            if (imgs.length >= 3) {
+              imgs[0].src = '/feedback-new-1.jpeg';
+              imgs[imgs.length - 1].src = '/feedback-new-2.jpeg';
+            } else {
+              // Otherwise, look for background images on div elements
+              const divs = testSection.querySelectorAll('div');
+              const bgDivs = Array.from(divs).filter(d => d.style.backgroundImage && d.style.backgroundImage.includes('url'));
+              if (bgDivs.length >= 3) {
+                bgDivs[0].style.backgroundImage = 'url(/feedback-new-1.jpeg)';
+                bgDivs[bgDivs.length - 1].style.backgroundImage = 'url(/feedback-new-2.jpeg)';
+              }
+            }
+          }
+        }
+      }
     }, 500);
   });
 </script>
