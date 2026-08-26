@@ -49,12 +49,14 @@
 
 
 
+
 <style id="master-light-css">
-  /* FLAWLESS LIGHT MODE - ABSOLUTE OVERRIDE OF ALL INLINE DARK BACKGROUNDS & GRADIENTS */
+  /* CLEAN LIGHT MODE - NO INVERSION FILTERS EVER */
   html.light, 
   html.light body {
-    background: #ffffff !important;
+    background-color: #ffffff !important;
     color: #111116 !important;
+    filter: none !important;
   }
   
   html.light section,
@@ -64,20 +66,17 @@
   html.light div {
     background-color: #ffffff !important;
     color: #111116 !important;
+    filter: none !important;
   }
 
-  /* Kill dark gradients on hero and sections in Light Mode */
+  /* Override dark background gradients and inline styles in Light Mode */
+  html.light [style*="background"],
   html.light [style*="linear-gradient"],
-  html.light [style*="radial-gradient"],
-  html.light [style*="rgba(8,8,10"],
-  html.light [style*="rgba(0,0,0"],
-  html.light [style*="background:#08080a"],
-  html.light [style*="background:#0a0a0c"],
-  html.light [style*="background:#0b0b0e"] {
+  html.light [style*="radial-gradient"] {
     background: #ffffff !important;
   }
 
-  /* Text color override for all text elements */
+  /* Text color override for all text elements in Light Mode */
   html.light h1, 
   html.light h2, 
   html.light h3, 
@@ -98,21 +97,20 @@
     -webkit-text-fill-color: #111116 !important;
   }
 
-  /* Navigation bar in Light Mode */
+  /* Fixed Navigation in Light Mode */
   html.light div[style*="position:fixed"] {
-    background: rgba(255, 255, 255, 0.85) !important;
+    background: rgba(255, 255, 255, 0.9) !important;
     border-bottom: 1px solid rgba(0, 0, 0, 0.1) !important;
-    backdrop-filter: blur(14px) !important;
   }
 
-  /* Cards and boxes in Light Mode */
+  /* Card boxes in Light Mode */
   html.light div[style*="border"],
   html.light section[style*="border"] {
     border-color: rgba(0, 0, 0, 0.12) !important;
     background: #f4f4f7 !important;
   }
 
-  /* Keep media, images, videos, canvas, svg 100% untouched and clear */
+  /* Media tags keep 100% natural original colors without any filter */
   html.light img,
   html.light video,
   html.light iframe,
