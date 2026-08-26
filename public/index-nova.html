@@ -48,11 +48,12 @@
   <script src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
 
 
+
 <style id="master-light-css">
-  /* REAL LIGHT MODE - CLEAN LIGHT BACKGROUNDS & DARK TEXT - NO INVERSION FILTERS ON PHOTOS */
+  /* FLAWLESS LIGHT MODE - ABSOLUTE OVERRIDE OF ALL INLINE DARK BACKGROUNDS & GRADIENTS */
   html.light, 
   html.light body {
-    background-color: #ffffff !important;
+    background: #ffffff !important;
     color: #111116 !important;
   }
   
@@ -60,12 +61,23 @@
   html.light main,
   html.light footer,
   html.light nav,
-  html.light div[style*="background"] {
+  html.light div {
     background-color: #ffffff !important;
-    background-image: none !important;
     color: #111116 !important;
   }
 
+  /* Kill dark gradients on hero and sections in Light Mode */
+  html.light [style*="linear-gradient"],
+  html.light [style*="radial-gradient"],
+  html.light [style*="rgba(8,8,10"],
+  html.light [style*="rgba(0,0,0"],
+  html.light [style*="background:#08080a"],
+  html.light [style*="background:#0a0a0c"],
+  html.light [style*="background:#0b0b0e"] {
+    background: #ffffff !important;
+  }
+
+  /* Text color override for all text elements */
   html.light h1, 
   html.light h2, 
   html.light h3, 
@@ -76,36 +88,37 @@
   html.light span, 
   html.light a, 
   html.light li, 
-  html.light td, 
-  html.light th, 
-  html.light label {
+  html.light em,
+  html.light strong,
+  html.light b,
+  html.light i {
     color: #111116 !important;
     background-clip: initial !important;
     -webkit-background-clip: initial !important;
-    -webkit-text-fill-color: initial !important;
+    -webkit-text-fill-color: #111116 !important;
   }
 
-  html.light a {
-    color: #000000 !important;
+  /* Navigation bar in Light Mode */
+  html.light div[style*="position:fixed"] {
+    background: rgba(255, 255, 255, 0.85) !important;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.1) !important;
+    backdrop-filter: blur(14px) !important;
   }
 
-  html.light .notranslate {
-    color: #000000 !important;
-  }
-
-  /* Cards and borders in Light Mode */
+  /* Cards and boxes in Light Mode */
   html.light div[style*="border"],
   html.light section[style*="border"] {
     border-color: rgba(0, 0, 0, 0.12) !important;
-    background-color: #f8f8fa !important;
+    background: #f4f4f7 !important;
   }
 
-  /* Keep images, videos, canvas, svgs completely normal */
+  /* Keep media, images, videos, canvas, svg 100% untouched and clear */
   html.light img,
   html.light video,
   html.light iframe,
   html.light svg,
-  html.light canvas {
+  html.light canvas,
+  html.light image-slot {
     filter: none !important;
     opacity: 1 !important;
   }
