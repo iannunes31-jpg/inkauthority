@@ -21,8 +21,16 @@
   <style>
     .skiptranslate { display: none !important; }
     body { top: 0px !important; }
-    html.light body { filter: invert(1) hue-rotate(180deg) contrast(0.95); background-color: #f7f7f7 !important; }
-    html.light img, html.light video, html.light iframe { filter: invert(1) hue-rotate(180deg) !important; }
+    html.light { 
+      filter: invert(1) hue-rotate(180deg) contrast(0.95) !important; 
+      background-color: #000 !important; 
+    }
+    html.light img, 
+    html.light video, 
+    html.light iframe, 
+    html.light [style*="background-image"] { 
+      filter: invert(1) hue-rotate(180deg) !important; 
+    }
   </style>
   <script>
     window.addEventListener('message', (event) => {
