@@ -69,7 +69,7 @@ export default function ToolsPage() {
               <div className="flex-1">
                 <h3 className="text-3xl font-black mb-3">Tutor IA Especialista</h3>
                 <p className="text-muted-foreground mb-6 max-w-md mx-auto">
-                  Seu mentor particular 24 horas por dia. Nossa IA sugere agulhas, pigmentos e ajuda no planejamento cirúrgico.
+                  Um mentor particular disponível 24h. Tire dúvidas técnicas em tempo real, receba sugestões precisas de agulhas e pigmentos para cada projeto, e tenha ajuda no planejamento completo das suas sessões.
                 </p>
                 <div className="grid grid-cols-1 gap-4 mb-8 text-left max-w-xs mx-auto">
                   <div className="flex items-center gap-2 text-sm text-foreground/80">

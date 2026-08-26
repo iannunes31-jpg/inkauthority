@@ -39,12 +39,13 @@ export default function CoursesPage() {
   };
 
   const features = [
-    "Estratégias de atração de clientes High-Ticket",
-    "Metodologia Isabella Badini de Posicionamento",
-    "Como estruturar seu perfil no Instagram",
-    "Técnicas de vendas e precificação de tatuagens",
-    "Gestão de estúdio e atendimento premium",
-    "Acesso à comunidade exclusiva Ink Authority",
+    "O que é posicionamento e como aplicá-lo à sua carreira artística",
+    "Estruturação das suas redes sociais",
+    "Criação de conteúdos que atraem clientes",
+    "Técnicas de vendas e conversão de clientes",
+    "Como utilizar o tráfego pago de forma objetiva",
+    "Acesso à comunidade exclusiva da Ink Authority",
+    "🎁 BÔNUS: Análise de perfil grátis (para os 20 primeiros)",
   ];
 
   return (
@@ -66,7 +67,7 @@ export default function CoursesPage() {
               O Primeiro Passo Para o Topo
             </span>
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-black mb-4 uppercase tracking-tighter text-glow leading-tight">
-              Marketing & <span className="text-foreground">Posicionamento</span>
+              Posicionamento para <span className="text-foreground">tatuadores</span>
             </h1>
             <p className="text-lg text-muted-foreground font-light leading-relaxed">
               Não basta ser o melhor tatuador se ninguém conhece o seu trabalho. Aprenda os segredos exatos para se posicionar como autoridade, atrair clientes que pagam caro e transformar sua arte num negócio altamente lucrativo.
