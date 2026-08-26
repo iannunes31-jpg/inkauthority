@@ -92,6 +92,7 @@ export function Navbar() {
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
   const [isLoginOpen, setIsLoginOpen] = useState(false);
+  const [authView, setAuthView] = useState<"login" | "register">("login");
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const { isSignedIn: isLoggedIn } = useAuth();
@@ -105,7 +106,7 @@ export function Navbar() {
 
   return (
     <>
-      <LoginModal isOpen={isLoginOpen} onClose={() => setIsLoginOpen(false)} initialView="login" />
+      <LoginModal isOpen={isLoginOpen} onClose={() => setIsLoginOpen(false)} initialView={authView} />
       <nav className="fixed top-0 w-full z-50 glass border-b border-border/20 bg-background/80 backdrop-blur-md transition-colors h-[72px]">
         <div className="max-w-7xl mx-auto px-6 h-full flex items-center justify-between">
           <Link href="/" className="flex items-center gap-3" style={{ textDecoration: 'none' }}>
@@ -193,16 +194,16 @@ export function Navbar() {
                   <button 
                     className="text-foreground/70 hover:text-foreground"
                     style={{ background: 'none', border: 'none', fontSize: 13, fontWeight: 300, letterSpacing: '0.1em', cursor: 'pointer', padding: '8px 16px' }}
-                    onClick={() => setIsLoginOpen(true)}
+                    onClick={() => { setAuthView("login"); setIsLoginOpen(true); }}
                   >
                     Entrar
                   </button>
                   <button 
                     className="bg-foreground text-background transition-opacity hover:opacity-85"
                     style={{ fontWeight: 700, fontSize: 13, letterSpacing: '0.05em', padding: '10px 22px', borderRadius: 9999, textDecoration: 'none', border: 'none', cursor: 'pointer' }}
-                    onClick={() => setIsLoginOpen(true)}
+                    onClick={() => { setAuthView("register"); setIsLoginOpen(true); }}
                   >
-                    Matricule-se
+                    Acesso Antecipado
                   </button>
                 </div>
               )}
@@ -259,6 +260,7 @@ export function Navbar() {
                     className="w-full justify-start text-muted-foreground hover:text-white"
                     onClick={() => {
                       setIsOpen(false);
+                      setAuthView("login");
                       setIsLoginOpen(true);
                     }}
                   >
@@ -268,10 +270,11 @@ export function Navbar() {
                     className="w-full metallic-gradient text-black border-0"
                     onClick={() => {
                       setIsOpen(false);
+                      setAuthView("register");
                       setIsLoginOpen(true);
                     }}
                   >
-                    Matricule-se
+                    Acesso Antecipado
                   </Button>
                 </>
               ) : (
