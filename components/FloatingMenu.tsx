@@ -69,12 +69,12 @@ export function FloatingMenu() {
         doc.head.appendChild(s2);
 
         const style = doc.createElement('style');
-        style.innerHTML = \`
+        style.innerHTML = `
             .skiptranslate { display: none !important; }
             body { top: 0px !important; }
             html.light body { filter: invert(1) hue-rotate(180deg) contrast(0.95); background-color: #f7f7f7 !important; }
             html.light img, html.light video, html.light iframe { filter: invert(1) hue-rotate(180deg) !important; }
-        \`;
+        `;
         doc.head.appendChild(style);
       }
     };
@@ -181,10 +181,10 @@ export function FloatingMenu() {
         </div>
       </div>
       
-      <style dangerouslySetInnerHTML={{__html: \`
+      <style dangerouslySetInnerHTML={{__html: `
         .skiptranslate { display: none !important; }
         body { top: 0px !important; }
-      \`}} />
+      `}} />
     </>
   );
 }
