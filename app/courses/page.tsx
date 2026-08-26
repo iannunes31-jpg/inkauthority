@@ -3,14 +3,20 @@
 import { useState } from "react";
 import { motion } from "motion/react";
 import { ArrowRight, CheckCircle2, Play, Lock } from "lucide-react";
+import { useAuth } from "@clerk/nextjs";
 import { Button } from "@/components/ui/button";
 import { LoginModal } from "@/components/LoginModal";
 
 export default function CoursesPage() {
   const [isLoginOpen, setIsLoginOpen] = useState(false);
   const [isLoadingCheckout, setIsLoadingCheckout] = useState(false);
+  const { isSignedIn } = useAuth();
 
   const handleCheckout = async (productName: string, price: number) => {
+    if (!isSignedIn) {
+      setIsLoginOpen(true);
+      return;
+    }
     try {
       setIsLoadingCheckout(true);
       const response = await fetch('/api/checkout', {

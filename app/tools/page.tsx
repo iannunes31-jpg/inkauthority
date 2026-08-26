@@ -1,10 +1,19 @@
 "use client";
 
 import { CheckCircle, ArrowRight, Bot } from "lucide-react";
+import { useAuth } from "@clerk/nextjs";
+import { LoginModal } from "@/components/LoginModal";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 
 export default function ToolsPage() {
+  const [isLoginOpen, setIsLoginOpen] = useState(false);
+  const { isSignedIn } = useAuth();
   const handleCheckout = async (productName: string, price: number, isSubscription: boolean = true) => {
+    if (!isSignedIn) {
+      setIsLoginOpen(true);
+      return;
+    }
     try {
       const response = await fetch('/api/checkout', {
         method: 'POST',
@@ -138,6 +147,11 @@ export default function ToolsPage() {
         <p>© 2026 Ink Authority. Todos os direitos reservados.</p>
         <p className="mt-2 text-xs">Desenvolvido para criadores e tatuadores profissionais.</p>
       </footer>
+      <LoginModal 
+        isOpen={isLoginOpen} 
+        onClose={() => setIsLoginOpen(false)} 
+        initialView="register" 
+      />
     </main>
   );
 }
