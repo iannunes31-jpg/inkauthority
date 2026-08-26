@@ -19,7 +19,7 @@ export function FloatingMenu() {
   ];
 
   useEffect(() => {
-    // Carrega o Google Translate
+    // Carrega o Google Translate na janela principal
     const addScript = document.createElement("script");
     addScript.setAttribute(
       "src",
@@ -34,10 +34,59 @@ export function FloatingMenu() {
       );
     };
 
-    // Aplica o tema salvo
     const savedTheme = localStorage.getItem("theme") || "dark";
     setTheme(savedTheme);
     applyTheme(savedTheme);
+
+    const setupIframe = () => {
+      const iframe = document.querySelector('iframe');
+      if (iframe) {
+        const doc = iframe.contentDocument;
+        if (!doc) return;
+        
+        if (doc.getElementById('google_translate_element_iframe')) return;
+
+        applyTheme(savedTheme);
+        
+        const tDiv = doc.createElement('div');
+        tDiv.id = "google_translate_element_iframe";
+        tDiv.style.display = "none";
+        doc.body.appendChild(tDiv);
+
+        const s1 = doc.createElement('script');
+        s1.innerHTML = `
+            window.googleTranslateElementInit = function() {
+                new google.translate.TranslateElement(
+                    { pageLanguage: "pt", autoDisplay: false },
+                    "google_translate_element_iframe"
+                );
+            }
+        `;
+        doc.head.appendChild(s1);
+
+        const s2 = doc.createElement('script');
+        s2.src = "//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit";
+        doc.head.appendChild(s2);
+
+        const style = doc.createElement('style');
+        style.innerHTML = \`
+            .skiptranslate { display: none !important; }
+            body { top: 0px !important; }
+            html.light body { filter: invert(1) hue-rotate(180deg) contrast(0.95); background-color: #f7f7f7 !important; }
+            html.light img, html.light video, html.light iframe { filter: invert(1) hue-rotate(180deg) !important; }
+        \`;
+        doc.head.appendChild(style);
+      }
+    };
+
+    const iframe = document.querySelector('iframe');
+    if (iframe) {
+        iframe.addEventListener('load', setupIframe);
+        // Em caso de o iframe já ter carregado rápido
+        if (iframe.contentDocument && iframe.contentDocument.readyState === 'complete') {
+            setupIframe();
+        }
+    }
   }, []);
 
   const applyTheme = (newTheme: string) => {
@@ -51,8 +100,20 @@ export function FloatingMenu() {
     } else {
       html.classList.remove("light");
       html.classList.add("dark");
-      document.body.style.backgroundColor = "#000000";
+      document.body.style.backgroundColor = "#050505";
       document.body.style.color = "#ffffff";
+    }
+
+    const iframe = document.querySelector('iframe');
+    if (iframe && iframe.contentDocument) {
+        const iHtml = iframe.contentDocument.documentElement;
+        if (newTheme === "light") {
+            iHtml.classList.remove("dark");
+            iHtml.classList.add("light");
+        } else {
+            iHtml.classList.remove("light");
+            iHtml.classList.add("dark");
+        }
     }
   };
 
@@ -69,6 +130,16 @@ export function FloatingMenu() {
       selectField.value = langCode;
       selectField.dispatchEvent(new Event("change"));
     }
+    
+    const iframe = document.querySelector('iframe');
+    if (iframe && iframe.contentDocument) {
+        const iSelect = iframe.contentDocument.querySelector(".goog-te-combo") as HTMLSelectElement;
+        if (iSelect) {
+            iSelect.value = langCode;
+            iSelect.dispatchEvent(new Event("change"));
+        }
+    }
+    
     setIsTranslateOpen(false);
   };
 
@@ -77,14 +148,13 @@ export function FloatingMenu() {
       <div id="google_translate_element" style={{ display: "none" }}></div>
       
       <div className="fixed bottom-6 left-6 z-[9999] flex flex-col gap-3 notranslate items-start">
-        {/* Dropdown de Idiomas */}
         {isTranslateOpen && (
-          <div className="bg-black/90 backdrop-blur-md border border-white/10 rounded-2xl p-2 flex flex-col gap-1 mb-2 shadow-2xl animate-in fade-in slide-in-from-bottom-4">
+          <div className="bg-black/90 backdrop-blur-md border border-white/10 rounded-2xl p-2 flex flex-col gap-1 mb-2 shadow-2xl animate-in fade-in slide-in-from-bottom-4 text-white">
             {languages.map((lang) => (
               <button
                 key={lang.code}
                 onClick={() => changeLanguage(lang.code)}
-                className="text-right px-4 py-2 hover:bg-white/10 rounded-xl text-sm font-medium transition-colors"
+                className="text-left px-4 py-2 hover:bg-white/10 rounded-xl text-sm font-medium transition-colors"
               >
                 {lang.name}
               </button>
@@ -93,19 +163,17 @@ export function FloatingMenu() {
         )}
         
         <div className="flex gap-3">
-          {/* Botão de Tradução */}
           <button
             onClick={() => setIsTranslateOpen(!isTranslateOpen)}
-            className="w-12 h-12 rounded-full glass border border-white/10 flex items-center justify-center hover:bg-white/10 transition-colors shadow-lg hover:scale-105 active:scale-95 bg-black/50"
+            className="w-12 h-12 rounded-full glass border border-white/10 flex items-center justify-center hover:bg-white/10 transition-colors shadow-lg hover:scale-105 active:scale-95 bg-black/50 text-white"
             title="Mudar Idioma"
           >
             <Globe className="w-5 h-5" />
           </button>
 
-          {/* Botão de Tema */}
           <button
             onClick={toggleTheme}
-            className="w-12 h-12 rounded-full glass border border-white/10 flex items-center justify-center hover:bg-white/10 transition-colors shadow-lg hover:scale-105 active:scale-95 bg-black/50"
+            className="w-12 h-12 rounded-full glass border border-white/10 flex items-center justify-center hover:bg-white/10 transition-colors shadow-lg hover:scale-105 active:scale-95 bg-black/50 text-white"
             title="Alternar Modo Claro/Escuro"
           >
             {theme === "dark" ? <Sun className="w-5 h-5 text-yellow-500" /> : <Moon className="w-5 h-5 text-blue-500" />}
@@ -113,11 +181,10 @@ export function FloatingMenu() {
         </div>
       </div>
       
-      <style dangerouslySetInnerHTML={{__html: `
-        /* Oculta os banners nativos do Google Translate */
+      <style dangerouslySetInnerHTML={{__html: \`
         .skiptranslate { display: none !important; }
         body { top: 0px !important; }
-      `}} />
+      \`}} />
     </>
   );
 }
