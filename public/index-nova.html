@@ -51,78 +51,7 @@
 
 
 
-<style id="master-light-css">
-  /* CLEAN LIGHT MODE - LIGHT BACKGROUNDS, DARK TEXT, NO PHOTO INVERSION */
-  html.light, 
-  html.light body,
-  html.light section,
-  html.light main,
-  html.light footer,
-  html.light nav,
-  html.light div {
-    background-color: #ffffff !important;
-    color: #111116 !important;
-    filter: none !important;
-  }
 
-  /* Override dark background gradients and inline dark styles in Light Mode */
-  html.light [style*="background"],
-  html.light [style*="linear-gradient"],
-  html.light [style*="radial-gradient"] {
-    background: #ffffff !important;
-  }
-
-  /* Dark overlays in Light Mode */
-  html.light [style*="rgba(0,0,0"],
-  html.light [style*="rgba(8,8,10"] {
-    background: transparent !important;
-  }
-
-  /* Text color override for all text elements in Light Mode */
-  html.light h1, 
-  html.light h2, 
-  html.light h3, 
-  html.light h4, 
-  html.light h5, 
-  html.light h6, 
-  html.light p, 
-  html.light span, 
-  html.light a, 
-  html.light li, 
-  html.light em,
-  html.light strong,
-  html.light b,
-  html.light i {
-    color: #111116 !important;
-    background-clip: initial !important;
-    -webkit-background-clip: initial !important;
-    -webkit-text-fill-color: #111116 !important;
-  }
-
-  /* Navigation bar in Light Mode */
-  html.light div[style*="position:fixed"] {
-    background: rgba(255, 255, 255, 0.9) !important;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.1) !important;
-  }
-
-  /* Card boxes in Light Mode */
-  html.light div[style*="border"],
-  html.light section[style*="border"] {
-    border-color: rgba(0, 0, 0, 0.12) !important;
-    background: #f4f4f7 !important;
-  }
-
-  /* Keep all images, videos, iframes, SVG, canvas in 100% natural original color */
-  html.light img,
-  html.light video,
-  html.light iframe,
-  html.light svg,
-  html.light canvas,
-  html.light image-slot {
-    filter: none !important;
-    opacity: 1 !important;
-  }
-</style>
 <script>
   window.addEventListener('message', function(event) {
     if (event.data && event.data.type === 'SET_THEME') {
@@ -140,6 +69,129 @@
     }
   });
 </script>
+<style id="master-light-css">
+  /* MASTER LIGHT MODE - ABSOLUTE OVERRIDE FOR ALL SECTIONS & TEXT */
+  html.light,
+  html.light body {
+    background-color: #ffffff !important;
+    background: #ffffff !important;
+    color: #111116 !important;
+    filter: none !important;
+  }
+
+  html.light main,
+  html.light section,
+  html.light footer,
+  html.light nav {
+    background-color: #ffffff !important;
+    color: #111116 !important;
+    filter: none !important;
+  }
+
+  /* Override dark inline backgrounds, gradients, and shadows */
+  html.light [style*="background:#0"],
+  html.light [style*="background: #0"],
+  html.light [style*="background:rgb(0"],
+  html.light [style*="background: rgb(0"],
+  html.light [style*="background:rgba(0"],
+  html.light [style*="background: rgba(0"],
+  html.light [style*="background:linear-gradient"],
+  html.light [style*="background: linear-gradient"],
+  html.light [style*="background:radial-gradient"],
+  html.light [style*="background: radial-gradient"] {
+    background: #ffffff !important;
+    background-color: #ffffff !important;
+  }
+
+  /* Fixed Navigation in Light Mode */
+  html.light div[style*="position:fixed"] {
+    background: rgba(255, 255, 255, 0.92) !important;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.1) !important;
+  }
+
+  /* Cards and Container Boxes in Light Mode */
+  html.light div[style*="border"],
+  html.light section[style*="border"] {
+    border-color: rgba(0, 0, 0, 0.12) !important;
+    background-color: #f8f8fa !important;
+  }
+
+  /* Text elements in Light Mode */
+  html.light h1, 
+  html.light h2, 
+  html.light h3, 
+  html.light h4, 
+  html.light h5, 
+  html.light h6, 
+  html.light p, 
+  html.light span, 
+  html.light a, 
+  html.light li, 
+  html.light em,
+  html.light strong,
+  html.light b,
+  html.light i,
+  html.light label {
+    color: #111116 !important;
+    background-clip: initial !important;
+    -webkit-background-clip: initial !important;
+    -webkit-text-fill-color: #111116 !important;
+  }
+
+  /* Keep media, images, video, iframe 100% natural without any filter */
+  html.light img,
+  html.light video,
+  html.light iframe,
+  html.light svg,
+  html.light canvas,
+  html.light image-slot {
+    filter: none !important;
+    opacity: 1 !important;
+  }
+</style>
+<div id="google_translate_element_iframe" style="display:none !important"></div>
+<script>
+  function googleTranslateElementInitIframe() {
+    try {
+      new google.translate.TranslateElement({ pageLanguage: 'pt', autoDisplay: false }, 'google_translate_element_iframe');
+    } catch(e) {}
+  }
+
+  window.addEventListener('message', function(event) {
+    if (!event.data) return;
+
+    if (event.data.type === 'SET_THEME') {
+      if (event.data.theme === 'light') {
+        document.documentElement.classList.add('light');
+        document.body.classList.add('light');
+        document.documentElement.classList.remove('dark');
+        document.body.classList.remove('dark');
+      } else {
+        document.documentElement.classList.add('dark');
+        document.body.classList.add('dark');
+        document.documentElement.classList.remove('light');
+        document.body.classList.remove('light');
+      }
+    }
+
+    if (event.data.type === 'SET_LANG') {
+      const targetLang = event.data.lang;
+      let attempts = 0;
+      const interval = setInterval(function() {
+        attempts++;
+        const selectField = document.querySelector('.goog-te-combo');
+        if (selectField) {
+          selectField.value = targetLang;
+          selectField.dispatchEvent(new Event('change'));
+          clearInterval(interval);
+        } else if (attempts > 30) {
+          clearInterval(interval);
+        }
+      }, 200);
+    }
+  });
+</script>
+<script src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInitIframe"></script>
 </head>
 <body>
 <div id="google_translate_element_iframe" style="display:none"></div>
