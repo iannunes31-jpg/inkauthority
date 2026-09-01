@@ -16,7 +16,7 @@ export default function LandingPage() {
       <main className="relative min-h-screen w-full m-0 p-0 overflow-hidden bg-[#050505] pt-[72px]">
         {mounted && (
           <iframe 
-            src="/index-nova.html?v=120" 
+            src="/index-nova.html?v=130" 
             className="w-full" 
             style={{ height: 'calc(100vh - 72px)', border: 'none' }}
             title="Ink Authority Landing Page"
