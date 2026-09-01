@@ -46,7 +46,6 @@ export default function LibraryPage() {
       if (!libraryError && libraryData && libraryData.length > 0) {
         setResources(libraryData);
       } else {
-        // Fallback to default asset if Supabase returns 0 items or table is pending
         setResources([defaultPdfAsset]);
       }
     } catch (err) {
@@ -123,14 +122,14 @@ export default function LibraryPage() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.1 }}
                 key={item.id || i}
-                className={`bg-black/80 backdrop-blur-xl p-6 rounded-3xl border ${glowClass} transition-all duration-300 flex flex-col h-full relative group overflow-hidden``}
+                className={`bg-black/80 backdrop-blur-xl p-6 rounded-3xl border ${glowClass} transition-all duration-300 flex flex-col h-full relative group overflow-hidden`}
               >
                 {/* Visual Cover Header with Neon Banner */}
                 <div className="relative w-full aspect-[4/3] rounded-2xl bg-gradient-to-br from-gray-900 via-black to-slate-950 border border-white/10 mb-5 p-5 flex flex-col justify-between overflow-hidden group-hover:border-cyan-400/40 transition-colors">
                   <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(56,189,248,0.15),transparent_60%)]"></div>
                   
                   <div className="relative z-10 flex items-center justify-between">
-                    <span className={`text-[10px] font-black tracking-widest px-3 py-1 rounded-full border uppercase ${badgeBg}``}>
+                    <span className={`text-[10px] font-black tracking-widest px-3 py-1 rounded-full border uppercase ${badgeBg}`}>
                       {item.badge || "DOCUMENTO PDF"}
                     </span>
                     <div className="w-8 h-8 rounded-full bg-black/60 border border-white/10 flex items-center justify-center text-cyan-400">
@@ -160,7 +159,7 @@ export default function LibraryPage() {
                   <Button 
                     size="lg" 
                     onClick={() => handleDownload(item.file_url || "/library/guia-instagram-chatgpt.pdf")}
-                    className={`w-full font-extrabold uppercase tracking-wider text-xs rounded-xl py-3 flex items-center justify-center gap-2 transition-all ${btnBg}``}
+                    className={`w-full font-extrabold uppercase tracking-wider text-xs rounded-xl py-3 flex items-center justify-center gap-2 transition-all ${btnBg}`}
                   >
                     <Download className="w-4 h-4" /> Baixar Documento PDF
                   </Button>
