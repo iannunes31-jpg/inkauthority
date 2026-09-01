@@ -129,7 +129,23 @@ export function FloatingMenu() {
       </div>
       
       <style dangerouslySetInnerHTML={{__html: `
-        .skiptranslate { display: none !important; }
+        
+        .goog-te-banner-frame,
+        iframe.goog-te-banner-frame,
+        .skiptranslate,
+        #goog-gt-tt,
+        .goog-te-balloon-frame {
+          display: none !important;
+          visibility: hidden !important;
+          opacity: 0 !important;
+          height: 0 !important;
+          width: 0 !important;
+        }
+        body {
+          top: 0px !important;
+          position: static !important;
+        }
+
         body { top: 0px !important; }
       `}} />
     </>
