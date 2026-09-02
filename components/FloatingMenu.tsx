@@ -29,12 +29,14 @@ export function FloatingMenu() {
     const interval = setInterval(() => {
       const currentTheme = localStorage.getItem("theme") || "dark";
       const currentLang = localStorage.getItem("lang") || "pt";
-      const iframe = document.querySelector('iframe');
-      if (iframe && iframe.contentWindow) {
-        iframe.contentWindow.postMessage({ type: 'SET_THEME', theme: currentTheme }, '*');
-        iframe.contentWindow.postMessage({ type: 'SET_LANG', lang: currentLang }, '*');
-      }
-    }, 500);
+      const iframes = document.querySelectorAll('iframe');
+      iframes.forEach(iframe => {
+        if (iframe && iframe.contentWindow) {
+          iframe.contentWindow.postMessage({ type: 'SET_THEME', theme: currentTheme }, '*');
+          iframe.contentWindow.postMessage({ type: 'SET_LANG', lang: currentLang }, '*');
+        }
+      });
+    }, 400);
 
     return () => clearInterval(interval);
   }, []);
@@ -44,7 +46,7 @@ export function FloatingMenu() {
     if (newTheme === "light") {
       html.classList.remove("dark");
       html.classList.add("light");
-      document.body.style.backgroundColor = "#ffffff";
+      document.body.style.backgroundColor = "#f6f7f9";
       document.body.style.color = "#111116";
     } else {
       html.classList.remove("light");
@@ -53,10 +55,12 @@ export function FloatingMenu() {
       document.body.style.color = "#ffffff";
     }
 
-    const iframe = document.querySelector('iframe');
-    if (iframe && iframe.contentWindow) {
-      iframe.contentWindow.postMessage({ type: 'SET_THEME', theme: newTheme }, '*');
-    }
+    const iframes = document.querySelectorAll('iframe');
+    iframes.forEach(iframe => {
+      if (iframe && iframe.contentWindow) {
+        iframe.contentWindow.postMessage({ type: 'SET_THEME', theme: newTheme }, '*');
+      }
+    });
   };
 
   const toggleTheme = () => {
@@ -67,10 +71,12 @@ export function FloatingMenu() {
   };
 
   const syncLang = (langCode: string) => {
-    const iframe = document.querySelector('iframe');
-    if (iframe && iframe.contentWindow) {
-      iframe.contentWindow.postMessage({ type: 'SET_LANG', lang: langCode }, '*');
-    }
+    const iframes = document.querySelectorAll('iframe');
+    iframes.forEach(iframe => {
+      if (iframe && iframe.contentWindow) {
+        iframe.contentWindow.postMessage({ type: 'SET_LANG', lang: langCode }, '*');
+      }
+    });
   };
 
   const changeLanguage = (langCode: string) => {
