@@ -443,36 +443,45 @@ document.addEventListener('DOMContentLoaded', async function() {
   var isTranslating = false;
 
   function normalize(s) {
-    return (s || '').replace(/\u00a0/g, ' ').replace(/\s+/g, ' ').trim();
+    return (s || '').replace(/\u00a0/g, ' ').replace(/&nbsp;/g, ' ').replace(/\s+/g, ' ').trim();
   }
 
-  function getTranslation(origText, targetLang) {
-    if (!origText) return origText;
-    var norm = normalize(origText);
-    if (!norm) return origText;
+  function getTranslation(rawVal, targetLang) {
+    if (!rawVal || !rawVal.trim()) return rawVal;
+
+    var m = rawVal.match(/^(\s*)([\s\S]*?)(\s*)$/);
+    var leading = m ? m[1] : '';
+    var content = m ? m[2] : rawVal;
+    var trailing = m ? m[3] : '';
+
+    var norm = normalize(content);
+    if (!norm) return rawVal;
 
     if (!targetLang || targetLang === 'pt') {
-      return origText;
+      return rawVal;
     }
 
     var langDict = dict[targetLang];
-    if (!langDict) return origText;
+    if (!langDict) return rawVal;
 
+    // Direct match
     if (langDict[norm]) {
-      return origText.replace(norm, langDict[norm]);
+      return leading + langDict[norm] + trailing;
     }
 
+    // Direct match with unquoted text
     var unquoted = norm.replace(/^[\"“”']|[\"“”']$/g, '').trim();
     if (langDict[unquoted]) {
-      return origText.replace(unquoted, langDict[unquoted]);
+      return leading + langDict[unquoted] + trailing;
     }
 
+    // Reverse map check
     var ptKey = reverseMap[norm.toLowerCase()] || reverseMap[unquoted.toLowerCase()];
     if (ptKey && langDict[ptKey]) {
-      return origText.replace(norm, langDict[ptKey]);
+      return leading + langDict[ptKey] + trailing;
     }
 
-    return origText;
+    return rawVal;
   }
 
   function walk(node, targetLang) {
@@ -480,6 +489,7 @@ document.addEventListener('DOMContentLoaded', async function() {
       var val = node.nodeValue;
       if (!val || !val.trim()) return;
 
+      // Capture pure original text on first visit
       if (node._iaOrig === undefined) {
         var norm = normalize(val);
         var unq = norm.replace(/^[\"“”']|[\"“”']$/g, '').trim();
@@ -531,6 +541,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
   }
 
+  // Listen to postMessage from parent window (FloatingMenu)
   window.addEventListener('message', function(ev) {
     if (!ev.data) return;
     if (ev.data.type === 'SET_THEME' && ev.data.theme) {
@@ -541,6 +552,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
   });
 
+  // Observe DOM additions (e.g. React hydration)
   try {
     var observer = new MutationObserver(function(mutations) {
       if (currentLang && currentLang !== 'pt' && !isTranslating) {
@@ -554,20 +566,6 @@ document.addEventListener('DOMContentLoaded', async function() {
     });
     observer.observe(document.documentElement, { childList: true, subtree: true });
   } catch(e) {}
-
-  setInterval(function() {
-    var savedTheme = 'dark';
-    var savedLang = 'pt';
-    try {
-      savedTheme = localStorage.getItem('theme') || 'dark';
-      savedLang = localStorage.getItem('lang') || 'pt';
-    } catch(e) {}
-    
-    applyTheme(savedTheme);
-    if (savedLang !== currentLang) {
-      applyLang(savedLang);
-    }
-  }, 250);
 })();
 
   </` + `script>`;
