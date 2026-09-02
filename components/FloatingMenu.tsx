@@ -3,6 +3,118 @@
 import { useState, useEffect } from "react";
 import { Moon, Sun, Globe } from "lucide-react";
 
+// Master dictionary for top Navbar and Parent DOM elements
+const masterDict: Record<string, Record<string, string>> = {
+  en: {
+    "HOME": "HOME",
+    "CURSOS": "COURSES",
+    "TOOLS": "TOOLS",
+    "DASHBOARD": "DASHBOARD",
+    "Entrar": "Sign In",
+    "Acesso Antecipado": "Early Access",
+    "Acesso antecipado": "Early Access",
+    "Painel do Aluno": "Student Dashboard",
+    "Painel Admin": "Admin Panel",
+    "Sair da conta": "Sign Out",
+    "Pesquisar...": "Search...",
+    "Minha Conta": "My Account"
+  },
+  es: {
+    "HOME": "INICIO",
+    "CURSOS": "CURSOS",
+    "TOOLS": "HERRAMIENTAS",
+    "DASHBOARD": "PANEL",
+    "Entrar": "Iniciar Sesión",
+    "Acesso Antecipado": "Acceso Anticipado",
+    "Acesso antecipado": "Acceso anticipado",
+    "Painel do Aluno": "Panel del Alumno",
+    "Painel Admin": "Panel de Admin",
+    "Sair da conta": "Cerrar sesión",
+    "Pesquisar...": "Buscar...",
+    "Minha Conta": "Mi Cuenta"
+  },
+  fr: {
+    "HOME": "ACCUEIL",
+    "CURSOS": "COURS",
+    "TOOLS": "OUTILS",
+    "DASHBOARD": "TABLEAU DE BORD",
+    "Entrar": "Se Connecter",
+    "Acesso Antecipado": "Accès Anticipé",
+    "Acesso antecipado": "Accès anticipé",
+    "Painel do Aluno": "Espace Étudiant",
+    "Painel Admin": "Panneau Admin",
+    "Sair da conta": "Se Déconnecter",
+    "Pesquisar...": "Rechercher...",
+    "Minha Conta": "Mon Compte"
+  },
+  de: {
+    "HOME": "START",
+    "CURSOS": "KURSE",
+    "TOOLS": "WERKZEUGE",
+    "DASHBOARD": "DASHBOARD",
+    "Entrar": "Anmelden",
+    "Acesso Antecipado": "Frühzeitiger Zugang",
+    "Acesso antecipado": "Frühzeitiger Zugang",
+    "Painel do Aluno": "Studenten-Dashboard",
+    "Painel Admin": "Admin-Bereich",
+    "Sair da conta": "Abmelden",
+    "Pesquisar...": "Suchen...",
+    "Minha Conta": "Mein Konto"
+  },
+  it: {
+    "HOME": "HOME",
+    "CURSOS": "CORSI",
+    "TOOLS": "STRUMENTI",
+    "DASHBOARD": "DASHBOARD",
+    "Entrar": "Accedi",
+    "Acesso Antecipado": "Accesso Anticipado",
+    "Acesso antecipado": "Accesso anticipado",
+    "Painel do Aluno": "Pannello Studente",
+    "Painel Admin": "Pannello Admin",
+    "Sair da conta": "Disconnetti",
+    "Pesquisar...": "Cerca...",
+    "Minha Conta": "Il Mio Account"
+  },
+  ja: {
+    "HOME": "ホーム",
+    "CURSOS": "コース",
+    "TOOLS": "ツール",
+    "DASHBOARD": "ダッシュボード",
+    "Entrar": "ログイン",
+    "Acesso Antecipado": "早期アクセス",
+    "Acesso antecipado": "早期アクセス",
+    "Painel do Aluno": "受講生パネル",
+    "Painel Admin": "管理者パネル",
+    "Sair da conta": "ログアウト",
+    "Pesquisar...": "検索...",
+    "Minha Conta": "マイアカウント"
+  },
+  ru: {
+    "HOME": "ГЛАВНАЯ",
+    "CURSOS": "КУРСЫ",
+    "TOOLS": "ИНСТРУМЕНТЫ",
+    "DASHBOARD": "ДАШБОРД",
+    "Entrar": "Войти",
+    "Acesso Antecipado": "Ранний Доступ",
+    "Acesso antecipado": "Ранний доступ",
+    "Painel do Aluno": "Кабинет ученика",
+    "Painel Admin": "Панель админа",
+    "Sair da conta": "Выйти",
+    "Pesquisar...": "Поиск...",
+    "Minha Conta": "Мой аккаунт"
+  }
+};
+
+const reverseMap: Record<string, string> = {};
+for (const lang in masterDict) {
+  for (const pt in masterDict[lang]) {
+    const val = masterDict[lang][pt];
+    if (val && val !== pt) {
+      reverseMap[val.toLowerCase()] = pt;
+    }
+  }
+}
+
 export function FloatingMenu() {
   const [theme, setTheme] = useState("dark");
   const [isTranslateOpen, setIsTranslateOpen] = useState(false);
@@ -18,17 +130,59 @@ export function FloatingMenu() {
     { code: "ru", name: "Русский" }
   ];
 
+  const translateParentDOM = (targetLang: string) => {
+    if (typeof document === "undefined") return;
+    const walk = (node: Node) => {
+      if (node.nodeType === 3) {
+        const val = node.nodeValue;
+        if (!val || !val.trim()) return;
+
+        const anyNode = node as any;
+        if (anyNode._parentOrig === undefined) {
+          const norm = val.trim();
+          const pt = reverseMap[norm.toLowerCase()];
+          anyNode._parentOrig = pt ? val.replace(norm, pt) : val;
+        }
+
+        const orig = anyNode._parentOrig;
+        let res = orig;
+        if (targetLang && targetLang !== "pt" && masterDict[targetLang]) {
+          const norm = orig.trim();
+          if (masterDict[targetLang][norm]) {
+            res = orig.replace(norm, masterDict[targetLang][norm]);
+          }
+        }
+
+        if (res !== node.nodeValue) {
+          node.nodeValue = res;
+        }
+      } else if (node.nodeType === 1) {
+        const el = node as HTMLElement;
+        if (el.tagName !== "SCRIPT" && el.tagName !== "STYLE" && !el.classList.contains("notranslate")) {
+          for (let i = 0; i < node.childNodes.length; i++) {
+            walk(node.childNodes[i]);
+          }
+        }
+      }
+    };
+
+    const nav = document.querySelector("nav");
+    if (nav) walk(nav);
+  };
+
   useEffect(() => {
     const savedTheme = localStorage.getItem("theme") || "dark";
     setTheme(savedTheme);
     applyTheme(savedTheme);
 
     const savedLang = localStorage.getItem("lang") || "pt";
+    translateParentDOM(savedLang);
     syncLang(savedLang);
 
     const interval = setInterval(() => {
       const currentTheme = localStorage.getItem("theme") || "dark";
       const currentLang = localStorage.getItem("lang") || "pt";
+      translateParentDOM(currentLang);
       const iframes = document.querySelectorAll('iframe');
       iframes.forEach(iframe => {
         if (iframe && iframe.contentWindow) {
@@ -71,6 +225,7 @@ export function FloatingMenu() {
   };
 
   const syncLang = (langCode: string) => {
+    translateParentDOM(langCode);
     const iframes = document.querySelectorAll('iframe');
     iframes.forEach(iframe => {
       if (iframe && iframe.contentWindow) {
