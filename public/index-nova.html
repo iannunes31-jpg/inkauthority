@@ -1,6 +1,8 @@
 <!DOCTYPE html>
-<html>
+<html lang="pt-BR" class="notranslate" translate="no">
 <head>
+  <meta name="google" content="notranslate">
+  <meta name="google" content="disabled">
   <meta charset="utf-8">
   <title>Bundled Page</title>
   
@@ -51,10 +53,14 @@
 
 
 
-<style id="master-light-css">
+<style id="master-light-native-css">
   #__bundler_err { display: none !important; opacity: 0 !important; visibility: hidden !important; pointer-events: none !important; }
+  .goog-te-banner-frame, iframe.goog-te-banner-frame, .skiptranslate, #goog-gt-tt, .goog-te-balloon-frame {
+    display: none !important; visibility: hidden !important; opacity: 0 !important; height: 0 !important; width: 0 !important;
+  }
+  body { top: 0px !important; position: static !important; }
 
-  /* MASTER LIGHT MODE - OVERRIDE ALL INNER SECTIONS & INLINE DARK BACKGROUNDS */
+  /* MASTER LIGHT MODE OVERRIDES */
   html.light,
   html.light body,
   html.light #root,
@@ -119,6 +125,100 @@
 </style>
 <script>
   (function() {
+    var dict = {
+      en: {
+        "POSICIONAMENTO • TÉCNICA • ESTRATÉGIA": "POSITIONING • TECHNIQUE • STRATEGY",
+        "Entrar": "Sign In",
+        "Acesso Antecipado": "Early Access",
+        "Quem já vive a nova era": "Who already lives the new era",
+        "O cliente compra o artista antes da arte.": "The client buys the artist before the art.",
+        "Posicionamento é percepção": "Positioning is perception",
+        "Os três pilares para construir uma carreira sólida na tatuagem.": "The three pillars to build a solid career in tattooing.",
+        "POSICIONAMENTO": "POSITIONING",
+        "TÉCNICA": "TECHNIQUE",
+        "ESTRATÉGIA": "STRATEGY",
+        "AUTORIDADE": "AUTHORITY"
+      },
+      es: {
+        "POSICIONAMENTO • TÉCNICA • ESTRATÉGIA": "POSICIONAMIENTO • TÉCNICA • ESTRATEGIA",
+        "Entrar": "Iniciar Sesión",
+        "Acesso Antecipado": "Acceso Anticipado",
+        "Quem já vive a nova era": "Quienes ya viven la nueva era",
+        "O cliente compra o artista antes da arte.": "El cliente compra al artista antes que el arte.",
+        "Posicionamento é percepção": "El posicionamiento es percepción",
+        "Os três pilares para construir uma carreira sólida na tatuagem.": "Los tres pilares para construir una carrera sólida en el tatuaje.",
+        "POSICIONAMENTO": "POSICIONAMIENTO",
+        "TÉCNICA": "TÉCNICA",
+        "ESTRATÉGIA": "ESTRATEGIA",
+        "AUTORIDADE": "AUTORIDAD"
+      },
+      fr: {
+        "POSICIONAMENTO • TÉCNICA • ESTRATÉGIA": "POSITIONNEMENT • TECHNIQUE • STRATÉGIE",
+        "Entrar": "Se Connecter",
+        "Acesso Antecipado": "Accès Anticipé",
+        "Quem já vive a nova era": "Ceux qui vivent déjà la nouvelle ère",
+        "O cliente compra o artista antes da arte.": "Le client achète l'artiste avant l'art.",
+        "Posicionamento é percepção": "Le positionnement est une perception",
+        "Os três pilares para construir uma carreira sólida na tatuagem.": "Les trois piliers pour construire une carrière solide dans le tatouage.",
+        "POSICIONAMENTO": "POSITIONNEMENT",
+        "TÉCNICA": "TECHNIQUE",
+        "ESTRATÉGIA": "STRATÉGIE",
+        "AUTORIDADE": "AUTORITÉ"
+      },
+      de: {
+        "POSICIONAMENTO • TÉCNICA • ESTRATÉGIA": "POSITIONIERUNG • TECHNIK • STRATEGIE",
+        "Entrar": "Anmelden",
+        "Acesso Antecipado": "Frühzeitiger Zugang",
+        "Quem já vive a nova era": "Wer bereits die neue Ära lebt",
+        "O cliente compra o artista antes da arte.": "Der Kunde kauft den Künstler vor der Kunst.",
+        "Posicionamento é percepção": "Positionierung ist Wahrnehmung",
+        "Os três pilares para construir uma carreira sólida na tatuagem.": "Die drei Säulen für eine solide Karriere im Tätowieren.",
+        "POSICIONAMENTO": "POSITIONIERUNG",
+        "TÉCNICA": "TECHNIK",
+        "ESTRATÉGIA": "STRATEGIE",
+        "AUTORIDADE": "AUTORITÄT"
+      },
+      it: {
+        "POSICIONAMENTO • TÉCNICA • ESTRATÉGIA": "POSIZIONAMENTO • TECNICA • STRATEGIA",
+        "Entrar": "Accedi",
+        "Acesso Antecipado": "Accesso Anticipato",
+        "Quem já vive a nova era": "Chi vive già la nuova era",
+        "O cliente compra o artista antes da arte.": "Il cliente compra l'artista prima dell'arte.",
+        "Posicionamento é percepção": "Il posizionamento è percezione",
+        "Os três pilares para construir uma carreira sólida na tatuagem.": "I tre pilastri per costruire una solida carriera nel tatuaggio.",
+        "POSICIONAMENTO": "POSIZIONAMENTO",
+        "TÉCNICA": "TECNICA",
+        "ESTRATÉGIA": "STRATEGIA",
+        "AUTORIDADE": "AUTORITÀ"
+      },
+      ja: {
+        "POSICIONAMENTO • TÉCNICA • ESTRATÉGIA": "ポジショニング • 技術 • 戦略",
+        "Entrar": "ログイン",
+        "Acesso Antecipado": "早期アクセス",
+        "Quem já vive a nova era": "新時代を生きる人々",
+        "O cliente compra o artista antes da arte.": "クライアントはアートの前にアーティストを買う。",
+        "Posicionamento é percepção": "ポジショニングは知覚である",
+        "Os três pilares para construir uma carreira sólida na tatuagem.": "タトゥーで確固たるキャリアを築く3つの柱。",
+        "POSICIONAMENTO": "ポジショニング",
+        "TÉCNICA": "技術",
+        "ESTRATÉGIA": "戦略",
+        "AUTORIDADE": "権威"
+      },
+      ru: {
+        "POSICIONAMENTO • TÉCNICA • ESTRATÉGIA": "ПОЗИЦИОНИРОВАНИЕ • ТЕХНИКА • СТРАТЕГИЯ",
+        "Entrar": "Войти",
+        "Acesso Antecipado": "Ранний Доступ",
+        "Quem já vive a nova era": "Кто уже живет в новой эре",
+        "O cliente compra o artista antes da arte.": "Клиент покупает художника раньше искусства.",
+        "Posicionamento é percepção": "Позиционирование — это восприятие",
+        "Os três pilares para construir uma carreira sólida na tatuagem.": "Три столпа создания успешной карьеры в татуировке.",
+        "POSICIONAMENTO": "ПОЗИЦИОНИРОВАНИЕ",
+        "TÉCNICA": "ТЕХНИКА",
+        "ESTRATÉGIA": "СТРАТЕГИЯ",
+        "AUTORIDADE": "АВТОРИТЕТ"
+      }
+    };
+
     function applyTheme(t) {
       var isL = t === 'light';
       var root = document.documentElement;
@@ -134,16 +234,35 @@
       }
     }
 
+    function applyLang(lang) {
+      if (!lang || lang === 'pt') return;
+      var langDict = dict[lang];
+      if (!langDict) return;
+
+      function walk(n) {
+        if (n.nodeType === 3) {
+          var t = n.nodeValue ? n.nodeValue.trim() : '';
+          if (t && langDict[t]) {
+            n.nodeValue = langDict[t];
+          }
+        } else if (n.nodeType === 1 && n.tagName !== 'SCRIPT' && n.tagName !== 'STYLE') {
+          for (var i = 0; i < n.childNodes.length; i++) walk(n.childNodes[i]);
+        }
+      }
+      walk(document.body || document.documentElement);
+    }
+
     window.addEventListener('message', function(e) {
       if (!e.data) return;
-      if (e.data.type === 'SET_THEME') {
-        applyTheme(e.data.theme);
-      }
+      if (e.data.type === 'SET_THEME') applyTheme(e.data.theme);
+      if (e.data.type === 'SET_LANG') applyLang(e.data.lang);
     });
 
     setInterval(function() {
       var theme = localStorage.getItem('theme') || 'dark';
+      var lang = localStorage.getItem('lang') || 'pt';
       applyTheme(theme);
+      if (lang !== 'pt') applyLang(lang);
     }, 400);
   })();
 </script>

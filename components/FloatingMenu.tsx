@@ -6,6 +6,7 @@ import { Moon, Sun, Globe } from "lucide-react";
 export function FloatingMenu() {
   const [theme, setTheme] = useState("dark");
   const [isTranslateOpen, setIsTranslateOpen] = useState(false);
+  const [currentLang, setCurrentLang] = useState("pt");
 
   const languages = [
     { code: "pt", name: "Português" },
@@ -20,19 +21,18 @@ export function FloatingMenu() {
 
   useEffect(() => {
     const savedTheme = localStorage.getItem("theme") || "dark";
+    const savedLang = localStorage.getItem("lang") || "pt";
     setTheme(savedTheme);
+    setCurrentLang(savedLang);
     applyTheme(savedTheme);
 
-    const savedLang = localStorage.getItem("lang") || "pt";
-    syncLang(savedLang);
-
     const interval = setInterval(() => {
-      const currentTheme = localStorage.getItem("theme") || "dark";
-      const currentLang = localStorage.getItem("lang") || "pt";
+      const cTheme = localStorage.getItem("theme") || "dark";
+      const cLang = localStorage.getItem("lang") || "pt";
       const iframe = document.querySelector('iframe');
       if (iframe && iframe.contentWindow) {
-        iframe.contentWindow.postMessage({ type: 'SET_THEME', theme: currentTheme }, '*');
-        iframe.contentWindow.postMessage({ type: 'SET_LANG', lang: currentLang }, '*');
+        iframe.contentWindow.postMessage({ type: 'SET_THEME', theme: cTheme }, '*');
+        iframe.contentWindow.postMessage({ type: 'SET_LANG', lang: cLang }, '*');
       }
     }, 500);
 
@@ -66,28 +66,25 @@ export function FloatingMenu() {
     applyTheme(newTheme);
   };
 
-  const syncLang = (langCode: string) => {
+  const changeLanguage = (langCode: string) => {
+    setCurrentLang(langCode);
+    localStorage.setItem("lang", langCode);
     const iframe = document.querySelector('iframe');
     if (iframe && iframe.contentWindow) {
       iframe.contentWindow.postMessage({ type: 'SET_LANG', lang: langCode }, '*');
     }
-  };
-
-  const changeLanguage = (langCode: string) => {
-    localStorage.setItem("lang", langCode);
-    syncLang(langCode);
     setIsTranslateOpen(false);
   };
 
   return (
-    <div className="fixed bottom-6 left-6 z-[9999] flex flex-col gap-3 notranslate items-start">
+    <div className="fixed bottom-6 left-6 z-[9999] flex flex-col gap-3 notranslate items-start" translate="no">
       {isTranslateOpen && (
-        <div className="bg-black/90 backdrop-blur-md border border-white/10 rounded-2xl p-2 flex flex-col gap-1 mb-2 shadow-2xl animate-in fade-in slide-in-from-bottom-4 text-white min-w-[140px]">
+        <div className="bg-black/90 backdrop-blur-md border border-white/10 rounded-2xl p-2 flex flex-col gap-1 mb-2 shadow-2xl animate-in fade-in slide-in-from-bottom-4 text-white min-w-[140px] notranslate" translate="no">
           {languages.map((lang) => (
             <button
               key={lang.code}
               onClick={() => changeLanguage(lang.code)}
-              className="text-left px-4 py-2 hover:bg-white/10 rounded-xl text-sm font-medium transition-colors"
+              className={`text-left px-4 py-2 rounded-xl text-sm font-medium transition-colors ${currentLang === lang.code ? 'bg-white/20 text-cyan-400 font-bold' : 'hover:bg-white/10'}`}
             >
               {lang.name}
             </button>
@@ -95,7 +92,7 @@ export function FloatingMenu() {
         </div>
       )}
       
-      <div className="flex gap-3">
+      <div className="flex gap-3 notranslate" translate="no">
         <button
           onClick={() => setIsTranslateOpen(!isTranslateOpen)}
           className="w-12 h-12 rounded-full glass border border-white/10 flex items-center justify-center hover:bg-white/10 transition-colors shadow-lg hover:scale-105 active:scale-95 bg-black/50 text-white"
