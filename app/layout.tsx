@@ -22,7 +22,7 @@ export default function RootLayout({
 }>) {
   return (
     <ClerkProvider>
-      <html lang="pt-BR" class="notranslate" translate="no">
+      <html lang="pt-BR" className="notranslate" translate="no">
         <body className={`${inter.variable} ${orbitron.variable} font-sans antialiased min-h-screen bg-background text-foreground`} suppressHydrationWarning>
           <Navbar />
           {children}
