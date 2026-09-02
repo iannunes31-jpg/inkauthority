@@ -26,7 +26,6 @@ export function FloatingMenu() {
     const savedLang = localStorage.getItem("lang") || "pt";
     syncLang(savedLang);
 
-    // Periodic sync with iframe to ensure iframe stays synced
     const interval = setInterval(() => {
       const currentTheme = localStorage.getItem("theme") || "dark";
       const currentLang = localStorage.getItem("lang") || "pt";
