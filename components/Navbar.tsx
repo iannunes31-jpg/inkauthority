@@ -11,6 +11,7 @@ import { NotificationPanel } from "./NotificationPanel";
 import { useAuth, useUser, useClerk } from "@clerk/nextjs";
 import { LogOut, LayoutDashboard, Settings } from "lucide-react";
 import { LoginModal } from "./LoginModal";
+import { isAdminUser } from "@/lib/admin";
 
 function UserDropdown() {
   const { user } = useUser();
@@ -19,9 +20,7 @@ function UserDropdown() {
   
   if (!user) return null;
 
-  const isAdmin = 
-    user.primaryEmailAddress?.emailAddress === "yurilojavirtual@gmail.com" || 
-    user.primaryEmailAddress?.emailAddress === "o9.yuri@gmail.com";
+  const isAdmin = isAdminUser(user.primaryEmailAddress?.emailAddress, user.publicMetadata);
 
   return (
     <div className="relative">

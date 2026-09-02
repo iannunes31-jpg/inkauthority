@@ -2,8 +2,16 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { createVertex } from '@ai-sdk/google-vertex';
 import { generateText } from 'ai';
+import { checkIsAdmin } from '@/lib/auth-server';
 
 export async function GET() {
+  // Debug-only route: reveals which env vars are configured and burns a
+  // real Gemini API call on every hit. Had no auth check — anyone could
+  // hit it repeatedly to rack up AI usage or probe infra config.
+  if (!(await checkIsAdmin())) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  }
+
   const diagnostics: any = {
     env: {
       hasVertexCredentials: !!process.env.GOOGLE_VERTEX_CREDENTIALS,

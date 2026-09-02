@@ -30,22 +30,13 @@
           document.documentElement.classList.remove('light');
         }
       } else if (event.data.type === 'SET_LANG') {
-        const iSelect = document.querySelector('.goog-te-combo');
-        if (iSelect) {
-          iSelect.value = event.data.lang;
-          iSelect.dispatchEvent(new Event('change'));
+        if (window.translateLandingDOM) {
+          window.translateLandingDOM(event.data.lang);
         }
       }
     });
-
-    window.googleTranslateElementInit = function() {
-        new google.translate.TranslateElement(
-            { pageLanguage: 'pt', autoDisplay: false },
-            'google_translate_element_iframe'
-        );
-    };
   </script>
-  <script src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
+  <script src="/landing-i18n.js"></script>
 
 
 
@@ -142,7 +133,6 @@
 </script>
 </head>
 <body>
-<div id="google_translate_element_iframe" style="display:none"></div>
 
   <div id="__bundler_thumbnail"><svg xmlns="http://www.w3.org/2000/svg" sc-camel-view-box="0 0 400 400"><rect width="400" height="400" fill="#0a0a0c"></rect><circle cx="200" cy="176" r="62" fill="none" stroke="#cfcfd6" stroke-width="2"></circle><circle cx="164" cy="228" r="62" fill="none" stroke="#cfcfd6" stroke-width="2"></circle><circle cx="236" cy="228" r="62" fill="none" stroke="#cfcfd6" stroke-width="2"></circle><text x="200" y="330" font-family="Helvetica,Arial,sans-serif" font-size="30" font-weight="200" letter-spacing="7" fill="#e8e8ec" text-anchor="middle">INK</text></svg></div>
   <div id="__bundler_loading">Unpacking...</div>

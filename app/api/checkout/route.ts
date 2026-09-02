@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { getAuth } from '@clerk/nextjs/server';
 import { NextRequest } from 'next/server';
+import { supabase } from '@/lib/supabase';
+import { PRODUCT_CATALOG, DEFAULT_COURSE_PRICE } from '@/lib/products';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
   apiVersion: '2024-06-20' as any,
@@ -10,15 +12,46 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
 export async function POST(req: NextRequest) {
   try {
     const { userId } = getAuth(req);
-    
+
     if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { productName, price, productId, productType, isSubscription, returnUrl } = await req.json();
+    const { productId, productType, returnUrl } = await req.json();
 
-    if (!productName || !price) {
-      return NextResponse.json({ error: 'Missing product details' }, { status: 400 });
+    if (!productId) {
+      return NextResponse.json({ error: 'Missing productId' }, { status: 400 });
+    }
+
+    // Resolve name/price/subscription flag from a trusted server-side source.
+    // Never trust productName/price/isSubscription sent by the client — a
+    // browser can send anything it wants in the POST body.
+    let productName: string;
+    let price: number;
+    let isSubscription: boolean;
+
+    if (productType === 'course') {
+      const { data: course, error } = await supabase
+        .from('courses')
+        .select('id, title, is_published')
+        .eq('id', productId)
+        .single();
+
+      if (error || !course || course.is_published === false) {
+        return NextResponse.json({ error: 'Course not found' }, { status: 404 });
+      }
+
+      productName = course.title;
+      price = DEFAULT_COURSE_PRICE; // TODO: read from courses.price once that column exists
+      isSubscription = false;
+    } else {
+      const product = PRODUCT_CATALOG[productId];
+      if (!product) {
+        return NextResponse.json({ error: 'Unknown product' }, { status: 400 });
+      }
+      productName = product.name;
+      price = product.price;
+      isSubscription = product.isSubscription;
     }
 
     const session = await stripe.checkout.sessions.create({
@@ -31,8 +64,8 @@ export async function POST(req: NextRequest) {
             product_data: {
               name: productName,
               metadata: {
-                productId: productId || 'unknown',
-                productType: productType || 'general',
+                productId: String(productId),
+                productType: String(productType || 'general'),
               }
             },
             unit_amount: Math.round(price * 100),
@@ -43,7 +76,7 @@ export async function POST(req: NextRequest) {
       ],
       metadata: {
         userId,
-        productId: String(productId || 'unknown'),
+        productId: String(productId),
         productType: String(productType || 'general'),
       },
       success_url: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}${returnUrl || '/dashboard'}?success=true`,
