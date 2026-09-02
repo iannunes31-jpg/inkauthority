@@ -52,7 +52,9 @@
 
 
 <style id="master-light-css">
-  /* MASTER LIGHT MODE - OVERRIDE ALL INNER SECTIONS, DIVS, AND INLINE DARK BACKGROUNDS */
+  #__bundler_err { display: none !important; opacity: 0 !important; visibility: hidden !important; pointer-events: none !important; }
+
+  /* MASTER LIGHT MODE - OVERRIDE ALL INNER SECTIONS & INLINE DARK BACKGROUNDS */
   html.light,
   html.light body,
   html.light #root,
@@ -116,18 +118,34 @@
   }
 </style>
 <script>
-  window.addEventListener('message', function(event) {
-    if (!event.data) return;
-    if (event.data.type === 'SET_THEME') {
-      if (event.data.theme === 'light') {
-        document.documentElement.classList.add('light');
-        if (document.body) document.body.classList.add('light');
+  (function() {
+    function applyTheme(t) {
+      var isL = t === 'light';
+      var root = document.documentElement;
+      var body = document.body;
+      if (isL) {
+        root.classList.add('light'); root.classList.remove('dark');
+        if (body) { body.classList.add('light'); body.classList.remove('dark'); }
+        document.querySelectorAll('section, main, div').forEach(function(el) { el.classList.add('light'); });
       } else {
-        document.documentElement.classList.remove('light');
-        if (document.body) document.body.classList.remove('light');
+        root.classList.remove('light'); root.classList.add('dark');
+        if (body) { body.classList.remove('light'); body.classList.add('dark'); }
+        document.querySelectorAll('section, main, div').forEach(function(el) { el.classList.remove('light'); });
       }
     }
-  });
+
+    window.addEventListener('message', function(e) {
+      if (!e.data) return;
+      if (e.data.type === 'SET_THEME') {
+        applyTheme(e.data.theme);
+      }
+    });
+
+    setInterval(function() {
+      var theme = localStorage.getItem('theme') || 'dark';
+      applyTheme(theme);
+    }, 400);
+  })();
 </script>
 </head>
 <body>
