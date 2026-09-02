@@ -417,72 +417,177 @@ document.addEventListener('DOMContentLoaded', async function() {
     
     const myInjection = `
   <style id="ia-light-mode">
-    html.light,html.light body,html.light main,html.light section,html.light article,html.light header,html.light footer,html.light nav,html.light div:not([style*="background-image"]){background-color:#fff!important;background:#fff!important;color:#111!important}
-    html.light [style*="background:#"],html.light [style*="background: #"],html.light [style*="background:rgb"],html.light [style*="background: rgb"],html.light [style*="background:rgba"],html.light [style*="background: rgba"],html.light [style*="linear-gradient"],html.light [style*="radial-gradient"]{background:#fff!important;background-color:#fff!important}
-    html.light div[style*="position:fixed"],html.light header[style*="position:fixed"]{background:rgba(255,255,255,.95)!important;border-bottom:1px solid rgba(0,0,0,.12)!important}
-    html.light h1,html.light h2,html.light h3,html.light h4,html.light h5,html.light h6,html.light p,html.light span,html.light a,html.light li,html.light label,html.light strong,html.light b,html.light i{color:#111!important;-webkit-text-fill-color:#111!important;background-clip:initial!important;-webkit-background-clip:initial!important}
-    html.light img,html.light video,html.light iframe,html.light svg,html.light canvas,html.light [style*="background-image"]{filter:none!important;opacity:1!important}
-    @media(max-width:768px){html,body{overflow-x:hidden!important;width:100%!important}div[style*="display:grid"],div[style*="display: grid"]{grid-template-columns:1fr!important;gap:16px!important;padding-left:12px!important;padding-right:12px!important}h1{font-size:clamp(24px,7.5vw,38px)!important}h2{font-size:clamp(20px,6vw,28px)!important}p{font-size:clamp(14px,4vw,16px)!important}}
+    html.light, html.light body { background-color: #f8f9fa !important; color: #111118 !important; }
+    html.light main, html.light section, html.light article, html.light footer { background-color: transparent !important; color: #111118 !important; }
+    html.light [data-theme-card], html.light .card, html.light div[style*="background: rgba(13, 13, 18"], html.light div[style*="background:rgba(13,13,18"], html.light div[style*="background: rgb(13, 13, 18"], html.light div[style*="background:rgb(13,13,18"], html.light div[style*="background: #0d0d12"], html.light div[style*="background:#0d0d12"], html.light div[style*="background: #08080a"], html.light div[style*="background:#08080a"], html.light div[style*="background: rgba(8, 8, 10"], html.light div[style*="background:rgba(8,8,10"] { background-color: #ffffff !important; border-color: rgba(0,0,0,0.08) !important; box-shadow: 0 4px 20px rgba(0,0,0,0.04) !important; }
+    html.light div[style*="position:fixed"], html.light header[style*="position:fixed"], html.light nav[style*="position:fixed"] { background: rgba(248, 249, 250, 0.95) !important; border-bottom: 1px solid rgba(0,0,0,0.08) !important; }
+    html.light h1, html.light h2, html.light h3, html.light h4, html.light h5, html.light h6 { color: #0a0a0f !important; -webkit-text-fill-color: #0a0a0f !important; }
+    html.light p, html.light span:not([style*="color: rgb(0"]):not([style*="color:#0"]):not([style*="color: #0"]):not([style*="color: gold"]):not([style*="color: #d4af37"]), html.light a:not([style*="background"]), html.light li, html.light label { color: #2a2a35 !important; }
+    html.light div[style*="color: rgba(255, 255, 255, 0.6)"], html.light div[style*="color:rgba(255,255,255,0.6)"], html.light span[style*="color: rgba(255, 255, 255, 0.6)"], html.light span[style*="color:rgba(255,255,255,0.6)"], html.light p[style*="color: rgba(255, 255, 255, 0.6)"] { color: #646473 !important; }
+    /* PRESERVE ALL PHOTOS AND VIDEOS - NEVER INVERT */
+    html.light img, html.light video, html.light iframe, html.light svg, html.light canvas, html.light [style*="background-image"], html.light [data-parallax] { filter: none !important; opacity: 1 !important; }
   </style>
   <script>
-    (function(){
-      var dict={
-        en:{"POSICIONAMENTO • TÉCNICA • ESTRATÉGIA":"POSITIONING • TECHNIQUE • STRATEGY","Entrar":"Sign In","Acesso Antecipado":"Early Access","Quem já vive a nova era":"Who already lives the new era","O cliente compra o artista antes da arte.":"The client buys the artist before the art.","Posicionamento é percepção":"Positioning is perception","Os três pilares para construir uma carreira sólida na tatuagem.":"The three pillars to build a solid career in tattooing.","POSICIONAMENTO":"POSITIONING","TÉCNICA":"TECHNIQUE","ESTRATÉGIA":"STRATEGY","AUTORIDADE":"AUTHORITY","AUTORIDADE EM TINTA":"INK AUTHORITY","O conhecimento que transforma técnica em uma carreira sólida.":"The knowledge that transforms technique into a solid career."},
-        es:{"POSICIONAMENTO • TÉCNICA • ESTRATÉGIA":"POSICIONAMIENTO • TÉCNICA • ESTRATEGIA","Entrar":"Iniciar Sesión","Acesso Antecipado":"Acceso Anticipado","Quem já vive a nova era":"Quienes ya viven la nueva era","O cliente compra o artista antes da arte.":"El cliente compra al artista antes que el arte.","Posicionamento é percepção":"El posicionamiento es percepción","Os três pilares para construir uma carreira sólida na tatuagem.":"Los tres pilares para construir una carrera sólida en el tatuaje.","POSICIONAMENTO":"POSICIONAMIENTO","TÉCNICA":"TÉCNICA","ESTRATÉGIA":"ESTRATEGIA","AUTORIDADE":"AUTORIDAD","AUTORIDADE EM TINTA":"AUTORIDAD EN TINTA","O conhecimento que transforma técnica em uma carreira sólida.":"El conocimiento que transforma la técnica en una carrera sólida."},
-        fr:{"POSICIONAMENTO • TÉCNICA • ESTRATÉGIA":"POSITIONNEMENT • TECHNIQUE • STRATÉGIE","Entrar":"Se Connecter","Acesso Antecipado":"Accès Anticipé","Quem já vive a nova era":"Ceux qui vivent déjà la nouvelle ère","O cliente compra o artista antes da arte.":"Le client achète l'artiste avant l'art.","Posicionamento é percepção":"Le positionnement est une perception","Os três pilares para construir uma carreira sólida na tatuagem.":"Les trois piliers pour construire une carrière solide dans le tatouage.","POSICIONAMENTO":"POSITIONNEMENT","TÉCNICA":"TECHNIQUE","ESTRATÉGIA":"STRATÉGIE","AUTORIDADE":"AUTORITÉ","AUTORIDADE EM TINTA":"AUTORITÉ EN ENCRE","O conhecimento que transforma técnica em uma carreira sólida.":"La connaissance qui transforme la technique en une carrière solide."},
-        de:{"POSICIONAMENTO • TÉCNICA • ESTRATÉGIA":"POSITIONIERUNG • TECHNIK • STRATEGIE","Entrar":"Anmelden","Acesso Antecipado":"Frühzeitiger Zugang","Quem já vive a nova era":"Wer bereits die neue Ära lebt","O cliente compra o artista antes da arte.":"Der Kunde kauft den Künstler vor der Kunst.","Posicionamento é percepção":"Positionierung ist Wahrnehmung","Os três pilares para construir uma carreira sólida na tatuagem.":"Die drei Säulen für eine solide Karriere im Tätowieren.","POSICIONAMENTO":"POSITIONIERUNG","TÉCNICA":"TECHNIK","ESTRATÉGIA":"STRATEGIE","AUTORIDADE":"AUTORITÄT","AUTORIDADE EM TINTA":"AUTORITÄT IN TINTE","O conhecimento que transforma técnica em uma carreira sólida.":"Das Wissen, das Technik in eine solide Karriere verwandelt."},
-        it:{"POSICIONAMENTO • TÉCNICA • ESTRATÉGIA":"POSIZIONAMENTO • TECNICA • STRATEGIA","Entrar":"Accedi","Acesso Antecipado":"Accesso Anticipato","Quem já vive a nova era":"Chi vive già la nuova era","O cliente compra o artista antes da arte.":"Il cliente compra l'artista prima dell'arte.","Posicionamento é percepção":"Il posizionamento è percezione","Os três pilares para construir uma carreira sólida na tatuagem.":"I tre pilastri per costruire una solida carriera nel tatuaggio.","POSICIONAMENTO":"POSIZIONAMENTO","TÉCNICA":"TECNICA","ESTRATÉGIA":"STRATEGIA","AUTORIDADE":"AUTORITÀ","AUTORIDADE EM TINTA":"AUTORITÀ IN INCHIOSTRO","O conhecimento que transforma técnica em uma carreira sólida.":"La conoscenza che trasforma la tecnica in una carriera solida."},
-        ja:{"POSICIONAMENTO • TÉCNICA • ESTRATÉGIA":"ポジショニング • 技術 • 戦略","Entrar":"ログイン","Acesso Antecipado":"早期アクセス","Quem já vive a nova era":"新時代を生きる人々","O cliente compra o artista antes da arte.":"クライアントはアートの前にアーティストを買う。","Posicionamento é percepção":"ポジショニングは知覚である","Os três pilares para construir uma carreira sólida na tatuagem.":"タトゥーで確固たるキャリアを築く3つの柱。","POSICIONAMENTO":"ポジショニング","TÉCNICA":"技術","ESTRATÉGIA":"戦略","AUTORIDADE":"権威","AUTORIDADE EM TINTA":"インクの権威","O conhecimento que transforma técnica em uma carreira sólida.":"技術を確固たるキャリアに変える知識。"},
-        ru:{"POSICIONAMENTO • TÉCNICA • ESTRATÉGIA":"ПОЗИЦИОНИРОВАНИЕ • ТЕХНИКА • СТРАТЕГИЯ","Entrar":"Войти","Acesso Antecipado":"Ранний Доступ","Quem já vive a nova era":"Кто уже живет в новой эре","O cliente compra o artista antes da arte.":"Клиент покупает художника раньше искусства.","Posicionamento é percepção":"Позиционирование — это восприятие","Os três pilares para construir uma carreira sólida na tatuagem.":"Три столпа создания успешной карьеры в татуировке.","POSICIONAMENTO":"ПОЗИЦИОНИРОВАНИЕ","TÉCNICA":"ТЕХНИКА","ESTRATÉGIA":"СТРАТЕГИЯ","AUTORIDADE":"АВТОРИТЕТ","AUTORIDADE EM TINTA":"АВТОРИТЕТ В ТАТУИРОВКЕ","O conhecimento que transforma técnica em uma carreira sólida.":"Знания, превращающие технику в успешную карьеру."}
+    (function() {
+      var dict = {
+        en: {
+          "AUTORIDADE EM TINTA": "INK AUTHORITY",
+          "POSICIONAMENTO • TÉCNICA • ESTRATÉGIA": "POSITIONING • TECHNIQUE • STRATEGY",
+          "Entrar": "Sign In",
+          "Acesso Antecipado": "Early Access",
+          "Quem já vive a nova era": "Who already lives the new era",
+          "O cliente compra o artista antes da arte.": "The client buys the artist before the art.",
+          "Posicionamento é percepção": "Positioning is perception",
+          "Os três pilares para construir uma carreira sólida na tatuagem.": "The three pillars to build a solid career in tattooing.",
+          "POSICIONAMENTO": "POSITIONING",
+          "TÉCNICA": "TECHNIQUE",
+          "ESTRATÉGIA": "STRATEGY",
+          "AUTORIDADE": "AUTHORITY",
+          "O conhecimento que transforma técnica em uma carreira sólida.": "The knowledge that transforms technique into a solid career.",
+          "Quero me destacar": "I want to stand out",
+          "Garantir minha vaga": "Secure my spot",
+          "Começar Agora": "Start Now"
+        },
+        es: {
+          "AUTORIDADE EM TINTA": "AUTORIDAD EN TINTA",
+          "POSICIONAMENTO • TÉCNICA • ESTRATÉGIA": "POSICIONAMIENTO • TÉCNICA • ESTRATEGIA",
+          "Entrar": "Iniciar Sesión",
+          "Acesso Antecipado": "Acceso Anticipado",
+          "Quem já vive a nova era": "Quienes ya viven la nueva era",
+          "O cliente compra o artista antes da arte.": "El cliente compra al artista antes que el arte.",
+          "Posicionamento é percepção": "El posicionamiento es percepción",
+          "Os três pilares para construir uma carreira sólida na tatuagem.": "Los tres pilares para construir una carrera sólida en el tatuaje.",
+          "POSICIONAMENTO": "POSICIONAMIENTO",
+          "TÉCNICA": "TÉCNICA",
+          "ESTRATÉGIA": "ESTRATEGIA",
+          "AUTORIDADE": "AUTORIDAD",
+          "O conhecimento que transforma técnica em uma carreira sólida.": "El conocimiento que transforma la técnica en una carrera sólida.",
+          "Quero me destacar": "Quiero destacar",
+          "Garantir minha vaga": "Asegurar mi lugar",
+          "Começar Agora": "Empezar Ahora"
+        },
+        fr: {
+          "AUTORIDADE EM TINTA": "AUTORITÉ EN ENCRE",
+          "POSICIONAMENTO • TÉCNICA • ESTRATÉGIA": "POSITIONNEMENT • TECHNIQUE • STRATÉGIE",
+          "Entrar": "Se Connecter",
+          "Acesso Antecipado": "Accès Anticipé",
+          "Quem já vive a nova era": "Ceux qui vivent déjà la nouvelle ère",
+          "O cliente compra o artista antes da arte.": "Le client achète l'artiste avant l'art.",
+          "Posicionamento é percepção": "Le positionnement est une perception",
+          "Os três pilares para construir uma carreira sólida na tatuagem.": "Les três piliers pour construire une carrière solide dans le tatouage.",
+          "POSICIONAMENTO": "POSITIONNEMENT",
+          "TÉCNICA": "TECHNIQUE",
+          "ESTRATÉGIA": "STRATÉGIE",
+          "AUTORIDADE": "AUTORITÉ"
+        },
+        de: {
+          "AUTORIDADE EM TINTA": "AUTORITÄT IN TINTE",
+          "POSICIONAMENTO • TÉCNICA • ESTRATÉGIA": "POSITIONIERUNG • TECHNIK • STRATEGIE",
+          "Entrar": "Anmelden",
+          "Acesso Antecipado": "Frühzeitiger Zugang",
+          "Quem já vive a nova era": "Wer bereits die neue Ära lebt",
+          "O cliente compra o artista antes da arte.": "Der Kunde kauft den Künstler vor der Kunst.",
+          "Posicionamento é percepção": "Positionierung ist Wahrnehmung",
+          "Os três pilares para construir uma carreira sólida na tatuagem.": "Die drei Säulen für eine solide Karriere im Tätowieren.",
+          "POSICIONAMENTO": "POSITIONIERUNG",
+          "TÉCNICA": "TECHNIK",
+          "ESTRATÉGIA": "STRATEGIE",
+          "AUTORIDADE": "AUTORITÄT"
+        },
+        it: {
+          "AUTORIDADE EM TINTA": "AUTORITÀ IN INCHIOSTRO",
+          "POSICIONAMENTO • TÉCNICA • ESTRATÉGIA": "POSIZIONAMENTO • TECNICA • STRATEGIA",
+          "Entrar": "Accedi",
+          "Acesso Antecipado": "Accesso Anticipado",
+          "Quem já vive a nova era": "Chi vive già la nova era",
+          "O cliente compra o artista antes da arte.": "Il cliente compra l'artista prima dell'arte.",
+          "Posicionamento é percepção": "Il posizionamento è percezione",
+          "Os três pilares para construir uma carreira sólida na tatuagem.": "I tre pilastri per costruire una solida carriera nel tatuaggio.",
+          "POSICIONAMENTO": "POSIZIONAMENTO",
+          "TÉCNICA": "TECNICA",
+          "ESTRATÉGIA": "STRATEGIA",
+          "AUTORIDADE": "AUTORITÀ"
+        },
+        ja: {
+          "AUTORIDADE EM TINTA": "インクの権威",
+          "POSICIONAMENTO • TÉCNICA • ESTRATÉGIA": "ポジショニング • 技術 • 戦略",
+          "Entrar": "ログイン",
+          "Acesso Antecipado": "早期アクセス",
+          "Quem já vive a nova era": "新時代を生きる人々",
+          "O cliente compra o artista antes da arte.": "クライアントはアートの前にアーティストを買う。",
+          "POSICIONAMENTO": "ポジショニング",
+          "TÉCNICA": "技術",
+          "ESTRATÉGIA": "戦略",
+          "AUTORIDADE": "権威"
+        },
+        ru: {
+          "AUTORIDADE EM TINTA": "АВТОРИТЕТ В ТАТУИРОВКЕ",
+          "POSICIONAMENTO • TÉCNICA • ESTRATÉGIA": "ПОЗИЦИОНИРОВАНИЕ • ТЕХНИКА • СТРАТЕГИЯ",
+          "Entrar": "Войти",
+          "Acesso Antecipado": "Ранний Доступ",
+          "Quem já vive a nova era": "Кто уже живет в новой эре",
+          "O cliente compra o artista antes da arte.": "Клиент покупает художника раньше искусства.",
+          "POSICIONAMENTO": "ПОЗИЦИОНИРОВАНИЕ",
+          "TÉCNICA": "ТЕХНИКА",
+          "ESTRATÉGIA": "СТРАТЕГИЯ",
+          "AUTORIDADE": "АВТОРИТЕТ"
+        }
       };
-      var currentLang='pt';
 
-      function applyTheme(t){
-        var root=document.documentElement;
-        var body=document.body;
-        if(t==='light'){
-          root.classList.add('light');root.classList.remove('dark');
-          if(body){body.classList.add('light');body.classList.remove('dark');}
-          document.querySelectorAll('section,main,div').forEach(function(el){el.classList.add('light');});
-        }else{
-          root.classList.remove('light');root.classList.add('dark');
-          if(body){body.classList.remove('light');body.classList.add('dark');}
-          document.querySelectorAll('section,main,div').forEach(function(el){el.classList.remove('light');});
+      var curLang = 'pt';
+
+      function applyTheme(th) {
+        var root = document.documentElement;
+        var body = document.body;
+        if (th === 'light') {
+          root.classList.add('light');
+          root.classList.remove('dark');
+          if (body) { body.classList.add('light'); body.classList.remove('dark'); }
+        } else {
+          root.classList.remove('light');
+          root.classList.add('dark');
+          if (body) { body.classList.remove('light'); body.classList.add('dark'); }
         }
       }
 
-      function applyLang(lang){
-        if(!lang||lang==='pt'||lang===currentLang)return;
-        var d=dict[lang];
-        if(!d)return;
-        currentLang=lang;
-        function walk(n){
-          if(n.nodeType===3){
-            var t=n.nodeValue?n.nodeValue.trim():'';
-            if(t&&d[t])n.nodeValue=d[t];
-          }else if(n.nodeType===1&&n.tagName!=='SCRIPT'&&n.tagName!=='STYLE'){
-            for(var i=0;i<n.childNodes.length;i++)walk(n.childNodes[i]);
+      function applyLang(lang) {
+        if (!lang || lang === 'pt' || lang === curLang) return;
+        var d = dict[lang];
+        if (!d) return;
+        curLang = lang;
+        function walk(node) {
+          if (node.nodeType === 3) {
+            var txt = node.nodeValue ? node.nodeValue.trim() : '';
+            if (txt && d[txt]) {
+              node.nodeValue = node.nodeValue.replace(txt, d[txt]);
+            }
+          } else if (node.nodeType === 1 && node.tagName !== 'SCRIPT' && node.tagName !== 'STYLE') {
+            for (var i = 0; i < node.childNodes.length; i++) {
+              walk(node.childNodes[i]);
+            }
           }
         }
-        walk(document.body||document.documentElement);
+        walk(document.body || document.documentElement);
       }
 
-      window.addEventListener('message',function(e){
-        if(!e.data)return;
-        if(e.data.type==='SET_THEME')applyTheme(e.data.theme);
-        if(e.data.type==='SET_LANG')applyLang(e.data.lang);
+      window.addEventListener('message', function(ev) {
+        if (!ev.data) return;
+        if (ev.data.type === 'SET_THEME') applyTheme(ev.data.theme);
+        if (ev.data.type === 'SET_LANG') applyLang(ev.data.lang);
       });
 
-      // Re-apply every 300ms to survive bundler DOM swap
-      setInterval(function(){
-        var t=localStorage.getItem('theme')||'dark';
-        var l=localStorage.getItem('lang')||'pt';
-        applyTheme(t);
-        if(l!=='pt'&&l!==currentLang)applyLang(l);
-      },300);
+      setInterval(function() {
+        var savedTheme = localStorage.getItem('theme') || 'dark';
+        var savedLang = localStorage.getItem('lang') || 'pt';
+        applyTheme(savedTheme);
+        if (savedLang !== 'pt' && savedLang !== curLang) {
+          applyLang(savedLang);
+        }
+      }, 300);
     })();
-  </script>`;
-const resourceScript = '<script>window.__resources = ' +
+  </` + `script>`;
+
+    const resourceScript = '<script>window.__resources = ' +
       JSON.stringify(resourceMap).replace(/<\//g, '<\\/') +
       ';</' + 'script>' + myInjection;
 
