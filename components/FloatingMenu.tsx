@@ -20,28 +20,25 @@ export function FloatingMenu() {
 
   useEffect(() => {
     const savedTheme = localStorage.getItem("theme") || "dark";
-    setTheme(savedTheme);
-    applyTheme(savedTheme);
-
     const savedLang = localStorage.getItem("lang") || "pt";
-    syncLang(savedLang);
-
-    const interval = setInterval(() => {
+    setTheme(savedTheme);
+    
+    // Sync theme and lang on mount and periodically
+    const syncAll = () => {
       const currentTheme = localStorage.getItem("theme") || "dark";
       const currentLang = localStorage.getItem("lang") || "pt";
-      const iframe = document.querySelector('iframe');
-      if (iframe && iframe.contentWindow) {
-        iframe.contentWindow.postMessage({ type: 'SET_THEME', theme: currentTheme }, '*');
-        iframe.contentWindow.postMessage({ type: 'SET_LANG', lang: currentLang }, '*');
-      }
-    }, 1000);
+      applyThemeToParentAndIframe(currentTheme);
+      applyLangToIframe(currentLang);
+    };
+
+    syncAll();
+    const interval = setInterval(syncAll, 500);
 
     return () => clearInterval(interval);
   }, []);
 
-  const applyTheme = (newTheme: string) => {
+  const applyThemeToParentAndIframe = (newTheme: string) => {
     const html = document.documentElement;
-    
     if (newTheme === "light") {
       html.classList.remove("dark");
       html.classList.add("light");
@@ -54,29 +51,55 @@ export function FloatingMenu() {
       document.body.style.color = "#ffffff";
     }
 
-    const iframe = document.querySelector('iframe');
-    if (iframe && iframe.contentWindow) {
-      iframe.contentWindow.postMessage({ type: 'SET_THEME', theme: newTheme }, '*');
-    }
+    // Direct DOM sync + postMessage
+    try {
+      const iframe = document.querySelector('iframe') as HTMLIFrameElement;
+      if (iframe) {
+        if (iframe.contentWindow) {
+          iframe.contentWindow.postMessage({ type: 'SET_THEME', theme: newTheme }, '*');
+        }
+        if (iframe.contentDocument && iframe.contentDocument.documentElement) {
+          if (newTheme === 'light') {
+            iframe.contentDocument.documentElement.classList.add('light');
+            iframe.contentDocument.documentElement.classList.remove('dark');
+            if (iframe.contentDocument.body) {
+              iframe.contentDocument.body.classList.add('light');
+              iframe.contentDocument.body.classList.remove('dark');
+            }
+          } else {
+            iframe.contentDocument.documentElement.classList.add('dark');
+            iframe.contentDocument.documentElement.classList.remove('light');
+            if (iframe.contentDocument.body) {
+              iframe.contentDocument.body.classList.add('dark');
+              iframe.contentDocument.body.classList.remove('light');
+            }
+          }
+        }
+      }
+    } catch(e) {}
+  };
+
+  const applyLangToIframe = (langCode: string) => {
+    try {
+      const iframe = document.querySelector('iframe') as HTMLIFrameElement;
+      if (iframe) {
+        if (iframe.contentWindow) {
+          iframe.contentWindow.postMessage({ type: 'SET_LANG', lang: langCode }, '*');
+        }
+      }
+    } catch(e) {}
   };
 
   const toggleTheme = () => {
     const newTheme = theme === "dark" ? "light" : "dark";
     setTheme(newTheme);
     localStorage.setItem("theme", newTheme);
-    applyTheme(newTheme);
-  };
-
-  const syncLang = (langCode: string) => {
-    const iframe = document.querySelector('iframe');
-    if (iframe && iframe.contentWindow) {
-      iframe.contentWindow.postMessage({ type: 'SET_LANG', lang: langCode }, '*');
-    }
+    applyThemeToParentAndIframe(newTheme);
   };
 
   const changeLanguage = (langCode: string) => {
     localStorage.setItem("lang", langCode);
-    syncLang(langCode);
+    applyLangToIframe(langCode);
     setIsTranslateOpen(false);
   };
 
