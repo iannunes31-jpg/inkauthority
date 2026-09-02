@@ -537,7 +537,16 @@ document.addEventListener('DOMContentLoaded', async function() {
     if (ev.data.type === 'SET_THEME' && ev.data.theme) {
       applyTheme(ev.data.theme);
     }
-    if (ev.data.type === 'SET_LANG') {
+    if (false && ev.data.type === 'SET_LANG') {
+      // Disabled: this engine's getTranslation() falls back to the cached
+      // PT original whenever it can't match a phrase (a frequent miss on
+      // longer sentences), which OVERWRITES whatever the other translation
+      // engine (landing-i18n.js, wired up above in this same file) just
+      // correctly translated — every ~400ms, forever, permanently reverting
+      // most of the page back to Portuguese. landing-i18n.js has full,
+      // verified coverage on its own; this engine is kept in the file
+      // (removing it safely requires surgery inside a much larger,
+      // fragile script) but must never run its language-switching again.
       applyLang(ev.data.lang || 'pt');
     }
   });
