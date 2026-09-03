@@ -1,17 +1,55 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { motion } from "motion/react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { BookOpen, Compass, Trophy, Download, History, Settings, User, Users, Bot, Radio } from "lucide-react";
+import { BookOpen, Compass, Trophy, Download, History, Settings, User, Users, Bot, Radio, ArrowRight } from "lucide-react";
 import { useAuth, UserButton } from "@clerk/nextjs";
+import { supabase } from "@/lib/supabase";
 
 import { AITutorWidget } from "@/components/AITutorWidget";
+import { PurchaseCourseModal } from "@/components/PurchaseCourseModal";
+
+const FLAGSHIP_PRODUCT_ID = "marketing_posicionamento";
+const PURCHASE_MODAL_SESSION_KEY = "ia_purchase_modal_shown";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const { signOut } = useAuth();
+  const { userId, signOut } = useAuth();
+
+  // Free areas (community, library/PDFs, etc.) don't require buying the
+  // flagship course, so closing the popup shouldn't lose the offer --
+  // it collapses into a small neon button that stays on screen (across
+  // every dashboard page, not just this one) so it's still one click away
+  // whenever the person decides they want it.
+  const [hasPurchased, setHasPurchased] = useState<boolean | null>(null);
+  const [showPurchaseModal, setShowPurchaseModal] = useState(false);
+
+  useEffect(() => {
+    if (!userId) return;
+    (async () => {
+      try {
+        const { data } = await supabase
+          .from('user_purchases')
+          .select('id')
+          .eq('user_id', userId)
+          .eq('product_id', FLAGSHIP_PRODUCT_ID)
+          .maybeSingle();
+
+        const purchased = !!data;
+        setHasPurchased(purchased);
+
+        if (!purchased && !sessionStorage.getItem(PURCHASE_MODAL_SESSION_KEY)) {
+          setShowPurchaseModal(true);
+          sessionStorage.setItem(PURCHASE_MODAL_SESSION_KEY, '1');
+        }
+      } catch (err) {
+        console.error("Erro ao verificar compra do curso:", err);
+      }
+    })();
+  }, [userId]);
 
   const menuItems = [
     { name: "Meu Aprendizado", path: "/dashboard", icon: <BookOpen className="w-5 h-5" /> },
@@ -85,6 +123,28 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
       {/* Tutor IA Global */}
       <AITutorWidget />
+
+      {/* Oferta do curso completo -- some quando comprado */}
+      {hasPurchased === false && (
+        <>
+          <PurchaseCourseModal
+            isOpen={showPurchaseModal}
+            onClose={() => setShowPurchaseModal(false)}
+          />
+
+          {!showPurchaseModal && (
+            <motion.button
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              onClick={() => setShowPurchaseModal(true)}
+              className="fixed bottom-24 left-6 z-40 metallic-gradient text-black font-bold uppercase tracking-[0.15em] text-[11px] h-12 px-5 rounded-full flex items-center gap-2 shadow-lg hover:scale-105 transition-transform neon-glow"
+            >
+              Comprar Curso
+              <ArrowRight className="w-3.5 h-3.5" />
+            </motion.button>
+          )}
+        </>
+      )}
     </div>
   );
 }

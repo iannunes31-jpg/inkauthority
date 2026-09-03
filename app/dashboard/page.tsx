@@ -7,53 +7,20 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/lib/supabase";
 import { useUser, useAuth } from "@clerk/nextjs";
-import { PurchaseCourseModal } from "@/components/PurchaseCourseModal";
-
-const FLAGSHIP_PRODUCT_ID = "marketing_posicionamento";
-const PURCHASE_MODAL_SESSION_KEY = "ia_purchase_modal_shown";
 
 export default function Dashboard() {
   const { userId } = useAuth();
   const { user } = useUser();
   const [inProgressCourses, setInProgressCourses] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showPurchaseModal, setShowPurchaseModal] = useState(false);
 
   useEffect(() => {
     if (userId) {
       fetchUserProgress();
-      checkFlagshipPurchase();
     } else {
       setLoading(false);
     }
   }, [userId]);
-
-  // Shows the "buy the course" popup right after login, once per browser
-  // session, for anyone who hasn't bought the flagship course yet. Checked
-  // independently from `inProgressCourses` above (which only looks at rows
-  // in the `courses` table) because the flagship course is a hardcoded
-  // catalog product, not a Supabase `courses` row -- it needs its own
-  // purchase check by product_id instead.
-  const checkFlagshipPurchase = async () => {
-    try {
-      const { data } = await supabase
-        .from('user_purchases')
-        .select('id')
-        .eq('user_id', userId)
-        .eq('product_id', FLAGSHIP_PRODUCT_ID)
-        .maybeSingle();
-
-      const alreadyPurchased = !!data;
-      const alreadyShownThisSession = sessionStorage.getItem(PURCHASE_MODAL_SESSION_KEY);
-
-      if (!alreadyPurchased && !alreadyShownThisSession) {
-        setShowPurchaseModal(true);
-        sessionStorage.setItem(PURCHASE_MODAL_SESSION_KEY, '1');
-      }
-    } catch (err) {
-      console.error("Erro ao verificar compra do curso:", err);
-    }
-  };
 
   const fetchUserProgress = async () => {
     try {
@@ -173,11 +140,6 @@ export default function Dashboard() {
           </div>
         )}
       </section>
-
-      <PurchaseCourseModal
-        isOpen={showPurchaseModal}
-        onClose={() => setShowPurchaseModal(false)}
-      />
     </div>
   );
 }
