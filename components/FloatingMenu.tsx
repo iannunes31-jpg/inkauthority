@@ -405,7 +405,8 @@ export function FloatingMenu() {
 
   const translateParentDOM = (targetLang: string) => {
     if (typeof document === "undefined") return;
-    const walk = (node: Node) => {
+    const walk = (node: Node | null | undefined) => {
+      if (!node) return;
       if (node.nodeType === 3) {
         const val = node.nodeValue;
         if (!val || !val.trim()) return;
@@ -432,9 +433,15 @@ export function FloatingMenu() {
       } else if (node.nodeType === 1) {
         const el = node as HTMLElement;
         if (el.tagName !== "SCRIPT" && el.tagName !== "STYLE" && !el.classList.contains("notranslate")) {
-          for (let i = 0; i < node.childNodes.length; i++) {
-            walk(node.childNodes[i]);
-          }
+          // Snapshot into a plain array before recursing: this now walks
+          // the whole page (not just <nav>), and React mutates the live
+          // DOM as it renders — e.g. mid-navigation, when clicking a nav
+          // link unmounts the old page and mounts the new one. Iterating
+          // the live childNodes NodeList by index while React is adding or
+          // removing children out from under it throws (walk() would get
+          // called with an out-of-range/undefined entry); a static
+          // snapshot can't shrink mid-loop.
+          Array.from(node.childNodes).forEach(walk);
         }
       }
     };
@@ -445,7 +452,13 @@ export function FloatingMenu() {
     // document, not the document loaded inside it, so walk() can't cross
     // that boundary — that content has its own separate translation engine
     // (public/landing-i18n.js).
-    if (document.body) walk(document.body);
+    try {
+      if (document.body) walk(document.body);
+    } catch (err) {
+      // Best-effort UI polish — never let a translation pass take the app
+      // down with it (e.g. if it races a route transition).
+      console.error("translateParentDOM failed:", err);
+    }
   };
 
   useEffect(() => {
