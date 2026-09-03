@@ -145,7 +145,14 @@ const masterDict: Record<string, Record<string, string>> = {
     "Apagar Publicação": "Delete Post",
     "Salvando...": "Saving...",
     "Curtidas": "Likes",
-    "Comentários": "Comments"
+    "Comentários": "Comments",
+    "Explorar a Plataforma": "Explore the Platform",
+    "Assista transmissões e mentorias ao vivo com a comunidade.": "Watch live broadcasts and mentoring sessions with the community.",
+    "Compartilhe resultados e conecte-se com outros artistas.": "Share results and connect with other artists.",
+    "Tutor IA e assistente de WhatsApp para automatizar seu estúdio.": "AI Tutor and WhatsApp assistant to automate your studio.",
+    "Explore as matérias disponíveis e continue seus estudos.": "Explore the available courses and continue your studies.",
+    "Baixe materiais, e-books e guias exclusivos.": "Download exclusive materials, e-books, and guides.",
+    "Gerencie sua conta e informações de segurança.": "Manage your account and security information."
   },
   es: {
     "HOME": "INICIO",
@@ -286,7 +293,14 @@ const masterDict: Record<string, Record<string, string>> = {
     "Apagar Publicação": "Eliminar Publicación",
     "Salvando...": "Guardando...",
     "Curtidas": "Me Gusta",
-    "Comentários": "Comentarios"
+    "Comentários": "Comentarios",
+    "Explorar a Plataforma": "Explorar la Plataforma",
+    "Assista transmissões e mentorias ao vivo com a comunidade.": "Mira transmisiones y mentorías en vivo con la comunidad.",
+    "Compartilhe resultados e conecte-se com outros artistas.": "Comparte resultados y conéctate con otros artistas.",
+    "Tutor IA e assistente de WhatsApp para automatizar seu estúdio.": "Tutor IA y asistente de WhatsApp para automatizar tu estudio.",
+    "Explore as matérias disponíveis e continue seus estudos.": "Explora las materias disponibles y continúa tus estudios.",
+    "Baixe materiais, e-books e guias exclusivos.": "Descarga materiales, e-books y guías exclusivas.",
+    "Gerencie sua conta e informações de segurança.": "Gestiona tu cuenta e información de seguridad."
   },
   fr: {
     "HOME": "ACCUEIL",
@@ -427,7 +441,14 @@ const masterDict: Record<string, Record<string, string>> = {
     "Apagar Publicação": "Supprimer la Publication",
     "Salvando...": "Enregistrement...",
     "Curtidas": "J'aime",
-    "Comentários": "Commentaires"
+    "Comentários": "Commentaires",
+    "Explorar a Plataforma": "Explorer la Plateforme",
+    "Assista transmissões e mentorias ao vivo com a comunidade.": "Regardez des diffusions et des mentorats en direct avec la communauté.",
+    "Compartilhe resultados e conecte-se com outros artistas.": "Partagez vos résultats et connectez-vous avec d'autres artistes.",
+    "Tutor IA e assistente de WhatsApp para automatizar seu estúdio.": "Tuteur IA et assistant WhatsApp pour automatiser votre studio.",
+    "Explore as matérias disponíveis e continue seus estudos.": "Explorez les cours disponibles et poursuivez vos études.",
+    "Baixe materiais, e-books e guias exclusivos.": "Téléchargez des supports, e-books et guides exclusifs.",
+    "Gerencie sua conta e informações de segurança.": "Gérez votre compte et vos informations de sécurité."
   },
   de: {
     "HOME": "START",
@@ -568,7 +589,14 @@ const masterDict: Record<string, Record<string, string>> = {
     "Apagar Publicação": "Beitrag Löschen",
     "Salvando...": "Wird gespeichert...",
     "Curtidas": "Gefällt mir",
-    "Comentários": "Kommentare"
+    "Comentários": "Kommentare",
+    "Explorar a Plataforma": "Plattform Entdecken",
+    "Assista transmissões e mentorias ao vivo com a comunidade.": "Sieh dir Live-Übertragungen und Mentoring mit der Community an.",
+    "Compartilhe resultados e conecte-se com outros artistas.": "Teile Ergebnisse und vernetze dich mit anderen Künstlern.",
+    "Tutor IA e assistente de WhatsApp para automatizar seu estúdio.": "KI-Tutor und WhatsApp-Assistent, um dein Studio zu automatisieren.",
+    "Explore as matérias disponíveis e continue seus estudos.": "Entdecke die verfügbaren Kurse und setze dein Lernen fort.",
+    "Baixe materiais, e-books e guias exclusivos.": "Lade exklusive Materialien, E-Books und Guides herunter.",
+    "Gerencie sua conta e informações de segurança.": "Verwalte dein Konto und deine Sicherheitsinformationen."
   },
   it: {
     "HOME": "HOME",
@@ -709,7 +737,14 @@ const masterDict: Record<string, Record<string, string>> = {
     "Apagar Publicação": "Elimina Post",
     "Salvando...": "Salvataggio...",
     "Curtidas": "Mi Piace",
-    "Comentários": "Commenti"
+    "Comentários": "Commenti",
+    "Explorar a Plataforma": "Esplora la Piattaforma",
+    "Assista transmissões e mentorias ao vivo com a comunidade.": "Guarda trasmissioni e mentoring dal vivo con la comunità.",
+    "Compartilhe resultados e conecte-se com outros artistas.": "Condividi risultati e connettiti con altri artisti.",
+    "Tutor IA e assistente de WhatsApp para automatizar seu estúdio.": "Tutor IA e assistente WhatsApp per automatizzare il tuo studio.",
+    "Explore as matérias disponíveis e continue seus estudos.": "Esplora i corsi disponibili e continua i tuoi studi.",
+    "Baixe materiais, e-books e guias exclusivos.": "Scarica materiali, e-book e guide esclusive.",
+    "Gerencie sua conta e informações de segurança.": "Gestisci il tuo account e le informazioni di sicurezza."
   },
   ja: {
     "HOME": "ホーム",
@@ -850,7 +885,14 @@ const masterDict: Record<string, Record<string, string>> = {
     "Apagar Publicação": "投稿を削除",
     "Salvando...": "保存中...",
     "Curtidas": "いいね",
-    "Comentários": "コメント"
+    "Comentários": "コメント",
+    "Explorar a Plataforma": "プラットフォームを見る",
+    "Assista transmissões e mentorias ao vivo com a comunidade.": "コミュニティとのライブ配信やメンタリングをご覧ください。",
+    "Compartilhe resultados e conecte-se com outros artistas.": "成果を共有し、他のアーティストとつながりましょう。",
+    "Tutor IA e assistente de WhatsApp para automatizar seu estúdio.": "AIチューターとWhatsAppアシスタントでスタジオを自動化。",
+    "Explore as matérias disponíveis e continue seus estudos.": "利用可能なコースを見て、学習を続けましょう。",
+    "Baixe materiais, e-books e guias exclusivos.": "限定資料、電子書籍、ガイドをダウンロード。",
+    "Gerencie sua conta e informações de segurança.": "アカウントとセキュリティ情報を管理しましょう。"
   },
   ru: {
     "HOME": "ГЛАВНАЯ",
@@ -991,7 +1033,14 @@ const masterDict: Record<string, Record<string, string>> = {
     "Apagar Publicação": "Удалить Публикацию",
     "Salvando...": "Сохранение...",
     "Curtidas": "Нравится",
-    "Comentários": "Комментарии"
+    "Comentários": "Комментарии",
+    "Explorar a Plataforma": "Изучить Платформу",
+    "Assista transmissões e mentorias ao vivo com a comunidade.": "Смотрите прямые трансляции и менторские сессии с сообществом.",
+    "Compartilhe resultados e conecte-se com outros artistas.": "Делитесь результатами и общайтесь с другими мастерами.",
+    "Tutor IA e assistente de WhatsApp para automatizar seu estúdio.": "ИИ-наставник и WhatsApp-ассистент для автоматизации вашей студии.",
+    "Explore as matérias disponíveis e continue seus estudos.": "Изучите доступные курсы и продолжите обучение.",
+    "Baixe materiais, e-books e guias exclusivos.": "Скачивайте эксклюзивные материалы, книги и гайды.",
+    "Gerencie sua conta e informações de segurança.": "Управляйте своим аккаунтом и данными безопасности."
   }
 };
 

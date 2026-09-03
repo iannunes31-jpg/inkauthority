@@ -2,11 +2,23 @@
 
 import { useEffect, useState } from "react";
 import { motion } from "motion/react";
-import { PlayCircle, BookOpen, Compass, ChevronRight } from "lucide-react";
+import { PlayCircle, BookOpen, Compass, ChevronRight, Radio, Users, Bot, Download, User, ArrowUpRight } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/lib/supabase";
 import { useUser, useAuth } from "@clerk/nextjs";
+
+// Quick-access cards for every area of the platform, shown on the
+// dashboard home so a new user (with nothing "in progress" yet) still
+// sees everything that's available instead of an empty page.
+const platformAreas = [
+  { name: "Ao Vivo", path: "/dashboard/lives", icon: Radio, description: "Assista transmissões e mentorias ao vivo com a comunidade." },
+  { name: "Comunidade", path: "/dashboard/community", icon: Users, description: "Compartilhe resultados e conecte-se com outros artistas." },
+  { name: "Especialistas", path: "/dashboard/tools", icon: Bot, description: "Tutor IA e assistente de WhatsApp para automatizar seu estúdio." },
+  { name: "Minhas Matérias", path: "/dashboard/courses", icon: Compass, description: "Explore as matérias disponíveis e continue seus estudos." },
+  { name: "Biblioteca", path: "/dashboard/library", icon: Download, description: "Baixe materiais, e-books e guias exclusivos." },
+  { name: "Meu Perfil", path: "/dashboard/profile", icon: User, description: "Gerencie sua conta e informações de segurança." },
+];
 
 export default function Dashboard() {
   const { userId } = useAuth();
@@ -139,6 +151,39 @@ export default function Dashboard() {
             ))}
           </div>
         )}
+      </section>
+
+      {/* Explorar a Plataforma -- acesso rápido a tudo que existe no app */}
+      <section>
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-[11px] font-extrabold uppercase tracking-widest text-muted-foreground">
+            Explorar a Plataforma
+          </h2>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {platformAreas.map((area, i) => (
+            <Link key={area.path} href={area.path}>
+              <motion.div
+                initial={{ opacity: 0, y: 15 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.05 }}
+                className="glass p-6 rounded-2xl border border-white/10 hover:border-cyan-400/50 transition-all duration-300 h-full flex flex-col group"
+              >
+                <div className="flex items-start justify-between mb-4">
+                  <div className="w-12 h-12 rounded-xl bg-cyan-400/10 border border-cyan-400/20 flex items-center justify-center text-cyan-400">
+                    <area.icon className="w-6 h-6" />
+                  </div>
+                  <ArrowUpRight className="w-4 h-4 text-muted-foreground opacity-0 group-hover:opacity-100 group-hover:text-cyan-400 transition-all" />
+                </div>
+                <h3 className="font-bold text-lg mb-1">{area.name}</h3>
+                <p className="text-[13px] text-muted-foreground font-light leading-relaxed">
+                  {area.description}
+                </p>
+              </motion.div>
+            </Link>
+          ))}
+        </div>
       </section>
     </div>
   );
