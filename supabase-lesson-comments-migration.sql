@@ -17,10 +17,17 @@
 -- silently reject every request. Any signed-in user can post/edit/delete
 -- freely for now -- matching today's actual security posture, not
 -- pretending to be stricter than it is.
+--
+-- lesson_id is NOT a foreign key to `lessons` on purpose: running this
+-- the first time hit "relation lessons does not exist" in this project,
+-- so the FK constraint is dropped to avoid depending on that table's
+-- exact name/schema. It still works fine as a plain column -- the app
+-- only ever filters by lesson_id, it doesn't need the DB to enforce the
+-- relationship.
 
 create table if not exists lesson_comments (
   id uuid primary key default gen_random_uuid(),
-  lesson_id uuid not null references lessons(id) on delete cascade,
+  lesson_id uuid not null,
   clerk_user_id text not null,
   user_name text not null,
   user_avatar text,
