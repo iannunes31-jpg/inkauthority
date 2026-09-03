@@ -60,7 +60,13 @@ export async function POST(req: NextRequest) {
     }
 
     const session = await stripe.checkout.sessions.create({
-      payment_method_types: ['card', 'boleto'],
+      // 'boleto' is not activated on this Stripe account -- including it
+      // makes Stripe reject the whole session with a 400 ("boleto is
+      // invalid"), which is exactly what was surfacing as "Erro ao iniciar
+      // checkout." for every logged-in customer (on top of the getAuth()
+      // bug above). Card is confirmed working; add boleto back once it's
+      // enabled in the Stripe dashboard.
+      payment_method_types: ['card'],
       mode: isSubscription ? 'subscription' : 'payment',
       line_items: [
         {
