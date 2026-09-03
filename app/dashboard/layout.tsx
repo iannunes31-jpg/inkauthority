@@ -19,11 +19,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const pathname = usePathname();
   const { userId, signOut } = useAuth();
 
-  // Free areas (community, library/PDFs, etc.) don't require buying the
-  // flagship course, so closing the popup shouldn't lose the offer --
-  // it collapses into a small neon button that stays on screen (across
-  // every dashboard page, not just this one) so it's still one click away
-  // whenever the person decides they want it.
+  // Only shown on the dashboard home ("/dashboard") -- the other dashboard
+  // screens (Comunidade, Biblioteca, etc.) are free areas where this would
+  // just get in the way. Closing the popup on the home page collapses it
+  // into a small neon button (still on that same page) instead of losing
+  // the offer entirely.
   const [hasPurchased, setHasPurchased] = useState<boolean | null>(null);
   const [showPurchaseModal, setShowPurchaseModal] = useState(false);
 
@@ -41,7 +41,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         const purchased = !!data;
         setHasPurchased(purchased);
 
-        if (!purchased && !sessionStorage.getItem(PURCHASE_MODAL_SESSION_KEY)) {
+        // Only auto-open (and only consume the once-per-session flag) when
+        // actually landing on the dashboard home -- otherwise someone whose
+        // first stop is /dashboard/community would burn the one-time slot
+        // without ever seeing the popup, and it would never show once they
+        // did reach the home page.
+        if (!purchased && pathname === "/dashboard" && !sessionStorage.getItem(PURCHASE_MODAL_SESSION_KEY)) {
           setShowPurchaseModal(true);
           sessionStorage.setItem(PURCHASE_MODAL_SESSION_KEY, '1');
         }
@@ -49,7 +54,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         console.error("Erro ao verificar compra do curso:", err);
       }
     })();
-  }, [userId]);
+  }, [userId, pathname]);
 
   const menuItems = [
     { name: "Meu Aprendizado", path: "/dashboard", icon: <BookOpen className="w-5 h-5" /> },
@@ -124,8 +129,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       {/* Tutor IA Global */}
       <AITutorWidget />
 
-      {/* Oferta do curso completo -- some quando comprado */}
-      {hasPurchased === false && (
+      {/* Oferta do curso completo -- só na home do dashboard, some quando comprado */}
+      {pathname === "/dashboard" && hasPurchased === false && (
         <>
           <PurchaseCourseModal
             isOpen={showPurchaseModal}
