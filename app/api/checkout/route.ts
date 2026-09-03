@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
-import { getAuth } from '@clerk/nextjs/server';
+import { auth } from '@clerk/nextjs/server';
 import { NextRequest } from 'next/server';
 import { supabase } from '@/lib/supabase';
 import { PRODUCT_CATALOG, DEFAULT_COURSE_PRICE } from '@/lib/products';
@@ -11,7 +11,12 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
 
 export async function POST(req: NextRequest) {
   try {
-    const { userId } = getAuth(req);
+    // getAuth(req) (the old Pages Router-style helper) was returning no
+    // userId here even for genuinely signed-in users on the App Router —
+    // that's what was surfacing as "Erro ao iniciar checkout." auth() is
+    // the version that actually reads the session in this context (already
+    // used successfully in /api/chat and /api/whatsapp/instance).
+    const { userId } = await auth();
 
     if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
