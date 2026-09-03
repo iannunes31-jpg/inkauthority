@@ -9,6 +9,38 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
   apiVersion: '2024-06-20' as any,
 });
 
+// Boleto and Pix both require being switched on in the Stripe dashboard
+// (Settings -> Payment methods) before Stripe will accept them on a
+// Checkout Session -- if even one requested type isn't activated, Stripe
+// rejects the WHOLE session with a 400, which is what surfaced in
+// production as "Erro ao iniciar checkout." (that's why the previous fix
+// here dropped down to card-only). Neither supports recurring billing, so
+// there's no point offering them for subscription mode.
+// Instead of hardcoding whichever subset happens to be active today, try
+// the full wishlist and let Stripe tell us if one isn't enabled yet -- drop
+// just that one and retry. This means the day boleto/pix get activated in
+// the dashboard, they start showing up here with no code change needed.
+async function createCheckoutSession(
+  params: Stripe.Checkout.SessionCreateParams,
+  candidateMethods: Stripe.Checkout.SessionCreateParams.PaymentMethodType[]
+) {
+  let methods = candidateMethods;
+  for (let attempt = 0; attempt < candidateMethods.length; attempt++) {
+    try {
+      return await stripe.checkout.sessions.create({ ...params, payment_method_types: methods });
+    } catch (err: any) {
+      const invalidType = err?.message?.match(/payment method type provided: (\w+) is invalid/i)?.[1];
+      if (invalidType && methods.includes(invalidType as any) && methods.length > 1) {
+        methods = methods.filter((m) => m !== invalidType);
+        continue;
+      }
+      throw err;
+    }
+  }
+  // Guaranteed last resort: card is always active on any Stripe account.
+  return stripe.checkout.sessions.create({ ...params, payment_method_types: ['card'] });
+}
+
 export async function POST(req: NextRequest) {
   try {
     // getAuth(req) (the old Pages Router-style helper) was returning no
@@ -59,40 +91,38 @@ export async function POST(req: NextRequest) {
       isSubscription = product.isSubscription;
     }
 
-    const session = await stripe.checkout.sessions.create({
-      // 'boleto' is not activated on this Stripe account -- including it
-      // makes Stripe reject the whole session with a 400 ("boleto is
-      // invalid"), which is exactly what was surfacing as "Erro ao iniciar
-      // checkout." for every logged-in customer (on top of the getAuth()
-      // bug above). Card is confirmed working; add boleto back once it's
-      // enabled in the Stripe dashboard.
-      payment_method_types: ['card'],
-      mode: isSubscription ? 'subscription' : 'payment',
-      line_items: [
-        {
-          price_data: {
-            currency: 'brl',
-            product_data: {
-              name: productName,
-              metadata: {
-                productId: String(productId),
-                productType: String(productType || 'general'),
-              }
+    const session = await createCheckoutSession(
+      {
+        mode: isSubscription ? 'subscription' : 'payment',
+        line_items: [
+          {
+            price_data: {
+              currency: 'brl',
+              product_data: {
+                name: productName,
+                metadata: {
+                  productId: String(productId),
+                  productType: String(productType || 'general'),
+                }
+              },
+              unit_amount: Math.round(price * 100),
+              ...(isSubscription ? { recurring: { interval: 'month' } } : {})
             },
-            unit_amount: Math.round(price * 100),
-            ...(isSubscription ? { recurring: { interval: 'month' } } : {})
+            quantity: 1,
           },
-          quantity: 1,
+        ],
+        metadata: {
+          userId,
+          productId: String(productId),
+          productType: String(productType || 'general'),
         },
-      ],
-      metadata: {
-        userId,
-        productId: String(productId),
-        productType: String(productType || 'general'),
+        success_url: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}${returnUrl || '/dashboard'}?success=true`,
+        cancel_url: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}${returnUrl || '/dashboard'}?canceled=true`,
       },
-      success_url: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}${returnUrl || '/dashboard'}?success=true`,
-      cancel_url: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}${returnUrl || '/dashboard'}?canceled=true`,
-    });
+      // boleto/pix don't support recurring billing -- only offer them for
+      // one-time purchases.
+      isSubscription ? ['card'] : ['card', 'boleto', 'pix']
+    );
 
     return NextResponse.json({ url: session.url });
   } catch (error: any) {
