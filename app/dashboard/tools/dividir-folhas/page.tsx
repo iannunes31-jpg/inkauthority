@@ -2,8 +2,10 @@
 
 import { useRef, useState, useMemo, useEffect } from "react";
 import Link from "next/link";
-import { ArrowLeft, Upload, Printer, Grid3x3 } from "lucide-react";
+import jsPDF from "jspdf";
+import { ArrowLeft, Upload, Printer, Grid3x3, Download, FileDown, ImagePlus, SlidersHorizontal, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 // Splits one image across multiple A4 sheets so a large tattoo project can
 // be printed piece by piece and taped together -- no AI involved, just
@@ -13,8 +15,13 @@ const A4_WIDTH_CM = 21;
 const A4_HEIGHT_CM = 29.7;
 const PRINTER_MARGIN_CM = 0.5; // typical non-printable border on most printers
 const MAX_PAGES = 10; // cap the whole job at 10 A4 sheets, full-size each
+type Step = "enviar" | "ajustar" | "resultado";
 
-function computeMaxWidthCm(aspect: number, stepW: number, stepH: number, overlapCm: number, usableW: number, usableH: number) {
+// Finds the largest width (cm) whose resulting tile grid still fits
+// within `maxPages` sheets, for a given image aspect ratio and sheet
+// geometry. Used both to derive the width from a chosen page count and
+// to compute the absolute cap (maxPages = MAX_PAGES).
+function computeWidthForPages(aspect: number, stepW: number, stepH: number, overlapCm: number, usableW: number, usableH: number, maxPages: number) {
   const pagesFor = (widthCm: number) => {
     const heightCm = widthCm * aspect;
     const cols = Math.max(1, Math.ceil((widthCm - overlapCm) / stepW));
@@ -27,15 +34,17 @@ function computeMaxWidthCm(aspect: number, stepW: number, stepH: number, overlap
   // of precision for a print-sizing tool, and simple/robust against the
   // ceil()-driven step function (no closed-form solution worth the risk).
   // Bounded so a degenerate aspect ratio can't spin this forever.
-  for (let i = 0; i < 2000 && pagesFor(widthCm + 0.5) <= MAX_PAGES; i++) {
+  for (let i = 0; i < 2000 && pagesFor(widthCm + 0.5) <= maxPages; i++) {
     widthCm += 0.5;
   }
   return Math.floor(widthCm);
 }
 
 export default function DividirFolhasPage() {
+  const [step, setStep] = useState<Step>("enviar");
   const [imageEl, setImageEl] = useState<HTMLImageElement | null>(null);
   const [fileName, setFileName] = useState("");
+  const [desiredPages, setDesiredPages] = useState(4);
   const [targetWidthCm, setTargetWidthCm] = useState(60);
   const [overlapMm, setOverlapMm] = useState(10);
   const [orientation, setOrientation] = useState<"retrato" | "paisagem">("retrato");
@@ -45,7 +54,10 @@ export default function DividirFolhasPage() {
   const handleFileSelect = (file: File) => {
     const url = URL.createObjectURL(file);
     const img = new Image();
-    img.onload = () => setImageEl(img);
+    img.onload = () => {
+      setImageEl(img);
+      setStep("ajustar");
+    };
     img.src = url;
     setFileName(file.name);
   };
@@ -56,20 +68,17 @@ export default function DividirFolhasPage() {
   const usableH = pageH - 2 * PRINTER_MARGIN_CM;
   const overlapCm = overlapMm / 10;
 
-  // Never let the job grow past MAX_PAGES full-size A4 sheets -- the cap
-  // depends on the image's own aspect ratio plus orientation/overlap, so
-  // it's recalculated whenever any of those change.
-  const maxWidthCm = useMemo(() => {
-    if (!imageEl) return 200;
+  // The width is *derived* from how many sheets the person asks for --
+  // "escolher a quantidade de folhas" -- rather than the other way
+  // around. Recalculated whenever the page count, image, orientation or
+  // overlap changes.
+  useEffect(() => {
+    if (!imageEl) return;
     const aspect = imageEl.height / imageEl.width;
     const stepW = Math.max(usableW - overlapCm, 1);
     const stepH = Math.max(usableH - overlapCm, 1);
-    return computeMaxWidthCm(aspect, stepW, stepH, overlapCm, usableW, usableH);
-  }, [imageEl, usableW, usableH, overlapCm]);
-
-  useEffect(() => {
-    if (targetWidthCm > maxWidthCm) setTargetWidthCm(maxWidthCm);
-  }, [maxWidthCm, targetWidthCm]);
+    setTargetWidthCm(computeWidthForPages(aspect, stepW, stepH, overlapCm, usableW, usableH, desiredPages));
+  }, [imageEl, desiredPages, usableW, usableH, overlapCm]);
 
   const layout = useMemo(() => {
     if (!imageEl) return null;
@@ -97,7 +106,7 @@ export default function DividirFolhasPage() {
     if (!imageEl || !layout) return [];
     const { cols, rows, targetHeightCm, stepW, stepH } = layout;
     const scalePxPerCm = imageEl.width / targetWidthCm; // source px per cm of final output
-    const result: { row: number; col: number; dataUrl: string }[] = [];
+    const result: { row: number; col: number; dataUrl: string; wCm: number; hCm: number }[] = [];
 
     for (let row = 0; row < rows; row++) {
       for (let col = 0; col < cols; col++) {
@@ -138,13 +147,52 @@ export default function DividirFolhasPage() {
         ctx.font = "10px monospace";
         ctx.fillText(`L${row + 1}C${col + 1}`, 6, canvas.height - 6);
 
-        result.push({ row, col, dataUrl: canvas.toDataURL("image/png") });
+        result.push({ row, col, dataUrl: canvas.toDataURL("image/png"), wCm: tileWCm, hCm: tileHCm });
       }
     }
     return result;
   }, [imageEl, layout, targetWidthCm, usableW, usableH, CM_TO_PX]);
 
   const handlePrint = () => window.print();
+
+  const baseName = fileName.replace(/\.[^.]+$/, "") || "ink-authority";
+
+  const handleDownloadTile = (t: { row: number; col: number; dataUrl: string }) => {
+    const link = document.createElement("a");
+    link.download = `${baseName}-L${t.row + 1}C${t.col + 1}.png`;
+    link.href = t.dataUrl;
+    link.click();
+  };
+
+  const handleDownloadAllPng = async () => {
+    // Sequential with a short gap -- firing many downloads in the same
+    // tick gets some browsers to silently block everything after the
+    // first as if it were a popup spam attempt.
+    for (const t of tiles) {
+      handleDownloadTile(t);
+      await new Promise((r) => setTimeout(r, 300));
+    }
+  };
+
+  const handleDownloadPdf = () => {
+    if (tiles.length === 0) return;
+    const doc = new jsPDF({
+      orientation: orientation === "paisagem" ? "landscape" : "portrait",
+      unit: "cm",
+      format: "a4",
+    });
+    tiles.forEach((t, i) => {
+      if (i > 0) doc.addPage("a4", orientation === "paisagem" ? "landscape" : "portrait");
+      doc.addImage(t.dataUrl, "PNG", PRINTER_MARGIN_CM, PRINTER_MARGIN_CM, t.wCm, t.hCm);
+    });
+    doc.save(`${baseName}-folhas.pdf`);
+  };
+
+  const steps: { id: Step; label: string; icon: any; enabled: boolean }[] = [
+    { id: "enviar", label: "1. Enviar Imagem", icon: ImagePlus, enabled: true },
+    { id: "ajustar", label: "2. Ajustar", icon: SlidersHorizontal, enabled: !!imageEl },
+    { id: "resultado", label: "3. Resultado", icon: CheckCircle2, enabled: tiles.length > 0 },
+  ];
 
   return (
     <div className="max-w-5xl mx-auto pb-20 p-6 lg:p-10">
@@ -158,95 +206,116 @@ export default function DividirFolhasPage() {
           <p className="text-muted-foreground">Divida um projeto grande em folhas A4 para imprimir e montar peça por peça.</p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Controles */}
-          <div className="glass p-6 rounded-2xl border border-white/10 space-y-6 h-fit">
-            <div>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={(e) => e.target.files?.[0] && handleFileSelect(e.target.files[0])}
-              />
-              <Button onClick={() => fileInputRef.current?.click()} className="w-full metallic-gradient text-black font-bold gap-2">
-                <Upload className="w-4 h-4" /> {imageEl ? "Trocar Imagem" : "Enviar Imagem"}
-              </Button>
-              {fileName && <p className="text-xs text-muted-foreground mt-2 truncate">{fileName}</p>}
-            </div>
-
-            <div>
-              <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-2 block">
-                Largura final desejada: {targetWidthCm} cm
-              </label>
-              <input
-                type="range" min={10} max={maxWidthCm} value={targetWidthCm}
-                onChange={(e) => setTargetWidthCm(Number(e.target.value))}
-                className="w-full accent-primary"
-              />
-              {layout && (
-                <p className="text-[11px] text-muted-foreground mt-1">
-                  Altura final: {layout.targetHeightCm.toFixed(1)} cm (proporção original mantida)
-                </p>
+        {/* Passos (aba interativa) */}
+        <div className="flex items-center gap-2 mb-8 bg-black/40 p-1.5 rounded-xl border border-white/5 w-fit flex-wrap">
+          {steps.map((s) => (
+            <button
+              key={s.id}
+              onClick={() => s.enabled && setStep(s.id)}
+              disabled={!s.enabled}
+              className={cn(
+                "px-4 py-2 rounded-lg text-sm font-semibold transition-all flex items-center gap-2",
+                step === s.id ? "bg-white/10 text-white" : s.enabled ? "text-white/50 hover:text-white hover:bg-white/5" : "text-white/20 cursor-not-allowed"
               )}
-              {imageEl && (
-                <p className="text-[11px] text-muted-foreground/70 mt-1">
-                  Máximo de {MAX_PAGES} folhas A4 por projeto (até {maxWidthCm} cm de largura nessa orientação).
-                </p>
-              )}
+            >
+              <s.icon className="w-4 h-4" /> {s.label}
+            </button>
+          ))}
+        </div>
+
+        {step === "enviar" && (
+          <div
+            onClick={() => fileInputRef.current?.click()}
+            className="glass border-2 border-dashed border-white/15 hover:border-primary/50 rounded-3xl p-16 flex flex-col items-center justify-center text-center cursor-pointer transition-colors min-h-[360px]"
+          >
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={(e) => e.target.files?.[0] && handleFileSelect(e.target.files[0])}
+            />
+            <div className="w-16 h-16 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center mb-6 text-primary">
+              <Upload className="w-8 h-8" />
             </div>
-
-            <div>
-              <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-2 block">
-                Sobreposição p/ colar: {overlapMm} mm
-              </label>
-              <input
-                type="range" min={0} max={30} value={overlapMm}
-                onChange={(e) => setOverlapMm(Number(e.target.value))}
-                className="w-full accent-primary"
-              />
-            </div>
-
-            <div>
-              <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-2 block">Orientação da folha</label>
-              <div className="grid grid-cols-2 gap-2">
-                <button
-                  onClick={() => setOrientation("retrato")}
-                  className={`py-2 rounded-lg text-xs font-bold transition-colors ${orientation === "retrato" ? "bg-primary text-black" : "bg-white/5 text-white/70 hover:bg-white/10"}`}
-                >
-                  Retrato
-                </button>
-                <button
-                  onClick={() => setOrientation("paisagem")}
-                  className={`py-2 rounded-lg text-xs font-bold transition-colors ${orientation === "paisagem" ? "bg-primary text-black" : "bg-white/5 text-white/70 hover:bg-white/10"}`}
-                >
-                  Paisagem
-                </button>
-              </div>
-            </div>
-
-            {layout && (
-              <div className="bg-white/5 rounded-xl p-4 text-sm">
-                <p className="font-bold flex items-center gap-2 mb-1"><Grid3x3 className="w-4 h-4 text-primary" /> {layout.totalPages} folha{layout.totalPages > 1 ? "s" : ""} A4</p>
-                <p className="text-xs text-muted-foreground">{layout.cols} colunas × {layout.rows} linhas</p>
-              </div>
-            )}
-
-            <Button onClick={handlePrint} disabled={!imageEl} className="w-full metallic-gradient text-black font-bold gap-2 neon-glow">
-              <Printer className="w-4 h-4" /> Imprimir / Salvar PDF
-            </Button>
+            <h2 className="text-xl font-bold mb-2">Envie o projeto que vai imprimir</h2>
+            <p className="text-sm text-muted-foreground max-w-sm">Clique aqui para escolher uma imagem do seu computador ou celular.</p>
           </div>
+        )}
 
-          {/* Preview em grade */}
-          <div className="lg:col-span-2 glass rounded-2xl border border-white/10 p-6 min-h-[400px]">
-            {!imageEl ? (
-              <div className="h-full flex items-center justify-center text-center text-muted-foreground min-h-[350px]">
-                <div>
-                  <Grid3x3 className="w-10 h-10 mx-auto mb-3 opacity-30" />
-                  <p className="text-sm">Envie uma imagem para calcular as folhas</p>
+        {step === "ajustar" && imageEl && (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Controles */}
+            <div className="glass p-6 rounded-2xl border border-white/10 space-y-6 h-fit">
+              <div>
+                <Button onClick={() => fileInputRef.current?.click()} className="w-full bg-white/5 hover:bg-white/10 text-white font-bold gap-2">
+                  <Upload className="w-4 h-4" /> Trocar Imagem
+                </Button>
+                {fileName && <p className="text-xs text-muted-foreground mt-2 truncate">{fileName}</p>}
+              </div>
+
+              <div>
+                <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-2 block">
+                  Quantidade de folhas: {desiredPages}
+                </label>
+                <input
+                  type="range" min={1} max={MAX_PAGES} value={desiredPages}
+                  onChange={(e) => setDesiredPages(Number(e.target.value))}
+                  className="w-full accent-primary"
+                />
+                {layout && (
+                  <p className="text-[11px] text-muted-foreground mt-1">
+                    Tamanho final: {targetWidthCm.toFixed(0)} × {layout.targetHeightCm.toFixed(0)} cm (proporção original mantida)
+                  </p>
+                )}
+                <p className="text-[11px] text-muted-foreground/70 mt-1">
+                  Máximo de {MAX_PAGES} folhas A4 por projeto.
+                </p>
+              </div>
+
+              <div>
+                <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-2 block">
+                  Sobreposição p/ colar: {overlapMm} mm
+                </label>
+                <input
+                  type="range" min={0} max={30} value={overlapMm}
+                  onChange={(e) => setOverlapMm(Number(e.target.value))}
+                  className="w-full accent-primary"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-2 block">Orientação da folha</label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    onClick={() => setOrientation("retrato")}
+                    className={`py-2 rounded-lg text-xs font-bold transition-colors ${orientation === "retrato" ? "bg-primary text-black" : "bg-white/5 text-white/70 hover:bg-white/10"}`}
+                  >
+                    Retrato
+                  </button>
+                  <button
+                    onClick={() => setOrientation("paisagem")}
+                    className={`py-2 rounded-lg text-xs font-bold transition-colors ${orientation === "paisagem" ? "bg-primary text-black" : "bg-white/5 text-white/70 hover:bg-white/10"}`}
+                  >
+                    Paisagem
+                  </button>
                 </div>
               </div>
-            ) : (
+
+              {layout && (
+                <div className="bg-white/5 rounded-xl p-4 text-sm">
+                  <p className="font-bold flex items-center gap-2 mb-1"><Grid3x3 className="w-4 h-4 text-primary" /> {layout.totalPages} {layout.totalPages > 1 ? "folhas" : "folha"} A4</p>
+                  <p className="text-xs text-muted-foreground">{layout.cols} colunas × {layout.rows} linhas</p>
+                </div>
+              )}
+
+              <Button onClick={() => setStep("resultado")} disabled={tiles.length === 0} className="w-full metallic-gradient text-black font-bold gap-2 neon-glow">
+                <CheckCircle2 className="w-4 h-4" /> Ver Resultado
+              </Button>
+            </div>
+
+            {/* Preview em grade */}
+            <div className="lg:col-span-2 glass rounded-2xl border border-white/10 p-6 min-h-[400px]">
               <div
                 className="grid gap-1 mx-auto bg-black/30 p-1 rounded"
                 style={{
@@ -261,12 +330,51 @@ export default function DividirFolhasPage() {
                   </div>
                 ))}
               </div>
-            )}
-            <p className="text-[11px] text-muted-foreground text-center mt-4">
-              Prévia da montagem final. Cada quadro vira uma folha A4 impressa.
-            </p>
+              <p className="text-[11px] text-muted-foreground text-center mt-4">
+                Prévia da montagem final. Cada quadro vira uma folha A4 impressa.
+              </p>
+            </div>
           </div>
-        </div>
+        )}
+
+        {step === "resultado" && tiles.length > 0 && (
+          <div className="space-y-6">
+            <div className="glass rounded-2xl border border-white/10 p-6">
+              <div className="flex flex-wrap gap-3 mb-6">
+                <Button onClick={handleDownloadPdf} className="metallic-gradient text-black font-bold gap-2 neon-glow">
+                  <FileDown className="w-4 h-4" /> Baixar Tudo em PDF
+                </Button>
+                <Button onClick={handleDownloadAllPng} className="bg-white/5 hover:bg-white/10 text-white font-bold gap-2">
+                  <Download className="w-4 h-4" /> Baixar Cada Folha (PNG)
+                </Button>
+                <Button onClick={handlePrint} className="bg-white/5 hover:bg-white/10 text-white font-bold gap-2">
+                  <Printer className="w-4 h-4" /> Imprimir
+                </Button>
+                <Button onClick={() => setStep("ajustar")} variant="ghost" className="bg-white/5 hover:bg-white/10 text-white gap-2">
+                  <SlidersHorizontal className="w-4 h-4" /> Ajustar Novamente
+                </Button>
+              </div>
+
+              <div
+                className="grid gap-2 mx-auto"
+                style={{ gridTemplateColumns: `repeat(${layout?.cols || 1}, 1fr)`, maxWidth: 560 }}
+              >
+                {tiles.map((t) => (
+                  <div key={`${t.row}-${t.col}`} className="relative group border border-white/20 bg-white overflow-hidden rounded">
+                    <img src={t.dataUrl} alt={`Folha linha ${t.row + 1}, coluna ${t.col + 1}`} className="w-full h-full object-cover" />
+                    <button
+                      onClick={() => handleDownloadTile(t)}
+                      title={`Baixar folha L${t.row + 1}C${t.col + 1}`}
+                      className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 text-white text-xs font-bold"
+                    >
+                      <Download className="w-4 h-4" /> L{t.row + 1}C{t.col + 1}
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Área exclusiva de impressão: uma folha A4 por página, invisível na tela */}
