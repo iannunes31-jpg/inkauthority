@@ -7,6 +7,7 @@ import { useEffect, useRef, useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { useUser } from "@clerk/nextjs";
 import { supabase } from "@/lib/supabase";
+import { isAdminUser } from "@/lib/admin";
 
 export default function AssistantPage() {
   const chat = useMemo(
@@ -34,9 +35,7 @@ export default function AssistantPage() {
   const [hasAccess, setHasAccess] = useState<boolean | null>(null);
   const [inputValue, setInputValue] = useState("");
 
-  const isAdmin =
-    user?.primaryEmailAddress?.emailAddress === "yurilojavirtual@gmail.com" ||
-    user?.primaryEmailAddress?.emailAddress === "o9.yuri@gmail.com";
+  const isAdmin = isAdminUser(user?.primaryEmailAddress?.emailAddress, user?.publicMetadata);
 
   useEffect(() => {
     if (user?.id) checkAccess();

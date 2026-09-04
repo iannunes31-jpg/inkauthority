@@ -1,12 +1,16 @@
 import { NextResponse } from 'next/server';
-import { createClient } from "@supabase/supabase-js";
+import { supabaseAdmin } from "@/lib/supabase-admin";
+import { checkIsAdmin } from "@/lib/auth-server";
 
 export async function POST(request: Request) {
+  // Creates a real Cloudflare Stream live input (billable) and writes to
+  // Supabase — had no auth check at all before, so anyone could spam this.
+  if (!(await checkIsAdmin())) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  }
+
   const accountId = process.env.CLOUDFLARE_ACCOUNT_ID;
   const apiToken = process.env.CLOUDFLARE_API_TOKEN;
-  
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
 
   if (!accountId || !apiToken) {
     return NextResponse.json(
@@ -48,8 +52,7 @@ export async function POST(request: Request) {
     const { uid, rtmps } = data.result;
 
     // 2. Salvar no Supabase
-    const supabase = createClient(supabaseUrl, supabaseKey);
-    const { data: dbData, error: dbError } = await supabase
+    const { data: dbData, error: dbError } = await supabaseAdmin
       .from('live_streams')
       .insert([
         {

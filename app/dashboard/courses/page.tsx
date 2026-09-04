@@ -5,6 +5,7 @@ import { PlayCircle, Clock, Award, Layers, Lock, ShoppingCart } from "lucide-rea
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { useUser, useAuth } from "@clerk/nextjs";
+import { isAdminUser } from "@/lib/admin";
 
 export default function MyCoursesPage() {
   const { userId } = useAuth();
@@ -14,9 +15,7 @@ export default function MyCoursesPage() {
   const [hasFullAccess, setHasFullAccess] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  const isAdmin = 
-    user?.primaryEmailAddress?.emailAddress === "yurilojavirtual@gmail.com" || 
-    user?.primaryEmailAddress?.emailAddress === "o9.yuri@gmail.com";
+  const isAdmin = isAdminUser(user?.primaryEmailAddress?.emailAddress, user?.publicMetadata);
 
   useEffect(() => {
     if (userId) {

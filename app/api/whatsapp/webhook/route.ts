@@ -1,14 +1,21 @@
 import { NextResponse } from 'next/server';
 import { createVertex } from '@ai-sdk/google-vertex';
 import { generateText } from 'ai';
-import { createClient } from '@supabase/supabase-js';
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-const supabase = createClient(supabaseUrl, supabaseKey);
+import { supabaseAdmin as supabase } from '@/lib/supabase-admin';
 
 export async function POST(req: Request) {
   try {
+    // Evolution API doesn't sign its webhook payloads, so anyone who found
+    // this URL could POST a fake payload — spoof messages, insert fake
+    // "appointments", or make the app send arbitrary WhatsApp messages
+    // through the studio's own number. We register the webhook URL (see
+    // /api/whatsapp/instance) with a `?secret=` query param; require it here.
+    const url = new URL(req.url);
+    const expectedSecret = process.env.WHATSAPP_WEBHOOK_SECRET;
+    if (!expectedSecret || url.searchParams.get('secret') !== expectedSecret) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const payload = await req.json();
 
     if (payload.event?.toLowerCase() !== 'messages.upsert') {
@@ -56,7 +63,14 @@ export async function POST(req: Request) {
 
     let base64Media: string | null = null;
     const evolutionUrl = process.env.EVOLUTION_API_URL || 'https://evolution-api-production-fbfd.up.railway.app'; 
-    const apiKey = process.env.EVOLUTION_API_KEY || '42A5C9B31000-47F6-8B1E-F7C6656BE1D5';
+    // No hardcoded fallback: that literal key was committed to the repo in
+    // git history and should be treated as leaked — rotate it in Evolution
+    // API if it's still the one in use.
+    const apiKey = process.env.EVOLUTION_API_KEY;
+    if (!apiKey) {
+      console.error('EVOLUTION_API_KEY not configured');
+      return NextResponse.json({ error: 'Server misconfigured' }, { status: 500 });
+    }
 
     if (hasImage) {
       try {

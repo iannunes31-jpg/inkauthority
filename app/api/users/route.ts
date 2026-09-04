@@ -1,8 +1,15 @@
 import { NextResponse } from "next/server";
 import { clerkClient } from "@clerk/nextjs/server";
+import { checkIsAdmin } from "@/lib/auth-server";
 
 export async function GET() {
   try {
+    // This lists every user's name, email, phone and Instagram handle —
+    // admin-only. It used to have no auth check at all.
+    if (!(await checkIsAdmin())) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
     const client = await clerkClient();
     const response = await client.users.getUserList();
     

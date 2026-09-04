@@ -1,10 +1,21 @@
 import { createVertex } from '@ai-sdk/google-vertex';
 import { streamText } from 'ai';
+import { auth } from '@clerk/nextjs/server';
 
 export const maxDuration = 30;
 
 export async function POST(req: Request) {
   try {
+    // This proxies to Vertex AI (billable per call) — require login so it
+    // can't be hit anonymously from outside the app.
+    const { userId } = await auth();
+    if (!userId) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
     const body = await req.json();
 
     // SDK v7: messages come inside a "messages" key
