@@ -43,8 +43,7 @@ Analyze the image and describe the complete tattoo stencil with all outlines and
           content: [
             {
               type: "image",
-              image: imageBase64,
-              mimeType: mimeType as "image/jpeg" | "image/png" | "image/webp",
+              image: `data:${mimeType};base64,${imageBase64}`,
             },
             {
               type: "text",
