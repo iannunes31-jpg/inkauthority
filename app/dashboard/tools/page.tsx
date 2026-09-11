@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "motion/react";
-import { Bot, Settings, Users, Calendar, Contrast, Grid3x3, Ruler, Scissors } from "lucide-react";
+import { Bot, Settings, Users, Calendar, Contrast, Grid3x3, Ruler, Scissors, Megaphone, Search, Instagram, BarChart2, PenLine, Music2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 
@@ -132,6 +132,50 @@ export default function ToolsPage() {
             <Link href="/dashboard/tools/dividir-folhas" className="mt-4 block w-full">
               <Button className="w-full metallic-gradient text-black font-bold uppercase tracking-widest text-[10px]">
                 Acessar Ferramenta
+              </Button>
+            </Link>
+          </div>
+        </motion.div>
+        {/* Central de Anúncios Card */}
+        <motion.div
+          whileHover={{ y: -5 }}
+          className="glass p-6 rounded-2xl border border-white/10 hover:border-purple-400/50 transition-all flex flex-col h-full md:col-span-2"
+        >
+          <div className="flex items-start gap-5 mb-5">
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500/30 to-pink-500/30 flex items-center justify-center flex-shrink-0 border border-white/10">
+              <Megaphone className="w-6 h-6 text-purple-400" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <h2 className="text-xl font-bold">Central de Anúncios</h2>
+                <span className="text-[9px] font-bold tracking-widest uppercase bg-purple-500/20 text-purple-400 px-2 py-0.5 rounded-full border border-purple-400/20">Novo</span>
+              </div>
+              <p className="text-sm text-muted-foreground font-light">
+                6 agentes de IA para criar campanhas, analisar público, gerar conteúdo e otimizar resultados no Google, Meta e TikTok.
+              </p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-3 gap-2 mb-6">
+            {[
+              { icon: <Users className="w-3.5 h-3.5" />, label: "Agente de Público", color: "text-purple-400 bg-purple-500/15" },
+              { icon: <Search className="w-3.5 h-3.5" />, label: "Google Ads", color: "text-blue-400 bg-blue-500/15" },
+              { icon: <Instagram className="w-3.5 h-3.5" />, label: "Meta Ads", color: "text-pink-400 bg-pink-500/15" },
+              { icon: <Music2 className="w-3.5 h-3.5" />, label: "TikTok Ads", color: "text-cyan-400 bg-cyan-500/15" },
+              { icon: <BarChart2 className="w-3.5 h-3.5" />, label: "Análise", color: "text-green-400 bg-green-500/15" },
+              { icon: <PenLine className="w-3.5 h-3.5" />, label: "Conteúdo", color: "text-amber-400 bg-amber-500/15" },
+            ].map((item) => (
+              <div key={item.label} className={`flex items-center gap-2 text-[11px] font-semibold rounded-xl px-3 py-2 ${item.color.split(" ")[1]}`}>
+                <span className={item.color.split(" ")[0]}>{item.icon}</span>
+                <span className="text-foreground/70">{item.label}</span>
+              </div>
+            ))}
+          </div>
+
+          <div className="mt-auto">
+            <Link href="/dashboard/tools/anuncios" className="block w-full">
+              <Button className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white font-bold uppercase tracking-widest text-[10px] h-11">
+                Acessar Central de Anúncios
               </Button>
             </Link>
           </div>
