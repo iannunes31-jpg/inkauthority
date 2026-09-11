@@ -2,35 +2,86 @@
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { X, ArrowRight, CheckCircle2 } from "lucide-react";
+import { X, ArrowRight, CheckCircle2, CreditCard, QrCode, FileText } from "lucide-react";
+import { useUser } from "@clerk/nextjs";
 
 interface PurchaseCourseModalProps {
   isOpen: boolean;
   onClose: () => void;
+  /** Override productId (default: marketing_posicionamento flagship) */
+  productId?: string;
+  productType?: string;
 }
 
 const FLAGSHIP_PRODUCT_ID = "marketing_posicionamento";
 
-export function PurchaseCourseModal({ isOpen, onClose }: PurchaseCourseModalProps) {
+type PaymentMethod = "CREDIT_CARD" | "PIX" | "BOLETO";
+
+interface PaymentOption {
+  id: PaymentMethod;
+  label: string;
+  description: string;
+  icon: React.ReactNode;
+  gateway: "stripe" | "asaas";
+}
+
+const PAYMENT_OPTIONS: PaymentOption[] = [
+  {
+    id: "CREDIT_CARD",
+    label: "Cartão de Crédito",
+    description: "Até 12x sem juros",
+    icon: <CreditCard className="w-5 h-5" />,
+    gateway: "stripe",
+  },
+  {
+    id: "PIX",
+    label: "Pix",
+    description: "Aprovação instantânea",
+    icon: <QrCode className="w-5 h-5" />,
+    gateway: "asaas",
+  },
+  {
+    id: "BOLETO",
+    label: "Boleto Bancário",
+    description: "Prazo de 3 dias úteis",
+    icon: <FileText className="w-5 h-5" />,
+    gateway: "asaas",
+  },
+];
+
+export function PurchaseCourseModal({
+  isOpen,
+  onClose,
+  productId = FLAGSHIP_PRODUCT_ID,
+  productType = "catalog",
+}: PurchaseCourseModalProps) {
+  const { user } = useUser();
   const [isLoading, setIsLoading] = useState(false);
+  const [selectedMethod, setSelectedMethod] = useState<PaymentMethod>("CREDIT_CARD");
 
   const handleCheckout = async () => {
     try {
       setIsLoading(true);
-      const response = await fetch("/api/checkout", {
+      const option = PAYMENT_OPTIONS.find((o) => o.id === selectedMethod)!;
+      const endpoint = option.gateway === "asaas" ? "/api/checkout-asaas" : "/api/checkout";
+
+      const response = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          productId: FLAGSHIP_PRODUCT_ID,
-          productType: "catalog",
+          productId,
+          productType,
           returnUrl: "/dashboard",
+          paymentMethod: selectedMethod,
+          customerEmail: user?.primaryEmailAddress?.emailAddress,
+          customerName: user?.fullName || user?.username,
         }),
       });
       const data = await response.json();
       if (data.url) {
         window.location.href = data.url;
       } else {
-        alert("Erro ao iniciar checkout.");
+        alert("Erro ao iniciar checkout: " + (data.error || "tente novamente."));
         setIsLoading(false);
       }
     } catch (err) {
@@ -83,7 +134,8 @@ export function PurchaseCourseModal({ isOpen, onClose }: PurchaseCourseModalProp
                   Curso Marketing &amp; Posicionamento
                 </h2>
                 <p className="text-sm text-muted-foreground font-light">
-                  Você ainda não desbloqueou o curso completo. Aprenda a se posicionar como autoridade e atrair clientes que pagam caro.
+                  Você ainda não desbloqueou o curso completo. Aprenda a se posicionar como
+                  autoridade e atrair clientes que pagam caro.
                 </p>
               </div>
 
@@ -96,13 +148,42 @@ export function PurchaseCourseModal({ isOpen, onClose }: PurchaseCourseModalProp
                 ))}
               </div>
 
-              <div className="glass p-4 rounded-xl border border-border/20 mb-4 flex items-center justify-between gap-4 relative z-10">
+              {/* Price */}
+              <div className="glass p-4 rounded-xl border border-border/20 mb-5 flex items-center justify-between gap-4 relative z-10">
                 <div>
-                  <p className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground mb-1">Investimento</p>
+                  <p className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground mb-1">
+                    Investimento
+                  </p>
                   <div className="flex items-baseline gap-2">
                     <span className="text-2xl font-black text-foreground">R$ 997,00</span>
                   </div>
-                  <p className="text-xs text-primary mt-1">Ou 12x de R$ 99,70</p>
+                  <p className="text-xs text-primary mt-1">Ou 12x de R$ 99,70 no cartão</p>
+                </div>
+              </div>
+
+              {/* Payment method selector */}
+              <div className="mb-5 relative z-10">
+                <p className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground mb-3">
+                  Forma de pagamento
+                </p>
+                <div className="grid grid-cols-3 gap-2">
+                  {PAYMENT_OPTIONS.map((option) => (
+                    <button
+                      key={option.id}
+                      onClick={() => setSelectedMethod(option.id)}
+                      className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border text-center transition-all ${
+                        selectedMethod === option.id
+                          ? "border-primary/60 bg-primary/10 text-foreground"
+                          : "border-white/10 bg-white/5 text-muted-foreground hover:border-white/20 hover:text-foreground"
+                      }`}
+                    >
+                      {option.icon}
+                      <span className="text-[10px] font-bold uppercase tracking-wide leading-tight">
+                        {option.label}
+                      </span>
+                      <span className="text-[9px] leading-tight opacity-70">{option.description}</span>
+                    </button>
+                  ))}
                 </div>
               </div>
 
@@ -111,7 +192,15 @@ export function PurchaseCourseModal({ isOpen, onClose }: PurchaseCourseModalProp
                 disabled={isLoading}
                 className="w-full metallic-gradient text-black font-bold uppercase tracking-[0.2em] text-[12px] h-14 rounded-xl hover:scale-[1.02] transition-transform border-0 neon-glow flex items-center justify-center gap-2 relative z-10 disabled:opacity-70 disabled:hover:scale-100"
               >
-                <span>{isLoading ? "Processando..." : "Comprar Curso"}</span>
+                <span>
+                  {isLoading
+                    ? "Processando..."
+                    : selectedMethod === "PIX"
+                    ? "Pagar com Pix"
+                    : selectedMethod === "BOLETO"
+                    ? "Gerar Boleto"
+                    : "Comprar com Cartão"}
+                </span>
                 {!isLoading && <ArrowRight className="w-4 h-4" />}
               </button>
 
