@@ -3,11 +3,28 @@ import { createVertex } from "@ai-sdk/google-vertex";
 import { generateText } from "ai";
 import { auth } from "@clerk/nextjs/server";
 
-const vertex = createVertex({ location: "us-central1" });
-
 export async function POST(req: NextRequest) {
   const { userId } = await auth();
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  if (!process.env.GOOGLE_VERTEX_CREDENTIALS) {
+    return NextResponse.json(
+      { error: "Credenciais do Vertex AI não configuradas (GOOGLE_VERTEX_CREDENTIALS)." },
+      { status: 500 }
+    );
+  }
+
+  let vertex;
+  try {
+    const credentials = JSON.parse(process.env.GOOGLE_VERTEX_CREDENTIALS);
+    vertex = createVertex({
+      project: credentials.project_id,
+      location: "us-central1",
+      googleAuthOptions: { credentials },
+    });
+  } catch {
+    return NextResponse.json({ error: "JSON do Vertex AI inválido." }, { status: 500 });
+  }
 
   const body = await req.json();
   const { imageBase64, mimeType = "image/jpeg", style = "linhas" } = body;
@@ -27,10 +44,10 @@ export async function POST(req: NextRequest) {
 ${stylePrompts[style] || stylePrompts.linhas}
 
 IMPORTANT INSTRUCTIONS:
-- Output ONLY the line art image description — describe every line, curve, and contour precisely
-- Actually, your response must describe in detail how a tattoo artist would draw this as a stencil
+- Analyze every detail of the image and describe all contours, outlines and key lines
 - The final result should be suitable for printing on thermal transfer paper
 - Describe the exact lines to draw, their curves, thickness, and connections
+- Be specific about where lines start and end, curves, sharp angles, etc.
 
 Analyze the image and describe the complete tattoo stencil with all outlines and details needed.`;
 
