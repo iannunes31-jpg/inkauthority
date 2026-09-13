@@ -1,7 +1,29 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createVertex } from "@ai-sdk/google-vertex";
-import { generateText } from "ai";
 import { auth } from "@clerk/nextjs/server";
+import { GoogleAuth } from "google-auth-library";
+
+const STYLE_PROMPTS: Record<string, string> = {
+  linhas:
+    "You are a professional tattoo stencil artist. Convert this reference image into a clean technical tattoo stencil. " +
+    "Draw ONLY thin, precise black lines on a pure white background. " +
+    "NO filled black areas, NO shading, NO gradients, NO gray tones — only clean black outlines. " +
+    "Trace the essential contours of the main subject with crisp, single-pixel-weight lines. " +
+    "The result must be suitable for printing on thermal transfer (decal) paper for tattooing.",
+
+  sombras:
+    "You are a professional tattoo stencil artist. Convert this reference image into a blackwork tattoo stencil. " +
+    "Use solid black filled areas AND black outlines on a pure white background. " +
+    "Fill all dark/shadow regions with solid black. Keep highlights white. " +
+    "Think silhouette + outline style — high contrast, no gray, no gradients. " +
+    "The result must be suitable for printing on thermal transfer paper for tattooing.",
+
+  fino:
+    "You are a professional tattoo stencil artist. Convert this reference image into an ultra-fine-line tattoo stencil. " +
+    "Draw ONLY the most essential contours with hairline-thin black lines on a pure white background. " +
+    "Lines must be as thin and delicate as possible — ideal for fine-line or micro-realism tattoos. " +
+    "NO filled areas, NO shading, NO gray. Minimal but precise. " +
+    "The result must be suitable for printing on thermal transfer paper for tattooing.",
+};
 
 export async function POST(req: NextRequest) {
   const { userId } = await auth();
@@ -14,14 +36,9 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  let vertex;
+  let credentials: Record<string, string>;
   try {
-    const credentials = JSON.parse(process.env.GOOGLE_VERTEX_CREDENTIALS);
-    vertex = createVertex({
-      project: credentials.project_id,
-      location: "us-central1",
-      googleAuthOptions: { credentials },
-    });
+    credentials = JSON.parse(process.env.GOOGLE_VERTEX_CREDENTIALS);
   } catch {
     return NextResponse.json({ error: "JSON do Vertex AI inválido." }, { status: 500 });
   }
@@ -33,47 +50,85 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "imageBase64 required" }, { status: 400 });
   }
 
-  const stylePrompts: Record<string, string> = {
-    linhas: "Extract and render ONLY the clean line art / outline / contour of the main subject. Output a pure black line drawing on a pure white background. Lines should be crisp, thin (1-2px weight), and precise. Remove all shading, color, texture, and noise. This will be used as a tattoo stencil/decal to be transferred onto skin.",
-    sombras: "Convert this image into a high-contrast black and white stencil with both outlines AND shaded areas filled in black. Think of it as a silhouette-style tattoo stencil. Output pure black shapes on white. Remove all mid-tones and color. This will be used as a tattoo stencil.",
-    fino: "Extract ultra-fine, delicate line art from this image. Focus on the most essential contours only, with hairline-thin strokes. Output pure black lines on white background. Make the lines as thin and precise as possible — ideal for fine-line or micro tattoo stencils.",
-  };
-
-  const prompt = `You are an expert at converting reference images into tattoo stencil line art.
-
-${stylePrompts[style] || stylePrompts.linhas}
-
-IMPORTANT INSTRUCTIONS:
-- Analyze every detail of the image and describe all contours, outlines and key lines
-- The final result should be suitable for printing on thermal transfer paper
-- Describe the exact lines to draw, their curves, thickness, and connections
-- Be specific about where lines start and end, curves, sharp angles, etc.
-
-Analyze the image and describe the complete tattoo stencil with all outlines and details needed.`;
-
   try {
-    const result = await generateText({
-      model: vertex("gemini-2.5-flash"),
-      messages: [
+    // Authenticate using service account credentials
+    const googleAuth = new GoogleAuth({
+      credentials,
+      scopes: ["https://www.googleapis.com/auth/cloud-platform"],
+    });
+    const authClient = await googleAuth.getClient();
+    const tokenResponse = await authClient.getAccessToken();
+    const accessToken = tokenResponse.token;
+
+    if (!accessToken) {
+      return NextResponse.json({ error: "Falha ao obter token de acesso Vertex." }, { status: 500 });
+    }
+
+    const projectId = credentials.project_id;
+    const location = "us-central1";
+    // gemini-2.0-flash-exp supports responseModalities: IMAGE on Vertex AI
+    const model = "gemini-2.0-flash-exp";
+
+    const requestBody = {
+      contents: [
         {
           role: "user",
-          content: [
-            {
-              type: "image",
-              image: `data:${mimeType};base64,${imageBase64}`,
-            },
-            {
-              type: "text",
-              text: prompt,
-            },
+          parts: [
+            { inlineData: { mimeType, data: imageBase64 } },
+            { text: STYLE_PROMPTS[style] ?? STYLE_PROMPTS.linhas },
           ],
         },
       ],
-    });
+      generationConfig: {
+        responseModalities: ["IMAGE", "TEXT"],
+        temperature: 1,
+      },
+    };
 
-    return NextResponse.json({ description: result.text, style });
+    const vertexRes = await fetch(
+      `https://${location}-aiplatform.googleapis.com/v1/projects/${projectId}/locations/${location}/publishers/google/models/${model}:generateContent`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(requestBody),
+      }
+    );
+
+    if (!vertexRes.ok) {
+      const errText = await vertexRes.text();
+      console.error("[decalque-ai] Vertex API error:", vertexRes.status, errText);
+      return NextResponse.json(
+        { error: `Erro Vertex AI (${vertexRes.status}). Verifique se o modelo está disponível.` },
+        { status: 500 }
+      );
+    }
+
+    const result = await vertexRes.json();
+    const parts: any[] = result.candidates?.[0]?.content?.parts ?? [];
+
+    const imagePart = parts.find((p) => p.inlineData?.data);
+    const textPart = parts.find((p) => typeof p.text === "string");
+
+    if (imagePart) {
+      // AI returned a generated image — best case
+      return NextResponse.json({
+        imageBase64: imagePart.inlineData.data,
+        imageMimeType: imagePart.inlineData.mimeType ?? "image/png",
+        description: textPart?.text ?? "Decalque gerado com sucesso pela IA.",
+        style,
+      });
+    }
+
+    // Fallback: model returned text only (no image output)
+    return NextResponse.json({
+      description: textPart?.text ?? "Análise concluída.",
+      style,
+    });
   } catch (error) {
     console.error("[decalque-ai] Error:", error);
-    return NextResponse.json({ error: "Erro ao processar imagem com IA" }, { status: 500 });
+    return NextResponse.json({ error: "Erro ao processar imagem com IA." }, { status: 500 });
   }
 }

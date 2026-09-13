@@ -195,9 +195,21 @@ export default function DecalquePage() {
         body: JSON.stringify({ imageBase64, mimeType: imageMimeType, style }),
       });
       const data = await res.json();
-      if (data.description) {
-        setAiDescription(data.description);
-        // Apply proper stencil processing (edge detection) — visually different from the threshold preview
+
+      if (data.error) {
+        alert("Erro: " + data.error);
+        return;
+      }
+
+      setAiDescription(data.description || "");
+
+      if (data.imageBase64) {
+        // ✅ AI returned a real generated image — display it directly
+        const dataUrl = `data:${data.imageMimeType ?? "image/png"};base64,${data.imageBase64}`;
+        setResultDataUrl(dataUrl);
+        setStep("resultado");
+      } else if (data.description) {
+        // Fallback: AI returned text only — apply client-side edge detection
         const processed = applyStencilProcessing(imageEl, style);
         setResultDataUrl(processed);
         setStep("resultado");
