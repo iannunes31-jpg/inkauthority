@@ -69,16 +69,12 @@ export default function CourseManagerPage() {
   const handleAddModule = async () => {
     if (!newModuleTitle) return;
     try {
-      const { error } = await supabase
-        .from("modules")
-        .insert([
-          { 
-            course_id: id,
-            title: newModuleTitle,
-            order_index: modules.length
-          }
-        ]);
-      if (error) throw error;
+      const res = await fetch("/api/admin/modules", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ course_id: id, title: newModuleTitle, order_index: modules.length }),
+      });
+      if (!res.ok) throw new Error((await res.json()).error);
       setNewModuleTitle("");
       setIsModuleModalOpen(false);
       fetchCourseData();
@@ -91,8 +87,8 @@ export default function CourseManagerPage() {
   const handleDeleteModule = async (moduleId: string) => {
     if (!confirm("Tem certeza que deseja apagar este módulo e todas as aulas dele?")) return;
     try {
-      const { error } = await supabase.from("modules").delete().eq("id", moduleId);
-      if (error) throw error;
+      const res = await fetch(`/api/admin/modules?id=${moduleId}`, { method: "DELETE" });
+      if (!res.ok) throw new Error((await res.json()).error);
       fetchCourseData();
     } catch (err) {
       console.error(err);
@@ -114,17 +110,17 @@ export default function CourseManagerPage() {
       const targetModule = modules.find(m => m.id === activeModuleId);
       const nextIndex = targetModule?.lessons?.length || 0;
 
-      const { error } = await supabase
-        .from("lessons")
-        .insert([
-          {
-            module_id: activeModuleId,
-            title: newLessonTitle,
-            video_url: newLessonVideoId,
-            order_index: nextIndex
-          }
-        ]);
-      if (error) throw error;
+      const res = await fetch("/api/admin/lessons", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          module_id: activeModuleId,
+          title: newLessonTitle,
+          video_url: newLessonVideoId,
+          order_index: nextIndex,
+        }),
+      });
+      if (!res.ok) throw new Error((await res.json()).error);
       setIsLessonModalOpen(false);
       fetchCourseData();
     } catch (err) {
@@ -138,8 +134,8 @@ export default function CourseManagerPage() {
   const handleDeleteLesson = async (lessonId: string) => {
     if (!confirm("Tem certeza que deseja apagar esta aula?")) return;
     try {
-      const { error } = await supabase.from("lessons").delete().eq("id", lessonId);
-      if (error) throw error;
+      const res = await fetch(`/api/admin/lessons?id=${lessonId}`, { method: "DELETE" });
+      if (!res.ok) throw new Error((await res.json()).error);
       fetchCourseData();
     } catch (err) {
       console.error(err);

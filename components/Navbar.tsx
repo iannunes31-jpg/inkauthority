@@ -4,13 +4,14 @@ import Link from "next/link";
 import { Button } from "./ui/button";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "motion/react";
-import { Menu, X, Search, Bell } from "lucide-react";
+import { Menu, X, Search, Bell, BookOpen, Compass, Users, Bot, Download, User, Radio } from "lucide-react";
 import { useState, useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { NotificationPanel } from "./NotificationPanel";
 import { useAuth, useUser, useClerk } from "@clerk/nextjs";
 import { LogOut, LayoutDashboard, Settings } from "lucide-react";
 import { LoginModal } from "./LoginModal";
+import { isAdminUser } from "@/lib/admin";
 
 function UserDropdown() {
   const { user } = useUser();
@@ -19,9 +20,7 @@ function UserDropdown() {
   
   if (!user) return null;
 
-  const isAdmin = 
-    user.primaryEmailAddress?.emailAddress === "yurilojavirtual@gmail.com" || 
-    user.primaryEmailAddress?.emailAddress === "o9.yuri@gmail.com";
+  const isAdmin = isAdminUser(user.primaryEmailAddress?.emailAddress, user.publicMetadata);
 
   return (
     <div className="relative">
@@ -114,6 +113,21 @@ export function Navbar() {
     { name: "CURSOS", path: "/courses" },
     { name: "TOOLS", path: "/tools" },
     ...(isLoggedIn ? [{ name: "DASHBOARD", path: "/dashboard" }] : []),
+  ];
+
+  // Same sections as the dashboard sidebar (components handled in
+  // app/dashboard/layout.tsx) -- that sidebar is desktop-only (`hidden
+  // lg:flex`), so on mobile this menu is the ONLY way a logged-in user can
+  // reach Aulas/Ferramentas/etc. It was missing entirely before, which is
+  // what surfaced as "no menu after logging in on mobile."
+  const dashboardLinks = [
+    { name: "Meu Aprendizado", path: "/dashboard", icon: <BookOpen className="w-4 h-4" /> },
+    { name: "Ao Vivo", path: "/dashboard/lives", icon: <Radio className="w-4 h-4" /> },
+    { name: "Comunidade", path: "/dashboard/community", icon: <Users className="w-4 h-4" /> },
+    { name: "Especialistas", path: "/dashboard/tools", icon: <Bot className="w-4 h-4" /> },
+    { name: "Minhas Matérias", path: "/dashboard/courses", icon: <Compass className="w-4 h-4" /> },
+    { name: "Biblioteca", path: "/dashboard/library", icon: <Download className="w-4 h-4" /> },
+    { name: "Meu Perfil", path: "/dashboard/profile", icon: <User className="w-4 h-4" /> },
   ];
 
   return (
@@ -290,10 +304,27 @@ export function Navbar() {
                   </Button>
                 </>
               ) : (
-                <div className="flex items-center gap-4 px-4 py-2 justify-between">
-                  <span className="text-sm font-medium text-white/60">Minha Conta</span>
-                  <UserDropdown />
-                </div>
+                <>
+                  {dashboardLinks.map((link) => (
+                    <Link
+                      key={link.path}
+                      href={link.path}
+                      onClick={() => setIsOpen(false)}
+                      className={cn(
+                        "flex items-center gap-3 text-sm font-medium px-4 py-2 rounded-lg transition-colors",
+                        pathname === link.path ? "bg-white/10 text-white" : "text-white/60 hover:bg-white/5 hover:text-white"
+                      )}
+                    >
+                      {link.icon}
+                      {link.name}
+                    </Link>
+                  ))}
+                  <div className="h-px w-full bg-white/10 my-2" />
+                  <div className="flex items-center gap-4 px-4 py-2 justify-between">
+                    <span className="text-sm font-medium text-white/60">Minha Conta</span>
+                    <UserDropdown />
+                  </div>
+                </>
               )}
             </motion.div>
           )}

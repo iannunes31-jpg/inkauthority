@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { VideoPlayer } from "@/components/VideoPlayer";
+import { LessonComments } from "@/components/LessonComments";
 import { PlayCircle, CheckCircle, ChevronDown, ChevronUp, Layers } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -119,6 +120,8 @@ export default function StudentCoursePlayer() {
                {course.description || "Nenhuma descrição fornecida para este curso."}
             </p>
           </div>
+
+          {activeLesson && <LessonComments lessonId={activeLesson.id} />}
         </div>
 
         {/* Lado Direito - Módulos */}
