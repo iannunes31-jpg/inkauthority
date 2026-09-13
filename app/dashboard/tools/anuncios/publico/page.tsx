@@ -45,9 +45,14 @@ export default function PublicoPage() {
   const isLoading = status === "submitted" || status === "streaming";
   const [inputValue, setInputValue] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    const c = scrollContainerRef.current;
+    if (!c) return;
+    if (c.scrollHeight - c.scrollTop - c.clientHeight < 200) {
+      messagesEndRef.current?.scrollIntoView({ behavior: "instant" });
+    }
   }, [messages]);
 
   const handleFormSubmit = (e: React.FormEvent) => {
@@ -216,7 +221,7 @@ Por favor, faça uma análise completa do meu público-alvo e personas.`;
 
         {/* Right: Chat */}
         <div className="flex-1 flex flex-col overflow-hidden">
-          <div className="flex-1 overflow-y-auto p-6">
+          <div ref={scrollContainerRef} className="flex-1 overflow-y-auto p-6">
             <div className="max-w-2xl mx-auto space-y-5">
               {messages.map((m) => {
                 const textContent =

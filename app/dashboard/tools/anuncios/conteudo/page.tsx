@@ -45,8 +45,15 @@ export default function ConteudoPage() {
   const isLoading = status === "submitted" || status === "streaming";
   const [inputValue, setInputValue] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
+  useEffect(() => {
+    const c = scrollContainerRef.current;
+    if (!c) return;
+    if (c.scrollHeight - c.scrollTop - c.clientHeight < 200) {
+      messagesEndRef.current?.scrollIntoView({ behavior: "instant" });
+    }
+  }, [messages]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -87,7 +94,7 @@ export default function ConteudoPage() {
 
         {/* Chat */}
         <div className="flex-1 flex flex-col overflow-hidden">
-          <div className="flex-1 overflow-y-auto p-6">
+          <div ref={scrollContainerRef} className="flex-1 overflow-y-auto p-6">
             <div className="max-w-2xl mx-auto space-y-5">
               {messages.map((m) => {
                 const text = m.parts?.filter((p: any) => p.type === "text").map((p: any) => p.text).join("") ?? (m as any).content ?? "";

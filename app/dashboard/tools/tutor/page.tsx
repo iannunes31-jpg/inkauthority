@@ -84,8 +84,14 @@ export default function AssistantPage() {
   };
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    const container = scrollContainerRef.current;
+    if (!container) return;
+    const isNearBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 200;
+    if (isNearBottom) {
+      messagesEndRef.current?.scrollIntoView({ behavior: "instant" });
+    }
   }, [messages]);
 
   if (hasAccess === null) {
@@ -129,7 +135,7 @@ export default function AssistantPage() {
       </div>
 
       {/* Messages Area */}
-      <div className="flex-1 overflow-y-auto p-8">
+      <div ref={scrollContainerRef} className="flex-1 overflow-y-auto p-8">
         <div className="max-w-4xl mx-auto space-y-8">
           {messages.map((m) => {
             const textContent =
