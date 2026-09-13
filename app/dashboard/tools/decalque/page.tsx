@@ -28,7 +28,7 @@ export default function DecalquePage() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [aiDescription, setAiDescription] = useState<string>("");
   const [resultDataUrl, setResultDataUrl] = useState<string | null>(null);
-  const [threshold, setThreshold] = useState(200);
+  const [threshold, setThreshold] = useState(160);
   const [invert, setInvert] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -73,35 +73,67 @@ export default function DecalquePage() {
       const canvas = canvasRef.current;
       if (!canvas) return;
       const scale = Math.min(1, MAX_DIM / Math.max(imageEl.width, imageEl.height));
-      canvas.width = Math.round(imageEl.width * scale);
-      canvas.height = Math.round(imageEl.height * scale);
+      const W = Math.round(imageEl.width * scale);
+      const H = Math.round(imageEl.height * scale);
+      canvas.width = W;
+      canvas.height = H;
       const ctx = canvas.getContext("2d")!;
-      ctx.drawImage(imageEl, 0, 0, canvas.width, canvas.height);
-      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-      const data = imageData.data;
-      const n = data.length / 4;
+      ctx.drawImage(imageEl, 0, 0, W, H);
+      const imgData = ctx.getImageData(0, 0, W, H);
+      const data = imgData.data;
+      const n = W * H;
 
-      // Step 1: compute grayscale for every pixel
+      // Step 1: Grayscale
       const grays = new Float32Array(n);
-      let minG = 255, maxG = 0;
       for (let i = 0; i < n; i++) {
-        const g = 0.299 * data[i * 4] + 0.587 * data[i * 4 + 1] + 0.114 * data[i * 4 + 2];
-        grays[i] = g;
-        if (g < minG) minG = g;
-        if (g > maxG) maxG = g;
+        grays[i] = 0.299 * data[i * 4] + 0.587 * data[i * 4 + 1] + 0.114 * data[i * 4 + 2];
       }
 
-      // Step 2: auto-contrast stretch so details are preserved,
-      // then apply threshold — avoids crushing highlights/shadows
-      const range = maxG - minG || 1;
-      for (let i = 0; i < n; i++) {
-        const normalized = ((grays[i] - minG) / range) * 255;
-        const v = invert ? (normalized > threshold ? 0 : 255) : (normalized > threshold ? 255 : 0);
-        data[i * 4] = data[i * 4 + 1] = data[i * 4 + 2] = v;
-        data[i * 4 + 3] = 255;
+      // Step 2: Gaussian blur 3×3 (reduce noise before edge detection)
+      const blur = new Float32Array(n);
+      const gk = [1, 2, 1, 2, 4, 2, 1, 2, 1];
+      for (let y = 0; y < H; y++) {
+        for (let x = 0; x < W; x++) {
+          let s = 0, t = 0;
+          for (let ky = -1; ky <= 1; ky++) {
+            for (let kx = -1; kx <= 1; kx++) {
+              const nx = x + kx, ny = y + ky;
+              if (nx >= 0 && nx < W && ny >= 0 && ny < H) {
+                const k = gk[(ky + 1) * 3 + (kx + 1)];
+                s += grays[ny * W + nx] * k; t += k;
+              }
+            }
+          }
+          blur[y * W + x] = s / t;
+        }
       }
 
-      ctx.putImageData(imageData, 0, 0);
+      // Step 3: Sobel edge detection
+      // slider 100→240 maps to sensitivity 80→16 (left=more detail, right=cleaner)
+      const sensitivity = Math.round((260 - threshold) * 0.55);
+      const Gx = [-1, 0, 1, -2, 0, 2, -1, 0, 1];
+      const Gy = [-1, -2, -1, 0, 0, 0, 1, 2, 1];
+      for (let y = 0; y < H; y++) {
+        for (let x = 0; x < W; x++) {
+          let gx = 0, gy = 0;
+          for (let ky = -1; ky <= 1; ky++) {
+            for (let kx = -1; kx <= 1; kx++) {
+              const nx = x + kx, ny = y + ky;
+              const v = nx >= 0 && nx < W && ny >= 0 && ny < H ? blur[ny * W + nx] : 0;
+              const ki = (ky + 1) * 3 + (kx + 1);
+              gx += v * Gx[ki]; gy += v * Gy[ki];
+            }
+          }
+          const mag = Math.sqrt(gx * gx + gy * gy);
+          const edge = mag > sensitivity ? 0 : 255; // black edge on white bg
+          const idx = (y * W + x) * 4;
+          const out = invert ? 255 - edge : edge;
+          data[idx] = data[idx + 1] = data[idx + 2] = out;
+          data[idx + 3] = 255;
+        }
+      }
+
+      ctx.putImageData(imgData, 0, 0);
     });
   }, [step, imageEl, threshold, invert]);
 
@@ -255,7 +287,7 @@ export default function DecalquePage() {
     setAiDescription("");
     setResultDataUrl(null);
     setIsProcessing(false);
-    setThreshold(200);
+    setThreshold(160);
     setInvert(false);
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
@@ -388,15 +420,15 @@ export default function DecalquePage() {
               <div className="flex justify-between text-[10px] text-muted-foreground mb-1">
                 <span>+ Detalhes</span>
                 <span>{threshold}</span>
-                <span>+ Escuro</span>
+                <span>+ Limpo</span>
               </div>
-              <input type="range" min={100} max={240} value={threshold} onChange={(e) => setThreshold(Number(e.target.value))}
+              <input type="range" min={100} max={230} value={threshold} onChange={(e) => setThreshold(Number(e.target.value))}
                 className="w-full accent-primary mb-4" />
               <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer">
                 <input type="checkbox" checked={invert} onChange={(e) => setInvert(e.target.checked)} className="rounded" />
                 Inverter cores
               </label>
-              <p className="text-[10px] text-muted-foreground mt-3 opacity-60">Esta prévia é rápida. O resultado final é gerado pela IA com muito mais qualidade.</p>
+              <p className="text-[10px] text-muted-foreground mt-3 opacity-60">Arraste para a esquerda para ver mais detalhes finos, ou para a direita para linhas mais limpas e espaçadas.</p>
             </div>
 
             {/* Generate button */}

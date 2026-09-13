@@ -66,8 +66,12 @@ export async function POST(req: NextRequest) {
 
     const projectId = credentials.project_id;
     const location = "us-central1";
-    // gemini-2.0-flash-exp supports responseModalities: IMAGE on Vertex AI
-    const model = "gemini-2.0-flash-exp";
+
+    // Try image-generating models in order of preference
+    const IMAGE_MODELS = [
+      "gemini-2.0-flash-preview-image-generation", // Vertex AI dedicated image generation model
+      "gemini-2.0-flash-exp",                       // Experimental multimodal output
+    ];
 
     const requestBody = {
       contents: [
@@ -85,35 +89,39 @@ export async function POST(req: NextRequest) {
       },
     };
 
-    const vertexRes = await fetch(
-      `https://${location}-aiplatform.googleapis.com/v1/projects/${projectId}/locations/${location}/publishers/google/models/${model}:generateContent`,
-      {
+    let imagePart: any = null;
+    let textPart: any = null;
+
+    for (const model of IMAGE_MODELS) {
+      // v1beta is required for image generation on Vertex AI
+      const endpoint = `https://${location}-aiplatform.googleapis.com/v1beta/projects/${projectId}/locations/${location}/publishers/google/models/${model}:generateContent`;
+
+      const vertexRes = await fetch(endpoint, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${accessToken}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify(requestBody),
-      }
-    );
+      });
 
-    if (!vertexRes.ok) {
-      const errText = await vertexRes.text();
-      console.error("[decalque-ai] Vertex API error:", vertexRes.status, errText);
-      return NextResponse.json(
-        { error: `Erro Vertex AI (${vertexRes.status}). Verifique se o modelo está disponível.` },
-        { status: 500 }
-      );
+      if (!vertexRes.ok) {
+        const errText = await vertexRes.text();
+        console.warn(`[decalque-ai] Model ${model} failed (${vertexRes.status}):`, errText.slice(0, 300));
+        continue; // try next model
+      }
+
+      const result = await vertexRes.json();
+      const parts: any[] = result.candidates?.[0]?.content?.parts ?? [];
+
+      imagePart = parts.find((p: any) => p.inlineData?.data) ?? null;
+      textPart = parts.find((p: any) => typeof p.text === "string") ?? null;
+
+      if (imagePart) break; // got an image — stop trying
     }
 
-    const result = await vertexRes.json();
-    const parts: any[] = result.candidates?.[0]?.content?.parts ?? [];
-
-    const imagePart = parts.find((p) => p.inlineData?.data);
-    const textPart = parts.find((p) => typeof p.text === "string");
-
     if (imagePart) {
-      // AI returned a generated image — best case
+      // AI generated a real stencil image
       return NextResponse.json({
         imageBase64: imagePart.inlineData.data,
         imageMimeType: imagePart.inlineData.mimeType ?? "image/png",
@@ -122,10 +130,12 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // Fallback: model returned text only (no image output)
+    // All image models failed or returned text only —
+    // return a signal so the client applies canvas edge detection as fallback
     return NextResponse.json({
-      description: textPart?.text ?? "Análise concluída.",
+      description: textPart?.text ?? "Imagem analisada. Aplicando processamento local.",
       style,
+      useCanvasFallback: true,
     });
   } catch (error) {
     console.error("[decalque-ai] Error:", error);
