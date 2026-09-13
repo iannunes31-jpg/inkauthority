@@ -28,7 +28,7 @@ export default function DecalquePage() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [aiDescription, setAiDescription] = useState<string>("");
   const [resultDataUrl, setResultDataUrl] = useState<string | null>(null);
-  const [threshold, setThreshold] = useState(128);
+  const [threshold, setThreshold] = useState(200);
   const [invert, setInvert] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -79,12 +79,28 @@ export default function DecalquePage() {
       ctx.drawImage(imageEl, 0, 0, canvas.width, canvas.height);
       const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
       const data = imageData.data;
-      for (let i = 0; i < data.length; i += 4) {
-        const gray = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
-        const v = invert ? (gray > threshold ? 0 : 255) : (gray > threshold ? 255 : 0);
-        data[i] = data[i + 1] = data[i + 2] = v;
-        data[i + 3] = 255;
+      const n = data.length / 4;
+
+      // Step 1: compute grayscale for every pixel
+      const grays = new Float32Array(n);
+      let minG = 255, maxG = 0;
+      for (let i = 0; i < n; i++) {
+        const g = 0.299 * data[i * 4] + 0.587 * data[i * 4 + 1] + 0.114 * data[i * 4 + 2];
+        grays[i] = g;
+        if (g < minG) minG = g;
+        if (g > maxG) maxG = g;
       }
+
+      // Step 2: auto-contrast stretch so details are preserved,
+      // then apply threshold — avoids crushing highlights/shadows
+      const range = maxG - minG || 1;
+      for (let i = 0; i < n; i++) {
+        const normalized = ((grays[i] - minG) / range) * 255;
+        const v = invert ? (normalized > threshold ? 0 : 255) : (normalized > threshold ? 255 : 0);
+        data[i * 4] = data[i * 4 + 1] = data[i * 4 + 2] = v;
+        data[i * 4 + 3] = 255;
+      }
+
       ctx.putImageData(imageData, 0, 0);
     });
   }, [step, imageEl, threshold, invert]);
@@ -239,7 +255,7 @@ export default function DecalquePage() {
     setAiDescription("");
     setResultDataUrl(null);
     setIsProcessing(false);
-    setThreshold(128);
+    setThreshold(200);
     setInvert(false);
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
@@ -369,8 +385,12 @@ export default function DecalquePage() {
             {/* Threshold preview (fast local filter) */}
             <div className="glass rounded-2xl border border-white/10 p-5">
               <p className="text-[11px] font-bold uppercase tracking-widest mb-3">Prévia Rápida</p>
-              <label className="text-xs text-muted-foreground block mb-2">Limiar: {threshold}</label>
-              <input type="range" min={60} max={220} value={threshold} onChange={(e) => setThreshold(Number(e.target.value))}
+              <div className="flex justify-between text-[10px] text-muted-foreground mb-1">
+                <span>+ Detalhes</span>
+                <span>{threshold}</span>
+                <span>+ Escuro</span>
+              </div>
+              <input type="range" min={100} max={240} value={threshold} onChange={(e) => setThreshold(Number(e.target.value))}
                 className="w-full accent-primary mb-4" />
               <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer">
                 <input type="checkbox" checked={invert} onChange={(e) => setInvert(e.target.checked)} className="rounded" />
