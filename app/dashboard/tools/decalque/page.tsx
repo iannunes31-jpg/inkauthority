@@ -89,8 +89,102 @@ export default function DecalquePage() {
     });
   }, [step, imageEl, threshold, invert]);
 
+  // Applies proper stencil processing per style using canvas pixel manipulation
+  const applyStencilProcessing = useCallback((img: HTMLImageElement, stencilStyle: Style): string => {
+    const offscreen = document.createElement("canvas");
+    const scale = Math.min(1, MAX_DIM / Math.max(img.width, img.height));
+    const W = Math.round(img.width * scale);
+    const H = Math.round(img.height * scale);
+    offscreen.width = W;
+    offscreen.height = H;
+    const ctx = offscreen.getContext("2d")!;
+    ctx.drawImage(img, 0, 0, W, H);
+    const imgData = ctx.getImageData(0, 0, W, H);
+    const src = imgData.data;
+
+    // Step 1: to grayscale float array
+    const gray = new Float32Array(W * H);
+    for (let i = 0; i < W * H; i++) {
+      gray[i] = 0.299 * src[i * 4] + 0.587 * src[i * 4 + 1] + 0.114 * src[i * 4 + 2];
+    }
+
+    // Step 2: Gaussian blur 3×3 (reduces noise before edge detection)
+    const blur = new Float32Array(W * H);
+    const gk = [1, 2, 1, 2, 4, 2, 1, 2, 1]; // sum = 16
+    for (let y = 0; y < H; y++) {
+      for (let x = 0; x < W; x++) {
+        let s = 0, t = 0;
+        for (let ky = -1; ky <= 1; ky++) {
+          for (let kx = -1; kx <= 1; kx++) {
+            const nx = x + kx, ny = y + ky;
+            if (nx >= 0 && nx < W && ny >= 0 && ny < H) {
+              const k = gk[(ky + 1) * 3 + (kx + 1)];
+              s += gray[ny * W + nx] * k;
+              t += k;
+            }
+          }
+        }
+        blur[y * W + x] = s / t;
+      }
+    }
+
+    const out = new Uint8ClampedArray(W * H * 4);
+
+    if (stencilStyle === "sombras") {
+      // High-contrast adaptive threshold: fills dark areas solid black
+      // Calculate mean for local block adaptive threshold
+      const blockSize = Math.max(15, Math.floor(Math.min(W, H) / 20) | 1);
+      const half = Math.floor(blockSize / 2);
+      for (let y = 0; y < H; y++) {
+        for (let x = 0; x < W; x++) {
+          let s = 0, n = 0;
+          for (let by = -half; by <= half; by++) {
+            for (let bx = -half; bx <= half; bx++) {
+              const nx = x + bx, ny = y + by;
+              if (nx >= 0 && nx < W && ny >= 0 && ny < H) { s += blur[ny * W + nx]; n++; }
+            }
+          }
+          const localMean = s / n;
+          const v = blur[y * W + x] < localMean - 8 ? 0 : 255; // dark areas → black
+          const idx = (y * W + x) * 4;
+          out[idx] = out[idx + 1] = out[idx + 2] = v;
+          out[idx + 3] = 255;
+        }
+      }
+    } else {
+      // Sobel edge detection for "linhas" and "fino"
+      const sensitivity = stencilStyle === "fino" ? 18 : 35; // fino = thinner/more sensitive
+      const Gx = [-1, 0, 1, -2, 0, 2, -1, 0, 1];
+      const Gy = [-1, -2, -1, 0, 0, 0, 1, 2, 1];
+      for (let y = 0; y < H; y++) {
+        for (let x = 0; x < W; x++) {
+          let gx = 0, gy = 0;
+          for (let ky = -1; ky <= 1; ky++) {
+            for (let kx = -1; kx <= 1; kx++) {
+              const nx = x + kx, ny = y + ky;
+              const v = nx >= 0 && nx < W && ny >= 0 && ny < H ? blur[ny * W + nx] : 0;
+              const ki = (ky + 1) * 3 + (kx + 1);
+              gx += v * Gx[ki];
+              gy += v * Gy[ki];
+            }
+          }
+          const mag = Math.sqrt(gx * gx + gy * gy);
+          // Edge = black on white background
+          const edge = mag > sensitivity ? 0 : 255;
+          const idx = (y * W + x) * 4;
+          out[idx] = out[idx + 1] = out[idx + 2] = edge;
+          out[idx + 3] = 255;
+        }
+      }
+    }
+
+    const result = new ImageData(out, W, H);
+    ctx.putImageData(result, 0, 0);
+    return offscreen.toDataURL("image/png");
+  }, [MAX_DIM]);
+
   const generateWithAI = async () => {
-    if (!imageBase64 || isProcessing) return;
+    if (!imageBase64 || isProcessing || !imageEl) return;
     setIsProcessing(true);
     setAiDescription("");
 
@@ -103,9 +197,9 @@ export default function DecalquePage() {
       const data = await res.json();
       if (data.description) {
         setAiDescription(data.description);
-        // For the result display, convert canvas to data URL
-        const canvas = canvasRef.current;
-        if (canvas) setResultDataUrl(canvas.toDataURL("image/png"));
+        // Apply proper stencil processing (edge detection) — visually different from the threshold preview
+        const processed = applyStencilProcessing(imageEl, style);
+        setResultDataUrl(processed);
         setStep("resultado");
       } else {
         alert("Erro ao processar com IA. Tente novamente.");
