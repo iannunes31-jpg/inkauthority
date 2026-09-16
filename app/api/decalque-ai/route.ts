@@ -65,12 +65,11 @@ export async function POST(req: NextRequest) {
     }
 
     const projectId = credentials.project_id;
-    const location = "us-central1";
+    const location = "global";
 
-    // Try image-generating models in order of preference
+    // gemini-3.1-flash-lite-image: suporta responseModalities IMAGE + TEXT
     const IMAGE_MODELS = [
-      "gemini-2.0-flash-preview-image-generation", // Vertex AI dedicated image generation model
-      "gemini-2.0-flash-exp",                       // Experimental multimodal output
+      "gemini-3.1-flash-lite-image",
     ];
 
     const requestBody = {
@@ -93,8 +92,11 @@ export async function POST(req: NextRequest) {
     let textPart: any = null;
 
     for (const model of IMAGE_MODELS) {
-      // v1beta is required for image generation on Vertex AI
-      const endpoint = `https://${location}-aiplatform.googleapis.com/v1beta/projects/${projectId}/locations/${location}/publishers/google/models/${model}:generateContent`;
+      // global location uses the non-regional base URL
+      const base = location === "global"
+        ? "https://aiplatform.googleapis.com"
+        : `https://${location}-aiplatform.googleapis.com`;
+      const endpoint = `${base}/v1/projects/${projectId}/locations/${location}/publishers/google/models/${model}:generateContent`;
 
       const vertexRes = await fetch(endpoint, {
         method: "POST",

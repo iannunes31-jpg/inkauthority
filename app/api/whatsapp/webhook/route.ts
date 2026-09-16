@@ -220,7 +220,7 @@ Esta e a estrategia de conversao que voce DEVE seguir rigidamente:
       const credentials = JSON.parse(process.env.GOOGLE_VERTEX_CREDENTIALS);
       vertex = createVertex({
         project: credentials.project_id,
-        location: 'us-central1',
+        location: 'global',
         googleAuthOptions: { credentials }
       });
     } catch (e: any) {
@@ -228,7 +228,7 @@ Esta e a estrategia de conversao que voce DEVE seguir rigidamente:
     }
 
     const { text: aiResponse } = await generateText({
-      model: vertex('gemini-2.5-flash'),
+      model: vertex('gemini-3.1-flash-lite-image'),
       system: systemPrompt,
       messages: messagesToSend,
     });

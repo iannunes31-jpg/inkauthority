@@ -47,11 +47,11 @@ export async function GET() {
         const credentials = JSON.parse(process.env.GOOGLE_VERTEX_CREDENTIALS);
         const vertex = createVertex({
           project: credentials.project_id,
-          location: 'us-central1',
+          location: 'global',
           googleAuthOptions: { credentials }
         });
         const { text } = await generateText({
-          model: vertex('gemini-2.5-flash'),
+          model: vertex('gemini-3.1-flash-lite-image'),
           prompt: 'Say the word OK',
         });
         diagnostics.tests.gemini = 'success';
