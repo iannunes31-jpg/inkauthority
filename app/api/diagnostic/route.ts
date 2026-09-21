@@ -12,17 +12,21 @@ export async function GET() {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
+  const evolutionUrl = process.env.EVOLUTION_API_URL || 'https://evolution-api-production-fbfd.up.railway.app';
+  const evolutionKey = process.env.EVOLUTION_API_KEY || '';
+
   const diagnostics: any = {
     env: {
       hasVertexCredentials: !!process.env.GOOGLE_VERTEX_CREDENTIALS,
-      hasEvolutionUrl: !!process.env.EVOLUTION_API_URL,
+      evolutionUrl,
       hasEvolutionKey: !!process.env.EVOLUTION_API_KEY,
       hasSupabaseUrl: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
       hasSupabaseAnonKey: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
     },
     tests: {
       supabase: 'pending',
-      gemini: 'pending'
+      gemini: 'pending',
+      evolution: 'pending',
     }
   };
 
@@ -62,6 +66,24 @@ export async function GET() {
       }
     } else {
       diagnostics.tests.gemini = 'skipped_missing_vertex_json';
+    }
+
+    // Test Evolution API
+    try {
+      const evoRes = await fetch(`${evolutionUrl}/instance/fetchInstances`, {
+        headers: { 'apikey': evolutionKey },
+        signal: AbortSignal.timeout(8000),
+      });
+      const evoText = await evoRes.text();
+      let evoData: any;
+      try { evoData = JSON.parse(evoText); } catch { evoData = evoText; }
+      diagnostics.tests.evolution = evoRes.ok ? 'success' : `http_${evoRes.status}`;
+      diagnostics.evolutionResponse = Array.isArray(evoData)
+        ? `${evoData.length} instance(s): ${evoData.map((i: any) => i.name || i.instanceName).join(', ')}`
+        : JSON.stringify(evoData).slice(0, 300);
+    } catch (e: any) {
+      diagnostics.tests.evolution = 'failed';
+      diagnostics.evolutionError = e.message;
     }
 
   } catch (err: any) {
