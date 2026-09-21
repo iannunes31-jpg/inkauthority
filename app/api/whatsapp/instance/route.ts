@@ -43,9 +43,10 @@ export async function POST(req: Request) {
       });
 
       let connectData = await connectResponse.json();
+      console.log('[WhatsApp] connect response', connectResponse.status, JSON.stringify(connectData).slice(0, 300));
 
       // Se a instância não existir, cria uma nova
-      if (connectResponse.status === 404 || connectData.error) {
+      if (connectResponse.status === 404 || connectData.error || connectData.statusCode === 404) {
         const createPayload = {
           instanceName,
           qrcode: true,
@@ -57,8 +58,9 @@ export async function POST(req: Request) {
           headers: { 'apikey': apiKey, 'Content-Type': 'application/json' },
           body: JSON.stringify(createPayload)
         });
-        
+
         connectData = await createResponse.json();
+        console.log('[WhatsApp] create response', createResponse.status, JSON.stringify(connectData).slice(0, 300));
       }
 
       // Seta o Webhook sempre que conectar para garantir a URL correta

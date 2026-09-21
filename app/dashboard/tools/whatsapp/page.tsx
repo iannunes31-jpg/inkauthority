@@ -112,21 +112,23 @@ export default function AssistantPage() {
         body: JSON.stringify({ instanceName: user.id, action: "connect" })
       });
       const data = await res.json();
-      
-      if (data?.base64) {
-        setQrCodeData(data.base64);
-        setConnectionStatus("Aguardando leitura do QR Code");
-      } else if (data?.qrcode) {
-        setQrCodeData(data.qrcode);
-        setConnectionStatus("Aguardando leitura do QR Code");
-      } else if (data?.qrcode?.base64) {
-        setQrCodeData(data.qrcode.base64);
-        setConnectionStatus("Aguardando leitura do QR Code");
-      } else if (data?.hash?.qrcode) {
-        setQrCodeData(data.hash.qrcode);
+
+      // Extrai o base64 do QR code — a Evolution API pode retornar em vários formatos
+      const qrBase64 =
+        data?.base64 ||                  // /instance/connect → { code, base64 }
+        data?.qrcode?.base64 ||          // /instance/create  → { qrcode: { code, base64 } }
+        (typeof data?.qrcode === "string" ? data.qrcode : null) || // formato string direto
+        data?.hash?.qrcode ||            // formato legado
+        null;
+
+      if (qrBase64) {
+        setQrCodeData(qrBase64);
         setConnectionStatus("Aguardando leitura do QR Code");
       } else {
-        alert("Erro ao buscar QR Code. Verifique os logs.");
+        // Mostra o que a API retornou para facilitar debug
+        const detail = data?.message || data?.error || data?.status || JSON.stringify(data).slice(0, 120);
+        alert(`Erro ao buscar QR Code.\n\nResposta da API: ${detail}\n\nVerifique se EVOLUTION_API_KEY está configurada no Vercel.`);
+        console.error("[WhatsApp QR] Resposta inesperada:", data);
       }
     } catch (e) {
       console.error(e);
