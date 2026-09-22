@@ -110,7 +110,7 @@ export function Navbar() {
 
   const navLinks = [
     { name: "HOME", path: "/" },
-    { name: "CURSOS", path: "/courses" },
+    { name: "WORKSHOPS", path: "/courses" },
     { name: "TOOLS", path: "/tools" },
     ...(isLoggedIn ? [{ name: "DASHBOARD", path: "/dashboard" }] : []),
   ];

@@ -298,7 +298,7 @@ export default function AssistantPage() {
         </div>
         <div>
           <h1 className="text-3xl font-black uppercase tracking-tighter mb-1">Cérebro da IA</h1>
-          <p className="text-muted-foreground text-sm">Gerencie o conhecimento, clientes e a agenda do seu assistente virtual.</p>
+          <p className="text-muted-foreground text-sm">Gerencie o conhecimento, clientes e a agenda do <strong>Dante</strong>, seu assistente virtual.</p>
         </div>
       </div>
 

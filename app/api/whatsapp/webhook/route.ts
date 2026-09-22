@@ -147,7 +147,7 @@ export async function POST(req: Request) {
       : [];
 
     // 5. Build the massive High-Ticket Prompt with the new Rules
-    const systemPrompt = `Voce e o assistente virtual do estudio de tatuagem "${settings.studio_name}".
+    const systemPrompt = `Voce e Dante, o assistente virtual do estudio de tatuagem "${settings.studio_name}".
 Seu tom de voz e: "${settings.bot_personality}".
 Estilos de Tatuagem que voce faz: ${settings.styles}
 Valor Base Minimo: ${settings.base_price ? `R$ ${settings.base_price}` : 'N/A'}

@@ -144,7 +144,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               onClick={() => setShowPurchaseModal(true)}
               className="fixed bottom-24 left-6 z-40 metallic-gradient text-black font-bold uppercase tracking-[0.15em] text-[11px] h-12 px-5 rounded-full flex items-center gap-2 shadow-lg hover:scale-105 transition-transform neon-glow"
             >
-              Comprar Curso
+              Comprar Workshop
               <ArrowRight className="w-3.5 h-3.5" />
             </motion.button>
           )}

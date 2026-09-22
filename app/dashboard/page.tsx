@@ -162,7 +162,7 @@ export default function Dashboard() {
             <div className="w-16 h-16 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center mb-4 text-primary">
               <Compass className="w-8 h-8" />
             </div>
-            <h3 className="text-xl font-bold mb-2">Nenhum curso em andamento</h3>
+            <h3 className="text-xl font-bold mb-2">Nenhum workshop em andamento</h3>
             <p className="text-sm text-muted-foreground max-w-md mb-6 font-light">
               Seu progresso de estudo aparecerá aqui conforme você acessar e concluir as aulas das matérias disponíveis.
             </p>
@@ -206,7 +206,7 @@ export default function Dashboard() {
                   <div>
                     <h3 className="font-bold text-lg mb-1 line-clamp-1">{course.title}</h3>
                     <p className="text-[12px] text-muted-foreground line-clamp-2 mb-4 font-light">
-                      {course.description || "Curso da metodologia Ink Authority."}
+                      {course.description || "Workshop da metodologia Ink Authority."}
                     </p>
                   </div>
 

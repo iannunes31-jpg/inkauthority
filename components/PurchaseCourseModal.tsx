@@ -131,10 +131,10 @@ export function PurchaseCourseModal({
                   O Primeiro Passo Para o Topo
                 </span>
                 <h2 className="text-2xl font-bold tracking-tight mb-2 uppercase text-glow">
-                  Curso Marketing &amp; Posicionamento
+                  Workshop Marketing &amp; Posicionamento
                 </h2>
                 <p className="text-sm text-muted-foreground font-light">
-                  Você ainda não desbloqueou o curso completo. Aprenda a se posicionar como
+                  Você ainda não desbloqueou o workshop completo. Aprenda a se posicionar como
                   autoridade e atrair clientes que pagam caro.
                 </p>
               </div>
