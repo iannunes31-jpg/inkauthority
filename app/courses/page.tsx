@@ -132,18 +132,14 @@ export default function CoursesPage() {
           className="flex-1 w-full max-w-[500px] lg:max-w-none relative z-10"
         >
           <div className="relative rounded-[2rem] overflow-hidden border border-border/20 shadow-2xl glass group aspect-[4/5] lg:aspect-auto lg:h-[700px]">
-            <video 
-              autoPlay 
-              muted 
-              loop 
-              playsInline
-              className="w-full h-full object-cover opacity-90 transition-opacity duration-500"
-              poster="/isabella_poster.jpg"
-            >
-              <source src="/video_badini.mp4" type="video/mp4" />
-              Seu navegador não suporta vídeos.
-            </video>
-            
+            <iframe
+              src="https://customer-qorhxqfbnqhshnfn.cloudflarestream.com/f2a135026e57c0f0fe20dd0b355c0202/iframe?autoplay=true&muted=true&loop=true&controls=false&preload=true"
+              allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture;"
+              allowFullScreen
+              className="w-full h-full object-cover"
+              style={{ border: 'none' }}
+            />
+
             {/* Elegant overlay gradient to make it blend with the theme */}
             <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-background/20 to-transparent pointer-events-none" />
             <div className="absolute inset-0 bg-gradient-to-r from-background/40 via-transparent to-background/40 pointer-events-none" />
