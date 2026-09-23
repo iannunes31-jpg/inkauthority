@@ -524,12 +524,13 @@ export default function VendasPage() {
           <FadeUp delay={0.2}>
             <div className="relative">
               <div className="absolute -inset-4 bg-primary/10 rounded-3xl blur-2xl" />
-              <div className="relative glass rounded-3xl border border-primary/20 overflow-hidden shadow-2xl shadow-primary/10">
-                <Stream
-                  src="f2a135026e57c0f0fe20dd0b355c0202"
-                  controls
-                  responsive={false}
-                  className="w-full aspect-video"
+              <div className="relative glass rounded-3xl border border-primary/20 overflow-hidden shadow-2xl shadow-primary/10 aspect-video">
+                <iframe
+                  src="https://iframe.cloudflarestream.com/f2a135026e57c0f0fe20dd0b355c0202?controls=true&preload=true"
+                  allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture;"
+                  allowFullScreen
+                  className="absolute inset-0 w-full h-full"
+                  style={{ border: 'none' }}
                 />
               </div>
             </div>
