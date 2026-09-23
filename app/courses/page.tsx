@@ -131,31 +131,14 @@ export default function CoursesPage() {
           transition={{ duration: 0.7, delay: 0.2 }}
           className="flex-1 w-full max-w-[500px] lg:max-w-none relative z-10"
         >
-          <div className="relative rounded-[2rem] overflow-hidden border border-border/20 shadow-2xl glass group aspect-[4/5] lg:aspect-auto lg:h-[700px]">
+          <div className="relative rounded-[2rem] overflow-hidden border border-border/20 shadow-2xl glass group aspect-video">
             <iframe
-              src="https://customer-qorhxqfbnqhshnfn.cloudflarestream.com/f2a135026e57c0f0fe20dd0b355c0202/iframe?autoplay=true&muted=true&loop=true&controls=false&preload=true"
+              src="https://customer-qorhxqfbnqhshnfn.cloudflarestream.com/f2a135026e57c0f0fe20dd0b355c0202/iframe?autoplay=true&muted=true&loop=true&controls=true&preload=true"
               allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture;"
               allowFullScreen
-              className="w-full h-full object-cover"
+              className="absolute inset-0 w-full h-full"
               style={{ border: 'none' }}
             />
-
-            {/* Elegant overlay gradient to make it blend with the theme */}
-            <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-background/20 to-transparent pointer-events-none" />
-            <div className="absolute inset-0 bg-gradient-to-r from-background/40 via-transparent to-background/40 pointer-events-none" />
-            
-            {/* Play overlay just for aesthetics (video is autoplaying) */}
-            <div className="absolute bottom-8 left-8 right-8 flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-full bg-foreground/10 backdrop-blur-md border border-border/20 flex items-center justify-center pointer-events-none">
-                  <Play className="w-5 h-5 text-foreground ml-1" />
-                </div>
-                <div>
-                  <p className="text-foreground font-bold text-sm uppercase tracking-wider">Assista ao Vídeo</p>
-                  <p className="text-muted-foreground text-xs">Aumente o som</p>
-                </div>
-              </div>
-            </div>
           </div>
         </motion.div>
 
