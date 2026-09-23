@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { VideoPlayer } from "@/components/VideoPlayer";
+import { LessonComments } from "@/components/LessonComments";
 import { PlayCircle, CheckCircle, ChevronDown, ChevronUp, Layers } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -83,9 +84,9 @@ export default function StudentCoursePlayer() {
   if (!course) {
     return (
       <div className="text-center py-20 text-muted-foreground">
-        <p>Curso não encontrado ou não está disponível.</p>
+        <p>Workshop não encontrado ou não está disponível.</p>
         <Link href="/dashboard/courses">
-          <Button variant="link" className="text-primary mt-4">Voltar aos Cursos</Button>
+          <Button variant="link" className="text-primary mt-4">Voltar aos Workshops</Button>
         </Link>
       </div>
     );
@@ -116,15 +117,17 @@ export default function StudentCoursePlayer() {
               {activeLesson ? activeLesson.title : course.title}
             </h1>
             <p className="text-muted-foreground">
-               {course.description || "Nenhuma descrição fornecida para este curso."}
+               {course.description || "Nenhuma descrição fornecida para este workshop."}
             </p>
           </div>
+
+          {activeLesson && <LessonComments lessonId={activeLesson.id} />}
         </div>
 
         {/* Lado Direito - Módulos */}
         <div className="lg:col-span-1 xl:col-span-1 glass rounded-2xl border border-white/10 flex flex-col h-full overflow-hidden">
           <div className="p-5 border-b border-white/10 bg-black/40">
-            <h2 className="text-lg font-bold">Conteúdo do Curso</h2>
+            <h2 className="text-lg font-bold">Conteúdo do Workshop</h2>
             <div className="text-sm text-muted-foreground mt-1">
                {modules.length} {modules.length === 1 ? 'Módulo' : 'Módulos'}
             </div>

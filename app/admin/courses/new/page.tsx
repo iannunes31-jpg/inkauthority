@@ -6,7 +6,6 @@ import { Input } from "@/components/ui/input";
 import { ArrowLeft, Save, Image as ImageIcon } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { supabase } from "@/lib/supabase";
 
 export default function NewCoursePage() {
   const router = useRouter();
@@ -26,21 +25,14 @@ export default function NewCoursePage() {
     setMessage(null);
 
     try {
-      // Cria o curso no Supabase
-      const { data, error } = await supabase
-        .from('courses')
-        .insert([
-          { 
-            title, 
-            description,
-            thumbnail_url: thumbnailUrl,
-            is_published: false
-          }
-        ])
-        .select()
-        .single();
-
-      if (error) throw error;
+      // Cria o curso via API (admin-gated no servidor)
+      const res = await fetch('/api/admin/courses', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title, description, thumbnail_url: thumbnailUrl }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
 
       setMessage({ type: 'success', text: 'Curso criado com sucesso! Redirecionando...' });
       

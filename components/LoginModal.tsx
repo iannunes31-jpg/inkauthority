@@ -37,16 +37,77 @@ export function LoginModal({ isOpen, onClose, initialView = "login" }: LoginModa
   const [fotoPreview, setFotoPreview] = useState<string | null>(null);
   
   const [errorMsg, setErrorMsg] = useState("");
+  const [infoMsg, setInfoMsg] = useState("");
+  const [resendCooldown, setResendCooldown] = useState(0);
+  const [isResending, setIsResending] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
       setView(initialView);
       setPendingVerification(false);
       setErrorMsg("");
+      setInfoMsg("");
+      setResendCooldown(0);
       setPassword("");
       setCode("");
     }
   }, [isOpen, initialView]);
+
+  // Countdown for the "Reenviar código" button, so it isn't spammable
+  // (Clerk itself also rate-limits OTP sends, but a visible cooldown
+  // avoids the confusing "nothing happened" feeling when someone taps it
+  // repeatedly while waiting for a slow email).
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+    const timer = setInterval(() => {
+      setResendCooldown((s) => (s > 0 ? s - 1 : 0));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [resendCooldown]);
+
+  // The code sometimes not arriving is a real, known limitation (Clerk's
+  // shared email-sending domain gets flagged as spam by some providers,
+  // and/or its own OTP rate limits) -- there used to be no way to ask for
+  // a new one short of closing the whole modal and starting over. This
+  // reuses the exact same "prepare verification" calls already used when
+  // the code is first sent (handleSignUp / handleSignIn below).
+  const handleResendCode = async () => {
+    if (resendCooldown > 0 || isResending) return;
+    setIsResending(true);
+    setErrorMsg("");
+    setInfoMsg("");
+    try {
+      if (verificationType === "signup" && signUp) {
+        if (signUp.verifications && typeof signUp.verifications.sendEmailCode === 'function') {
+          await signUp.verifications.sendEmailCode();
+        } else if (signUp.prepareEmailAddressVerification) {
+          await signUp.prepareEmailAddressVerification({ strategy: "email_code" });
+        } else {
+          await (signUp as any).prepareVerification({ strategy: "email_code" });
+        }
+      } else if (verificationType === "signin" && signIn) {
+        const s = signIn as any;
+        if (typeof s.prepareFirstFactor === "function") {
+          await s.prepareFirstFactor({ strategy: "email_code", emailAddressId: s.supportedFirstFactors?.find((f: any) => f.strategy === "email_code")?.emailAddressId });
+        } else if (typeof s.prepareSecondFactor === "function") {
+          await s.prepareSecondFactor({ strategy: "email_code" });
+        } else if (typeof s.prepareVerification === "function") {
+          await s.prepareVerification({ strategy: "email_code" });
+        } else if (s.emailCode && typeof s.emailCode.sendCode === "function") {
+          await s.emailCode.sendCode();
+        } else if (s.verifications && typeof s.verifications.sendEmailCode === "function") {
+          await s.verifications.sendEmailCode();
+        }
+      }
+      setInfoMsg("Código reenviado! Confira sua caixa de entrada (e o spam).");
+      setResendCooldown(30);
+    } catch (e: any) {
+      const errs = e.errors || [];
+      setErrorMsg(errs.length > 0 ? (errs[0].longMessage || errs[0].message) : (e.message || "Erro ao reenviar código."));
+    } finally {
+      setIsResending(false);
+    }
+  };
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -101,8 +162,9 @@ export function LoginModal({ isOpen, onClose, initialView = "login" }: LoginModa
          console.error("Falha ao preparar verificação:", e);
          throw new Error(`Erro ao enviar código: ${e.message}`);
       }
-      
+
       setPendingVerification(true);
+      setResendCooldown(30);
     } catch (err: any) {
       console.error("Erro no Clerk Sign Up:", err);
       const errorMessage = err.errors?.[0]?.longMessage || err.errors?.[0]?.message || err.message || "Erro de conexão com o servidor de autenticação.";
@@ -260,6 +322,7 @@ export function LoginModal({ isOpen, onClose, initialView = "login" }: LoginModa
            
            setVerificationType("signin");
            setPendingVerification(true);
+           setResendCooldown(30);
         } catch (e: any) {
            console.error("Erro ao preparar fator:", e);
            const errs = e.errors || [];
@@ -344,8 +407,23 @@ export function LoginModal({ isOpen, onClose, initialView = "login" }: LoginModa
                     <span>{isLoading ? "Verificando..." : "Confirmar Acesso"}</span>
                     <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
                   </Button>
-                  <div className="text-center mt-4">
-                    <button 
+                  {infoMsg && (
+                    <p className="text-center text-xs text-green-400">{infoMsg}</p>
+                  )}
+                  <div className="text-center mt-4 flex flex-col items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={handleResendCode}
+                      disabled={resendCooldown > 0 || isResending}
+                      className="text-xs text-muted-foreground hover:text-white disabled:opacity-50 disabled:hover:text-muted-foreground"
+                    >
+                      {isResending
+                        ? "Reenviando..."
+                        : resendCooldown > 0
+                          ? `Reenviar código em ${resendCooldown}s`
+                          : "Não recebeu? Reenviar código"}
+                    </button>
+                    <button
                       type="button"
                       onClick={() => setPendingVerification(false)}
                       className="text-xs text-muted-foreground hover:text-white"

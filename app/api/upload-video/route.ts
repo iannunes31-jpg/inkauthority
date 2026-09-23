@@ -1,6 +1,14 @@
 import { NextResponse } from 'next/server';
+import { checkIsAdmin } from '@/lib/auth-server';
 
 export async function POST(request: Request) {
+  // Proxies to Cloudflare Stream using our API token — admin-only (course
+  // video uploads). Had no auth check at all before, so anyone could use
+  // the studio's Cloudflare Stream quota.
+  if (!(await checkIsAdmin())) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  }
+
   const accountId = process.env.CLOUDFLARE_ACCOUNT_ID;
   const apiToken = process.env.CLOUDFLARE_API_TOKEN;
 

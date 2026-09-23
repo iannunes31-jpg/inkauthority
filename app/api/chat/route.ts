@@ -1,10 +1,21 @@
 import { createVertex } from '@ai-sdk/google-vertex';
 import { streamText } from 'ai';
+import { auth } from '@clerk/nextjs/server';
 
 export const maxDuration = 30;
 
 export async function POST(req: Request) {
   try {
+    // This proxies to Vertex AI (billable per call) — require login so it
+    // can't be hit anonymously from outside the app.
+    const { userId } = await auth();
+    if (!userId) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
     const body = await req.json();
 
     // SDK v7: messages come inside a "messages" key
@@ -22,7 +33,7 @@ export async function POST(req: Request) {
       const credentials = JSON.parse(process.env.GOOGLE_VERTEX_CREDENTIALS);
       vertex = createVertex({
         project: credentials.project_id,
-        location: 'us-central1',
+        location: 'global',
         googleAuthOptions: { credentials }
       });
     } catch {
@@ -47,7 +58,7 @@ export async function POST(req: Request) {
     });
 
     const result = streamText({
-      model: vertex('gemini-2.5-flash'),
+      model: vertex('gemini-3.1-flash-lite-image'),
       messages: formattedMessages,
       system: `Voce e o Tutor Oficial de Inteligencia Artificial da "Ink Authority", uma plataforma online de cursos de tatuagem para tatuadores profissionais e iniciantes.
       Seu tom deve ser amigavel, direto, respeitoso e focado em arte e tecnica de tatuagem.

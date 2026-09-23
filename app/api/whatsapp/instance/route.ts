@@ -1,15 +1,27 @@
 import { NextResponse } from 'next/server';
+import { auth } from '@clerk/nextjs/server';
 
 const evolutionUrl = process.env.EVOLUTION_API_URL || 'https://evolution-api-production-fbfd.up.railway.app';
 const apiKey = process.env.EVOLUTION_API_KEY!;
 // TODO: Trocar para a URL real da Vercel quando for para produção 100%
-const webhookUrl = process.env.NEXT_PUBLIC_APP_URL ? `${process.env.NEXT_PUBLIC_APP_URL}/api/whatsapp/webhook` : 'https://inkauthority.com.br/api/whatsapp/webhook';
+const webhookBaseUrl = process.env.NEXT_PUBLIC_APP_URL ? `${process.env.NEXT_PUBLIC_APP_URL}/api/whatsapp/webhook` : 'https://inkauthority.com.br/api/whatsapp/webhook';
+// Shared secret so /api/whatsapp/webhook can verify a request really came
+// from our own Evolution instance (Evolution doesn't sign its payloads).
+const webhookUrl = process.env.WHATSAPP_WEBHOOK_SECRET
+  ? `${webhookBaseUrl}?secret=${process.env.WHATSAPP_WEBHOOK_SECRET}`
+  : webhookBaseUrl;
 
 export async function POST(req: Request) {
   try {
-    const { instanceName, action } = await req.json();
+    // instanceName used to come straight from the client — anyone could
+    // check the status of, or (re)connect, ANY other user's WhatsApp
+    // instance just by knowing/guessing their Clerk user id. It always maps
+    // 1:1 to the caller's own id, so derive it from the session instead.
+    const { userId } = await auth();
+    if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-    if (!instanceName) return NextResponse.json({ error: 'Missing instanceName' }, { status: 400 });
+    const { action } = await req.json();
+    const instanceName = userId;
 
     // 1. STATUS
     if (action === 'status') {
@@ -31,9 +43,10 @@ export async function POST(req: Request) {
       });
 
       let connectData = await connectResponse.json();
+      console.log('[WhatsApp] connect response', connectResponse.status, JSON.stringify(connectData).slice(0, 300));
 
       // Se a instância não existir, cria uma nova
-      if (connectResponse.status === 404 || connectData.error) {
+      if (connectResponse.status === 404 || connectData.error || connectData.statusCode === 404) {
         const createPayload = {
           instanceName,
           qrcode: true,
@@ -45,8 +58,9 @@ export async function POST(req: Request) {
           headers: { 'apikey': apiKey, 'Content-Type': 'application/json' },
           body: JSON.stringify(createPayload)
         });
-        
+
         connectData = await createResponse.json();
+        console.log('[WhatsApp] create response', createResponse.status, JSON.stringify(connectData).slice(0, 300));
       }
 
       // Seta o Webhook sempre que conectar para garantir a URL correta

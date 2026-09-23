@@ -88,20 +88,19 @@ export default function AdminLibrary() {
         .from('library_files')
         .getPublicUrl(filePath);
 
-      // 3. Salva no banco de dados
-      const { error: dbError } = await supabase
-        .from('library_resources')
-        .insert([
-          {
-            title,
-            category,
-            resource_type: resourceType,
-            file_url: publicUrl,
-            file_size: sizeStr
-          }
-        ]);
-
-      if (dbError) throw dbError;
+      // 3. Salva no banco de dados (admin-gated no servidor)
+      const res = await fetch('/api/admin/library', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title,
+          category,
+          resource_type: resourceType,
+          file_url: publicUrl,
+          file_size: sizeStr,
+        }),
+      });
+      if (!res.ok) throw new Error((await res.json()).error);
 
       // Reseta e atualiza
       setTitle("");
@@ -119,16 +118,10 @@ export default function AdminLibrary() {
   const handleDelete = async (id: string, fileUrl: string) => {
     if (!confirm("Tem certeza que deseja apagar este material?")) return;
     try {
-      // Deleta do DB
-      const { error: dbError } = await supabase.from('library_resources').delete().eq('id', id);
-      if (dbError) throw dbError;
-
-      // Deleta do Storage (extrair caminho da URL pública)
-      const pathSegments = fileUrl.split('/library_files/');
-      if (pathSegments.length > 1) {
-         const filePath = pathSegments[1];
-         await supabase.storage.from('library_files').remove([filePath]);
-      }
+      const res = await fetch(`/api/admin/library?id=${id}&fileUrl=${encodeURIComponent(fileUrl)}`, {
+        method: 'DELETE',
+      });
+      if (!res.ok) throw new Error((await res.json()).error);
 
       fetchResources();
     } catch (err) {

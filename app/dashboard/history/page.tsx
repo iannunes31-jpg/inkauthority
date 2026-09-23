@@ -8,7 +8,7 @@ export default function HistoryPage() {
     {
       id: 1,
       type: "purchase",
-      title: "Compra: Curso Marketing e Posicionamento PRO",
+      title: "Compra: Workshop Marketing e Posicionamento PRO",
       date: "Hoje, 14:32",
       icon: <CreditCard className="w-5 h-5 text-green-400" />,
       color: "border-green-500/30 bg-green-500/5",

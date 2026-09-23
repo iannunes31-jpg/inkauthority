@@ -7,6 +7,7 @@ import { useEffect, useRef, useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { useUser } from "@clerk/nextjs";
 import { supabase } from "@/lib/supabase";
+import { isAdminUser } from "@/lib/admin";
 
 export default function AssistantPage() {
   const chat = useMemo(
@@ -34,9 +35,7 @@ export default function AssistantPage() {
   const [hasAccess, setHasAccess] = useState<boolean | null>(null);
   const [inputValue, setInputValue] = useState("");
 
-  const isAdmin =
-    user?.primaryEmailAddress?.emailAddress === "yurilojavirtual@gmail.com" ||
-    user?.primaryEmailAddress?.emailAddress === "o9.yuri@gmail.com";
+  const isAdmin = isAdminUser(user?.primaryEmailAddress?.emailAddress, user?.publicMetadata);
 
   useEffect(() => {
     if (user?.id) checkAccess();
@@ -85,8 +84,14 @@ export default function AssistantPage() {
   };
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    const container = scrollContainerRef.current;
+    if (!container) return;
+    const isNearBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 200;
+    if (isNearBottom) {
+      messagesEndRef.current?.scrollIntoView({ behavior: "instant" });
+    }
   }, [messages]);
 
   if (hasAccess === null) {
@@ -130,7 +135,7 @@ export default function AssistantPage() {
       </div>
 
       {/* Messages Area */}
-      <div className="flex-1 overflow-y-auto p-8">
+      <div ref={scrollContainerRef} className="flex-1 overflow-y-auto p-8">
         <div className="max-w-4xl mx-auto space-y-8">
           {messages.map((m) => {
             const textContent =

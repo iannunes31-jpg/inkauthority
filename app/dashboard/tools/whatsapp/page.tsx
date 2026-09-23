@@ -7,6 +7,7 @@ import { useUser } from "@clerk/nextjs";
 import { supabase } from "@/lib/supabase";
 import { motion, AnimatePresence } from "motion/react";
 import { cn } from "@/lib/utils";
+import { isAdminUser } from "@/lib/admin";
 
 export default function AssistantPage() {
   const { user } = useUser();
@@ -18,9 +19,7 @@ export default function AssistantPage() {
   const [isGeneratingQr, setIsGeneratingQr] = useState(false);
   const [hasAccess, setHasAccess] = useState<boolean | null>(null);
 
-  const isAdmin = 
-    user?.primaryEmailAddress?.emailAddress === "yurilojavirtual@gmail.com" || 
-    user?.primaryEmailAddress?.emailAddress === "o9.yuri@gmail.com";
+  const isAdmin = isAdminUser(user?.primaryEmailAddress?.emailAddress, user?.publicMetadata);
 
   const [formData, setFormData] = useState({
     studio_name: "",
@@ -113,21 +112,23 @@ export default function AssistantPage() {
         body: JSON.stringify({ instanceName: user.id, action: "connect" })
       });
       const data = await res.json();
-      
-      if (data?.base64) {
-        setQrCodeData(data.base64);
-        setConnectionStatus("Aguardando leitura do QR Code");
-      } else if (data?.qrcode) {
-        setQrCodeData(data.qrcode);
-        setConnectionStatus("Aguardando leitura do QR Code");
-      } else if (data?.qrcode?.base64) {
-        setQrCodeData(data.qrcode.base64);
-        setConnectionStatus("Aguardando leitura do QR Code");
-      } else if (data?.hash?.qrcode) {
-        setQrCodeData(data.hash.qrcode);
+
+      // Extrai o base64 do QR code — a Evolution API pode retornar em vários formatos
+      const qrBase64 =
+        data?.base64 ||                  // /instance/connect → { code, base64 }
+        data?.qrcode?.base64 ||          // /instance/create  → { qrcode: { code, base64 } }
+        (typeof data?.qrcode === "string" ? data.qrcode : null) || // formato string direto
+        data?.hash?.qrcode ||            // formato legado
+        null;
+
+      if (qrBase64) {
+        setQrCodeData(qrBase64);
         setConnectionStatus("Aguardando leitura do QR Code");
       } else {
-        alert("Erro ao buscar QR Code. Verifique os logs.");
+        // Mostra o que a API retornou para facilitar debug
+        const detail = data?.message || data?.error || data?.status || JSON.stringify(data).slice(0, 120);
+        alert(`Erro ao buscar QR Code.\n\nResposta da API: ${detail}\n\nVerifique se EVOLUTION_API_KEY está configurada no Vercel.`);
+        console.error("[WhatsApp QR] Resposta inesperada:", data);
       }
     } catch (e) {
       console.error(e);
@@ -138,11 +139,8 @@ export default function AssistantPage() {
 
   const fetchSettings = async () => {
     if (!user) return;
-    const { data, error } = await supabase
-      .from("ai_settings")
-      .select("*")
-      .eq("clerk_user_id", user.id)
-      .single();
+    const res = await fetch("/api/ai-settings");
+    const data = res.ok ? await res.json() : null;
 
     if (data) {
       setFormData({
@@ -215,7 +213,6 @@ export default function AssistantPage() {
     setIsSaving(true);
 
     const payload = {
-      clerk_user_id: user.id,
       ...formData,
       base_price: Number(formData.base_price) || 0,
       hourly_rate: Number(formData.hourly_rate) || 0,
@@ -223,33 +220,19 @@ export default function AssistantPage() {
       price_leg: Number(formData.price_leg) || null,
       price_front: Number(formData.price_front) || null,
       price_back: Number(formData.price_back) || null,
-      updated_at: new Date().toISOString()
     };
 
-    const { error } = await supabase
-      .from("ai_settings")
-      .upsert(payload, { onConflict: "clerk_user_id" });
-
     try {
-      const payload = {
-        clerk_user_id: user.id,
-        ...formData,
-        base_price: Number(formData.base_price) || 0,
-        hourly_rate: Number(formData.hourly_rate) || 0,
-        price_arm: Number(formData.price_arm) || null,
-        price_leg: Number(formData.price_leg) || null,
-        price_front: Number(formData.price_front) || null,
-        price_back: Number(formData.price_back) || null,
-        updated_at: new Date().toISOString()
-      };
+      const res = await fetch("/api/ai-settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const result = await res.json();
 
-      const { error } = await supabase
-        .from("ai_settings")
-        .upsert(payload, { onConflict: "clerk_user_id" });
-
-      if (error) {
-        console.error("Erro ao salvar configurações", error);
-        alert(`⚠️ ATENÇÃO: Erro ao salvar! ${error.message} - ${error.details || ""}\n\nA tabela 'ai_settings' pode estar faltando colunas ou permissões.`);
+      if (!res.ok) {
+        console.error("Erro ao salvar configurações", result);
+        alert(`⚠️ ATENÇÃO: Erro ao salvar! ${result.error || ""} - ${result.details || ""}\n\nA tabela 'ai_settings' pode estar faltando colunas ou permissões.`);
       } else {
         alert("Configurações do Assistente salvas com sucesso!");
       }
@@ -315,7 +298,7 @@ export default function AssistantPage() {
         </div>
         <div>
           <h1 className="text-3xl font-black uppercase tracking-tighter mb-1">Cérebro da IA</h1>
-          <p className="text-muted-foreground text-sm">Gerencie o conhecimento, clientes e a agenda do seu assistente virtual.</p>
+          <p className="text-muted-foreground text-sm">Gerencie o conhecimento, clientes e a agenda do <strong>Dante</strong>, seu assistente virtual.</p>
         </div>
       </div>
 
