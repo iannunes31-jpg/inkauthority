@@ -13,6 +13,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@clerk/nextjs";
 import { LoginModal } from "@/components/LoginModal";
+import { Stream } from "@cloudflare/stream-react";
 import { cn } from "@/lib/utils";
 
 // ─────────── Translations ───────────
@@ -523,30 +524,13 @@ export default function VendasPage() {
           <FadeUp delay={0.2}>
             <div className="relative">
               <div className="absolute -inset-4 bg-primary/10 rounded-3xl blur-2xl" />
-              <div className="relative glass rounded-3xl border border-primary/20 overflow-hidden">
-                <div className="bg-primary/5 px-6 py-4 border-b border-border/20 flex items-center gap-2">
-                  {[...Array(3)].map((_, i) => (
-                    <div key={i} className={cn("w-3 h-3 rounded-full", i === 0 ? "bg-red-500/60" : i === 1 ? "bg-yellow-500/60" : "bg-green-500/60")} />
-                  ))}
-                  <span className="text-xs text-muted-foreground ml-2">ink-authority.dashboard</span>
-                </div>
-                <div className="p-6 space-y-3">
-                  {[
-                    { color: "bg-primary", label: "Tutor IA Especialista", sub: "Online agora" },
-                    { color: "bg-purple-500", label: "Central de Anúncios", sub: "6 agentes ativos" },
-                    { color: "bg-green-500", label: "Assistente WhatsApp", sub: "3 clientes em atendimento" },
-                    { color: "bg-blue-500", label: "Gerador de Decalque", sub: "Gemini 2.5 Flash" },
-                  ].map((item) => (
-                    <div key={item.label} className="flex items-center gap-3 p-3 rounded-xl bg-white/5 hover:bg-white/10 transition-colors cursor-pointer">
-                      <div className={cn("w-2 h-2 rounded-full animate-pulse", item.color)} />
-                      <div className="flex-1">
-                        <p className="text-sm font-semibold">{item.label}</p>
-                        <p className="text-xs text-muted-foreground">{item.sub}</p>
-                      </div>
-                      <ArrowRight className="w-3.5 h-3.5 text-muted-foreground" />
-                    </div>
-                  ))}
-                </div>
+              <div className="relative glass rounded-3xl border border-primary/20 overflow-hidden shadow-2xl shadow-primary/10">
+                <Stream
+                  src="f2a135026e57c0f0fe20dd0b355c0202"
+                  controls
+                  responsive={false}
+                  className="w-full aspect-video"
+                />
               </div>
             </div>
           </FadeUp>
