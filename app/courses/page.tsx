@@ -133,7 +133,7 @@ export default function CoursesPage() {
         >
           <div className="relative rounded-[2rem] overflow-hidden border border-border/20 shadow-2xl glass group aspect-video">
             <iframe
-              src="https://customer-qorhxqfbnqhshnfn.cloudflarestream.com/f2a135026e57c0f0fe20dd0b355c0202/iframe?autoplay=true&muted=true&loop=true&controls=true&preload=true"
+              src="https://iframe.cloudflarestream.com/f2a135026e57c0f0fe20dd0b355c0202?autoplay=true&muted=true&loop=true&controls=true&preload=true"
               allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture;"
               allowFullScreen
               className="absolute inset-0 w-full h-full"
