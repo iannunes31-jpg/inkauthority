@@ -7,6 +7,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/lib/supabase";
 import { useUser, useAuth } from "@clerk/nextjs";
+import { isAdminUser } from "@/lib/admin";
 
 // Quick-access cards for every area of the platform, shown on the
 // dashboard home so a new user (with nothing "in progress" yet) still
@@ -18,7 +19,7 @@ const platformAreas = [
   { name: "Ao Vivo", path: "/dashboard/lives", icon: Radio, description: "Assista transmissões e mentorias ao vivo com a comunidade.", previewKey: "live" },
   { name: "Comunidade", path: "/dashboard/community", icon: Users, description: "Compartilhe resultados e conecte-se com outros artistas.", previewKey: "post" },
   { name: "Especialistas", path: "/dashboard/tools", icon: Bot, description: "Tutor IA e assistente de WhatsApp para automatizar seu estúdio.", previewKey: null },
-  { name: "Minhas Matérias", path: "/dashboard/courses", icon: Compass, description: "Explore as matérias disponíveis e continue seus estudos.", previewKey: "courses" },
+  { name: "Workshop", path: "/dashboard/courses", icon: Compass, description: "Explore os workshops disponíveis e continue seus estudos.", previewKey: "courses" },
   { name: "Biblioteca", path: "/dashboard/library", icon: Download, description: "Baixe materiais, e-books e guias exclusivos.", previewKey: "library" },
   { name: "Meu Perfil", path: "/dashboard/profile", icon: User, description: "Gerencie sua conta e informações de segurança.", previewKey: null },
 ];
@@ -47,22 +48,29 @@ export default function Dashboard() {
   const fetchUserProgress = async () => {
     try {
       setLoading(true);
-      const { data: purchases, error: purchasesErr } = await supabase
-        .from('user_purchases')
-        .select('product_id')
-        .eq('user_id', userId)
-        .eq('product_type', 'course');
+      const adminCheck = isAdminUser(user?.primaryEmailAddress?.emailAddress, user?.publicMetadata);
 
-      if (!purchasesErr && purchases && purchases.length > 0) {
-        const courseIds = purchases.map(p => p.product_id);
-        const { data: coursesData } = await supabase
-          .from('courses')
-          .select('*')
-          .in('id', courseIds);
-
+      if (adminCheck) {
+        // Admins see all courses directly
+        const { data: coursesData } = await supabase.from('courses').select('*').order('created_at', { ascending: false });
         setInProgressCourses(coursesData || []);
       } else {
-        setInProgressCourses([]);
+        const { data: purchases, error: purchasesErr } = await supabase
+          .from('user_purchases')
+          .select('product_id')
+          .eq('user_id', userId)
+          .eq('product_type', 'course');
+
+        if (!purchasesErr && purchases && purchases.length > 0) {
+          const courseIds = purchases.map(p => p.product_id);
+          const { data: coursesData } = await supabase
+            .from('courses')
+            .select('*')
+            .in('id', courseIds);
+          setInProgressCourses(coursesData || []);
+        } else {
+          setInProgressCourses([]);
+        }
       }
     } catch (err) {
       console.error("Erro ao carregar progresso do aluno:", err);
@@ -119,7 +127,7 @@ export default function Dashboard() {
     if (previewKey === "courses" && previews.coursesCount > 0) {
       return (
         <div className="mt-3 pt-3 border-t border-white/5 text-[12px] text-white/60">
-          {previews.coursesCount} {previews.coursesCount === 1 ? "matéria disponível" : "matérias disponíveis"}
+          {previews.coursesCount} {previews.coursesCount === 1 ? "workshop disponível" : "workshops disponíveis"}
         </div>
       );
     }
@@ -164,11 +172,11 @@ export default function Dashboard() {
             </div>
             <h3 className="text-xl font-bold mb-2">Nenhum workshop em andamento</h3>
             <p className="text-sm text-muted-foreground max-w-md mb-6 font-light">
-              Seu progresso de estudo aparecerá aqui conforme você acessar e concluir as aulas das matérias disponíveis.
+              Seu progresso de estudo aparecerá aqui conforme você acessar e concluir as aulas dos workshops disponíveis.
             </p>
             <Link href="/dashboard/courses">
               <Button size="lg" className="rounded-full font-bold px-8 metallic-gradient text-black neon-glow">
-                Explorar Matérias Disponíveis
+                Explorar Workshops Disponíveis
               </Button>
             </Link>
           </div>

@@ -4,8 +4,8 @@ import Link from "next/link";
 import { Button } from "./ui/button";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "motion/react";
-import { Menu, X, Search, Bell, BookOpen, Compass, Users, Bot, Download, User, Radio } from "lucide-react";
-import { useState, useEffect } from "react";
+import { Menu, X, Search, Bell, BookOpen, Compass, Users, Bot, Download, User, Radio, Globe, Sun, Moon } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { NotificationPanel } from "./NotificationPanel";
 import { useAuth, useUser, useClerk } from "@clerk/nextjs";
@@ -86,6 +86,35 @@ function UserDropdown() {
   );
 }
 
+const LANGUAGES = [
+  { code: "pt", name: "Português" },
+  { code: "en", name: "English" },
+  { code: "es", name: "Español" },
+  { code: "fr", name: "Français" },
+  { code: "de", name: "Deutsch" },
+  { code: "it", name: "Italiano" },
+  { code: "ja", name: "日本語" },
+  { code: "ru", name: "Русский" },
+];
+
+function applyTheme(newTheme: string) {
+  const html = document.documentElement;
+  if (newTheme === "light") {
+    html.classList.remove("dark");
+    html.classList.add("light");
+    document.body.style.backgroundColor = "#f6f7f9";
+    document.body.style.color = "#111116";
+  } else {
+    html.classList.remove("light");
+    html.classList.add("dark");
+    document.body.style.backgroundColor = "#050505";
+    document.body.style.color = "#ffffff";
+  }
+  document.querySelectorAll<HTMLIFrameElement>('iframe').forEach(iframe => {
+    iframe.contentWindow?.postMessage({ type: 'SET_THEME', theme: newTheme }, '*');
+  });
+}
+
 export function Navbar() {
   const pathname = usePathname();
   const router = useRouter();
@@ -94,7 +123,41 @@ export function Navbar() {
   const [authView, setAuthView] = useState<"login" | "register">("login");
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [theme, setTheme] = useState("dark");
+  const [isLangOpen, setIsLangOpen] = useState(false);
+  const langRef = useRef<HTMLDivElement>(null);
   const { isSignedIn: isLoggedIn } = useAuth();
+
+  useEffect(() => {
+    const saved = localStorage.getItem("theme") || "dark";
+    setTheme(saved);
+    applyTheme(saved);
+  }, []);
+
+  useEffect(() => {
+    const handleClick = (e: MouseEvent) => {
+      if (langRef.current && !langRef.current.contains(e.target as Node)) {
+        setIsLangOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
+
+  const toggleTheme = () => {
+    const next = theme === "dark" ? "light" : "dark";
+    setTheme(next);
+    localStorage.setItem("theme", next);
+    applyTheme(next);
+  };
+
+  const changeLanguage = (code: string) => {
+    localStorage.setItem("lang", code);
+    document.querySelectorAll<HTMLIFrameElement>('iframe').forEach(iframe => {
+      iframe.contentWindow?.postMessage({ type: 'SET_LANG', lang: code }, '*');
+    });
+    setIsLangOpen(false);
+  };
 
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
@@ -125,7 +188,7 @@ export function Navbar() {
     { name: "Ao Vivo", path: "/dashboard/lives", icon: <Radio className="w-4 h-4" /> },
     { name: "Comunidade", path: "/dashboard/community", icon: <Users className="w-4 h-4" /> },
     { name: "Especialistas", path: "/dashboard/tools", icon: <Bot className="w-4 h-4" /> },
-    { name: "Minhas Matérias", path: "/dashboard/courses", icon: <Compass className="w-4 h-4" /> },
+    { name: "Workshop", path: "/dashboard/courses", icon: <Compass className="w-4 h-4" /> },
     { name: "Biblioteca", path: "/dashboard/library", icon: <Download className="w-4 h-4" /> },
     { name: "Meu Perfil", path: "/dashboard/profile", icon: <User className="w-4 h-4" /> },
   ];
@@ -209,6 +272,49 @@ export function Navbar() {
 
                   <div className="ml-2 flex items-center justify-center">
                     <UserDropdown />
+                  </div>
+
+                  {/* Language + Theme toggles — to the right of the profile photo */}
+                  <div className="flex items-center gap-1 ml-1">
+                    <div ref={langRef} className="relative">
+                      <button
+                        onClick={() => setIsLangOpen(!isLangOpen)}
+                        className="p-2 text-muted-foreground hover:text-white transition-colors notranslate"
+                        title="Mudar Idioma"
+                      >
+                        <Globe className="w-4 h-4" />
+                      </button>
+                      <AnimatePresence>
+                        {isLangOpen && (
+                          <motion.div
+                            initial={{ opacity: 0, y: 8, scale: 0.95 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            exit={{ opacity: 0, y: 8, scale: 0.95 }}
+                            className="absolute right-0 top-full mt-2 w-40 glass rounded-xl border border-white/10 shadow-2xl py-2 z-50 flex flex-col notranslate"
+                          >
+                            {LANGUAGES.map((lang) => (
+                              <button
+                                key={lang.code}
+                                onClick={() => changeLanguage(lang.code)}
+                                className="text-left px-4 py-2 text-sm text-white/70 hover:text-white hover:bg-white/5 transition-colors"
+                              >
+                                {lang.name}
+                              </button>
+                            ))}
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
+
+                    <button
+                      onClick={toggleTheme}
+                      className="p-2 text-muted-foreground hover:text-white transition-colors"
+                      title="Alternar Modo Claro/Escuro"
+                    >
+                      {theme === "dark"
+                        ? <Sun className="w-4 h-4 text-yellow-400" />
+                        : <Moon className="w-4 h-4 text-blue-400" />}
+                    </button>
                   </div>
                 </>
               )}

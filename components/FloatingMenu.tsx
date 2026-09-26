@@ -1984,41 +1984,6 @@ export function FloatingMenu() {
     setIsTranslateOpen(false);
   };
 
-  if (!showButtons) return null;
-
-  return (
-    <div className="fixed bottom-6 left-6 z-[9999] flex flex-col gap-3 notranslate items-start">
-      {isTranslateOpen && (
-        <div className="bg-black/90 backdrop-blur-md border border-white/10 rounded-2xl p-2 flex flex-col gap-1 mb-2 shadow-2xl animate-in fade-in slide-in-from-bottom-4 text-white min-w-[140px]">
-          {languages.map((lang) => (
-            <button
-              key={lang.code}
-              onClick={() => changeLanguage(lang.code)}
-              className="text-left px-4 py-2 hover:bg-white/10 rounded-xl text-sm font-medium transition-colors"
-            >
-              {lang.name}
-            </button>
-          ))}
-        </div>
-      )}
-      
-      <div className="flex gap-3">
-        <button
-          onClick={() => setIsTranslateOpen(!isTranslateOpen)}
-          className="w-12 h-12 rounded-full glass border border-white/10 flex items-center justify-center hover:bg-white/10 transition-colors shadow-lg hover:scale-105 active:scale-95 bg-black/50 text-white"
-          title="Mudar Idioma"
-        >
-          <Globe className="w-5 h-5" />
-        </button>
-
-        <button
-          onClick={toggleTheme}
-          className="w-12 h-12 rounded-full glass border border-white/10 flex items-center justify-center hover:bg-white/10 transition-colors shadow-lg hover:scale-105 active:scale-95 bg-black/50 text-white"
-          title="Alternar Modo Claro/Escuro"
-        >
-          {theme === "dark" ? <Sun className="w-5 h-5 text-yellow-500" /> : <Moon className="w-5 h-5 text-blue-500" />}
-        </button>
-      </div>
-    </div>
-  );
+  // Buttons moved to Navbar — this component only runs background logic
+  return null;
 }
