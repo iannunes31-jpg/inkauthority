@@ -20,13 +20,13 @@ export function VideoPlayer({ videoId, poster, className = "" }: VideoPlayerProp
   // Se for uma live (stream_key), o id vem acompanhado de outras configs
   // Mas para VOD (Video on Demand) padrão:
   return (
-    <div className={`w-full aspect-video rounded-xl overflow-hidden shadow-2xl bg-black ${className}`}>
-      <Stream
-        controls
-        src={videoId}
-        poster={poster}
-        responsive={false} // Mantemos false para o container pai controlar
-        className="w-full h-full object-cover"
+    <div className={`w-full aspect-video rounded-xl overflow-hidden shadow-2xl bg-black relative ${className}`}>
+      <iframe
+        src={`https://iframe.cloudflarestream.com/${videoId}?controls=true&preload=true${poster ? `&poster=${encodeURIComponent(poster)}` : ''}`}
+        allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture;"
+        allowFullScreen
+        className="absolute inset-0 w-full h-full"
+        style={{ border: 'none' }}
       />
     </div>
   );
