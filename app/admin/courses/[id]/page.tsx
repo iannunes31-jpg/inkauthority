@@ -283,10 +283,41 @@ export default function CourseManagerPage() {
                <div>
                  <label className="text-sm text-muted-foreground mb-1 block">Vídeo (Cloudflare Stream)</label>
                  {!newLessonVideoId ? (
-                   <VideoUploader onSuccess={(id) => setNewLessonVideoId(id)} />
+                   <div className="space-y-3">
+                     <VideoUploader onSuccess={(id) => setNewLessonVideoId(id)} />
+                     <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                       <div className="h-px flex-1 bg-white/10" />
+                       <span>ou cole o ID diretamente</span>
+                       <div className="h-px flex-1 bg-white/10" />
+                     </div>
+                     <div className="flex gap-2">
+                       <Input
+                         placeholder="ID do Cloudflare Stream (ex: f2a135026e57...)"
+                         className="bg-black/50 font-mono text-xs"
+                         onKeyDown={(e) => {
+                           if (e.key === 'Enter') {
+                             const val = (e.target as HTMLInputElement).value.trim();
+                             if (val) setNewLessonVideoId(val);
+                           }
+                         }}
+                       />
+                       <Button
+                         variant="outline"
+                         size="sm"
+                         className="border-white/10 shrink-0"
+                         onClick={(e) => {
+                           const input = (e.currentTarget.previousSibling as HTMLInputElement);
+                           const val = input?.value.trim();
+                           if (val) setNewLessonVideoId(val);
+                         }}
+                       >
+                         Usar ID
+                       </Button>
+                     </div>
+                   </div>
                  ) : (
                    <div className="border border-green-500/20 bg-green-500/5 rounded-xl p-4 flex flex-col items-center text-center">
-                     <p className="text-green-400 font-bold mb-2">Vídeo Carregado!</p>
+                     <p className="text-green-400 font-bold mb-2">Vídeo Configurado!</p>
                      <p className="text-xs text-muted-foreground mb-4">ID: {newLessonVideoId}</p>
                      <Button variant="outline" size="sm" onClick={() => setNewLessonVideoId(null)} className="border-white/10">
                        Substituir
