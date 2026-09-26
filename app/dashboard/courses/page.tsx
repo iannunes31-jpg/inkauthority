@@ -27,12 +27,14 @@ export default function MyCoursesPage() {
     try {
       setLoading(true);
       
-      // 1. Fetch published courses
-      const { data: coursesData, error: coursesError } = await supabase
+      // 1. Fetch courses — admins see all, regular users see only published
+      const adminCheck = isAdminUser(user?.primaryEmailAddress?.emailAddress, user?.publicMetadata);
+      let query = supabase
         .from('courses')
         .select('*, modules(count)')
-        .eq('is_published', true)
         .order('created_at', { ascending: false });
+      if (!adminCheck) query = query.eq('is_published', true);
+      const { data: coursesData, error: coursesError } = await query;
 
       if (coursesError) throw coursesError;
       
@@ -89,7 +91,7 @@ export default function MyCoursesPage() {
   return (
     <div className="max-w-5xl mx-auto pb-20 p-6 lg:p-10">
       <div className="mb-10">
-        <h1 className="text-3xl font-black uppercase tracking-tighter mb-2">Matérias Disponíveis</h1>
+        <h1 className="text-3xl font-black uppercase tracking-tighter mb-2">Workshop</h1>
         <p className="text-muted-foreground">Acesse seus treinamentos ou descubra novos conteúdos para evoluir sua arte.</p>
       </div>
 
@@ -98,8 +100,8 @@ export default function MyCoursesPage() {
       ) : courses.length === 0 ? (
          <div className="text-center py-20 glass rounded-2xl border border-white/10">
             <Layers className="w-12 h-12 mx-auto mb-4 text-white/20" />
-            <h2 className="text-xl font-bold mb-2">Nenhuma matéria disponível</h2>
-            <p className="text-muted-foreground text-sm">O administrador ainda não publicou nenhuma matéria.</p>
+            <h2 className="text-xl font-bold mb-2">Nenhum workshop disponível</h2>
+            <p className="text-muted-foreground text-sm">O administrador ainda não publicou nenhum workshop.</p>
          </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -163,7 +165,7 @@ export default function MyCoursesPage() {
                       <div className="mt-auto pt-4 border-t border-white/5">
                         <div className="flex items-center justify-center gap-2 text-primary text-sm font-bold bg-primary/10 py-2 rounded-lg group-hover:bg-primary group-hover:text-black transition-colors">
                           <ShoppingCart className="w-4 h-4" />
-                          <span>Desbloquear Matéria</span>
+                          <span>Desbloquear Workshop</span>
                         </div>
                       </div>
                     )}
