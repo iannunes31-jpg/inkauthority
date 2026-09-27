@@ -66,10 +66,13 @@ export default function Dashboard() {
       setLoading(true);
       const adminCheck = isAdminUser(user?.primaryEmailAddress?.emailAddress, user?.publicMetadata);
 
+      let coursesData: any[] = [];
       if (adminCheck) {
-        // Admins see all courses directly
-        const { data: coursesData } = await supabase.from('courses').select('*').order('created_at', { ascending: false });
-        setInProgressCourses(coursesData || []);
+        const { data } = await supabase
+          .from('courses')
+          .select('*, modules(order_index, lessons(video_url, order_index))')
+          .order('created_at', { ascending: false });
+        coursesData = data || [];
       } else {
         const { data: purchases, error: purchasesErr } = await supabase
           .from('user_purchases')
@@ -79,15 +82,25 @@ export default function Dashboard() {
 
         if (!purchasesErr && purchases && purchases.length > 0) {
           const courseIds = purchases.map(p => p.product_id);
-          const { data: coursesData } = await supabase
+          const { data } = await supabase
             .from('courses')
-            .select('*')
+            .select('*, modules(order_index, lessons(video_url, order_index))')
             .in('id', courseIds);
-          setInProgressCourses(coursesData || []);
-        } else {
-          setInProgressCourses([]);
+          coursesData = data || [];
         }
       }
+
+      // Attach first lesson's video_url to each course for thumbnail
+      const enriched = coursesData.map((c: any) => {
+        const sortedModules = (c.modules || []).sort((a: any, b: any) => a.order_index - b.order_index);
+        const firstModule = sortedModules[0];
+        const firstLesson = firstModule
+          ? (firstModule.lessons || []).sort((a: any, b: any) => a.order_index - b.order_index)[0]
+          : null;
+        return { ...c, firstVideoId: firstLesson?.video_url || null };
+      });
+
+      setInProgressCourses(enriched);
     } catch (err) {
       console.error("Erro ao carregar progresso do aluno:", err);
       setInProgressCourses([]);

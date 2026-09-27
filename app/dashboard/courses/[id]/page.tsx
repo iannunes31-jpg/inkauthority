@@ -5,7 +5,7 @@ import { useParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { VideoPlayer } from "@/components/VideoPlayer";
 import { LessonComments } from "@/components/LessonComments";
-import { PlayCircle, CheckCircle, ChevronDown, ChevronUp, Layers } from "lucide-react";
+import { PlayCircle, CheckCircle, ChevronDown, ChevronUp, Layers, BookOpen, Link2, Package } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 
@@ -145,7 +145,7 @@ export default function StudentCoursePlayer() {
           {activeLesson && <LessonComments lessonId={activeLesson.id} />}
         </div>
 
-        {/* Lado Direito - Módulos */}
+        {/* Lado Direito - Módulos + Materiais */}
         <div className="lg:col-span-1 xl:col-span-1 glass rounded-2xl border border-white/10 flex flex-col h-full overflow-hidden">
           <div className="p-5 border-b border-white/10 bg-black/40">
             <h2 className="text-lg font-bold">Conteúdo do Workshop</h2>
@@ -153,7 +153,7 @@ export default function StudentCoursePlayer() {
                {modules.length} {modules.length === 1 ? 'Módulo' : 'Módulos'}
             </div>
           </div>
-          
+
           <div className="flex-1 overflow-y-auto custom-scrollbar">
             {modules.length === 0 ? (
                <div className="p-6 text-center text-muted-foreground text-sm">
@@ -166,7 +166,7 @@ export default function StudentCoursePlayer() {
 
                 return (
                   <div key={mod.id} className="border-b border-white/5 last:border-0">
-                    <button 
+                    <button
                       onClick={() => toggleModule(mod.id)}
                       className={`w-full flex items-center justify-between p-4 hover:bg-white/5 transition-colors ${isModuleActive ? 'bg-white/5' : ''}`}
                     >
@@ -176,7 +176,7 @@ export default function StudentCoursePlayer() {
                       </div>
                       {isExpanded ? <ChevronUp className="w-4 h-4 text-muted-foreground flex-shrink-0" /> : <ChevronDown className="w-4 h-4 text-muted-foreground flex-shrink-0" />}
                     </button>
-                    
+
                     {isExpanded && (
                       <div className="bg-black/30 py-2">
                         {mod.lessons.length === 0 ? (
@@ -207,6 +207,54 @@ export default function StudentCoursePlayer() {
                   </div>
                 );
               })
+            )}
+
+            {/* Materiais de Apoio */}
+            {activeLesson && Array.isArray(activeLesson.support_materials) && activeLesson.support_materials.length > 0 && (
+              <div className="border-t border-white/10 mt-2">
+                <div className="flex items-center gap-2 px-4 py-3 bg-black/40">
+                  <BookOpen className="w-4 h-4 text-primary" />
+                  <span className="text-sm font-bold">Materiais de Apoio</span>
+                </div>
+                <div className="px-4 pb-3 flex flex-col gap-2">
+                  {activeLesson.support_materials.map((mat: any, i: number) => (
+                    <a
+                      key={i}
+                      href={mat.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-2 text-sm text-primary hover:underline truncate"
+                    >
+                      <Link2 className="w-3.5 h-3.5 flex-shrink-0" />
+                      {mat.name || mat.url}
+                    </a>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Links de Equipamento */}
+            {activeLesson && Array.isArray(activeLesson.equipment_links) && activeLesson.equipment_links.length > 0 && (
+              <div className="border-t border-white/10">
+                <div className="flex items-center gap-2 px-4 py-3 bg-black/40">
+                  <Package className="w-4 h-4 text-primary" />
+                  <span className="text-sm font-bold">Links de Equipamento</span>
+                </div>
+                <div className="px-4 pb-4 flex flex-col gap-2">
+                  {activeLesson.equipment_links.map((eq: any, i: number) => (
+                    <a
+                      key={i}
+                      href={eq.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-2 text-sm text-primary hover:underline truncate"
+                    >
+                      <Link2 className="w-3.5 h-3.5 flex-shrink-0" />
+                      {eq.name || eq.url}
+                    </a>
+                  ))}
+                </div>
+              </div>
             )}
           </div>
         </div>
