@@ -43,9 +43,9 @@ export default function Dashboard() {
   }>({ live: null, post: null, library: null, coursesCount: 0 });
 
   useEffect(() => {
-    if (userId) {
+    if (userId && user) {
       fetchUserProgress();
-    } else {
+    } else if (!userId) {
       setLoading(false);
     }
     fetchPreviews();
@@ -59,7 +59,7 @@ export default function Dashboard() {
         setWatchProgress(progress);
       }
     } catch {}
-  }, [userId]);
+  }, [userId, user]);
 
   const fetchUserProgress = async () => {
     try {
