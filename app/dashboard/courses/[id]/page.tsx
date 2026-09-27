@@ -50,16 +50,36 @@ export default function StudentCoursePlayer() {
 
       setModules(orderedModules);
 
-      // Set first lesson active by default
+      // Set first lesson active by default (or last watched)
       if (orderedModules.length > 0 && orderedModules[0].lessons.length > 0) {
-        setActiveLesson(orderedModules[0].lessons[0]);
+        const firstLesson = orderedModules[0].lessons[0];
+        setActiveLesson(firstLesson);
         setExpandedModules([orderedModules[0].id]);
+        saveLastWatched(courseData, firstLesson);
       }
     } catch (err) {
       console.error("Erro ao carregar curso:", err);
     } finally {
       setLoading(false);
     }
+  };
+
+  const saveLastWatched = (courseData: any, lesson: any) => {
+    try {
+      localStorage.setItem("lastWatched", JSON.stringify({
+        courseId: courseData.id,
+        courseTitle: courseData.title,
+        lessonId: lesson.id,
+        lessonTitle: lesson.title,
+        videoId: lesson.video_url,
+        timestamp: Date.now(),
+      }));
+    } catch {}
+  };
+
+  const handleSelectLesson = (lesson: any) => {
+    setActiveLesson(lesson);
+    if (course) saveLastWatched(course, lesson);
   };
 
   const toggleModule = (moduleId: string) => {
@@ -100,9 +120,10 @@ export default function StudentCoursePlayer() {
         <div className="lg:col-span-2 xl:col-span-3 flex flex-col gap-6">
           <div className="rounded-2xl overflow-hidden bg-black border border-white/10 shadow-2xl">
             {activeLesson ? (
-              <VideoPlayer 
-                videoId={activeLesson.video_url} 
-                poster={course.thumbnail_url} 
+              <VideoPlayer
+                videoId={activeLesson.video_url}
+                lessonId={activeLesson.id}
+                poster={course.thumbnail_url}
                 className="w-full aspect-video"
               />
             ) : (
@@ -166,7 +187,7 @@ export default function StudentCoursePlayer() {
                             return (
                               <button
                                 key={lesson.id}
-                                onClick={() => setActiveLesson(lesson)}
+                                onClick={() => handleSelectLesson(lesson)}
                                 className={`w-full flex items-start gap-3 px-6 py-3 text-left hover:bg-white/5 transition-colors ${isCurrent ? 'bg-primary/10 border-l-2 border-primary' : 'border-l-2 border-transparent'}`}
                               >
                                 {isCurrent ? (

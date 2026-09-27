@@ -29,6 +29,12 @@ export default function Dashboard() {
   const { user } = useUser();
   const [inProgressCourses, setInProgressCourses] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [lastWatched, setLastWatched] = useState<{
+    courseId: string; courseTitle: string;
+    lessonId: string; lessonTitle: string;
+    videoId: string; timestamp: number;
+  } | null>(null);
+  const [watchProgress, setWatchProgress] = useState(0);
   const [previews, setPreviews] = useState<{
     live: any | null;
     post: any | null;
@@ -43,6 +49,16 @@ export default function Dashboard() {
       setLoading(false);
     }
     fetchPreviews();
+    // Load last-watched lesson from localStorage
+    try {
+      const raw = localStorage.getItem("lastWatched");
+      if (raw) {
+        const lw = JSON.parse(raw);
+        setLastWatched(lw);
+        const progress = parseInt(localStorage.getItem(`progress_${lw.lessonId}`) || "0", 10);
+        setWatchProgress(progress);
+      }
+    } catch {}
   }, [userId]);
 
   const fetchUserProgress = async () => {
@@ -153,18 +169,95 @@ export default function Dashboard() {
         </p>
       </div>
 
-      {/* Seção Meu Aprendizado (Dinamico) */}
+      {/* Seção Meu Aprendizado */}
       <section className="mb-12">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-[11px] font-extrabold uppercase tracking-widest text-muted-foreground">
             Meu Aprendizado em Andamento
           </h2>
+          {inProgressCourses.length > 0 && (
+            <Link href="/dashboard/courses" className="text-xs text-muted-foreground hover:text-primary transition-colors flex items-center gap-1">
+              Ver todos <ChevronRight className="w-3 h-3" />
+            </Link>
+          )}
         </div>
 
         {loading ? (
           <div className="text-center py-16 text-muted-foreground animate-pulse glass rounded-2xl">
             Carregando seu progresso...
           </div>
+        ) : lastWatched ? (
+          /* Continuar Assistindo — card grande com thumbnail do vídeo */
+          <motion.div
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="glass rounded-3xl border border-white/10 overflow-hidden hover:border-primary/40 transition-all duration-300 group"
+          >
+            <Link href={`/dashboard/courses/${lastWatched.courseId}`}>
+              <div className="relative w-full aspect-video md:aspect-[21/7] overflow-hidden bg-black">
+                {/* Thumbnail do Cloudflare Stream */}
+                <img
+                  src={`https://videodelivery.net/${lastWatched.videoId}/thumbnails/thumbnail.jpg?time=3s&height=480`}
+                  alt={lastWatched.lessonTitle}
+                  className="w-full h-full object-cover opacity-60 group-hover:opacity-80 group-hover:scale-105 transition-all duration-500"
+                  onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                />
+                <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/50 to-transparent" />
+
+                {/* Conteúdo sobre a imagem */}
+                <div className="absolute inset-0 flex flex-col justify-end p-6 md:p-8">
+                  <p className="text-[11px] font-bold uppercase tracking-widest text-primary mb-2">
+                    Continuar Assistindo
+                  </p>
+                  <h3 className="text-xl md:text-3xl font-black mb-1 leading-tight">
+                    {lastWatched.lessonTitle}
+                  </h3>
+                  <p className="text-sm text-white/60 mb-4 font-light">{lastWatched.courseTitle}</p>
+
+                  {/* Barra de progresso */}
+                  <div className="max-w-sm">
+                    <div className="flex items-center justify-between mb-1.5">
+                      <span className="text-[11px] text-white/50">{watchProgress > 0 ? `${watchProgress}% assistido` : "Começar"}</span>
+                    </div>
+                    <div className="h-1.5 w-full bg-white/10 rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-primary rounded-full transition-all duration-700 neon-glow"
+                        style={{ width: `${Math.max(watchProgress, 3)}%` }}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Botão play central */}
+                <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div className="w-16 h-16 rounded-full bg-primary flex items-center justify-center shadow-2xl neon-glow">
+                    <PlayCircle className="w-8 h-8 text-black ml-0.5" />
+                  </div>
+                </div>
+              </div>
+            </Link>
+
+            {/* Grade de outros cursos abaixo */}
+            {inProgressCourses.length > 1 && (
+              <div className="border-t border-white/5 p-4 grid grid-cols-2 md:grid-cols-4 gap-3">
+                {inProgressCourses.slice(0, 4).map((course) => (
+                  course.id !== lastWatched.courseId && (
+                    <Link key={course.id} href={`/dashboard/courses/${course.id}`}>
+                      <div className="relative aspect-video rounded-xl overflow-hidden bg-black border border-white/5 hover:border-primary/40 transition-all group/item">
+                        {course.thumbnail_url ? (
+                          <img src={course.thumbnail_url} alt={course.title} className="w-full h-full object-cover opacity-60 group-hover/item:opacity-90 transition-opacity" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center"><BookOpen className="w-6 h-6 text-white/20" /></div>
+                        )}
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent" />
+                        <p className="absolute bottom-2 left-2 right-2 text-[11px] font-bold leading-tight line-clamp-2">{course.title}</p>
+                      </div>
+                    </Link>
+                  )
+                ))}
+              </div>
+            )}
+          </motion.div>
         ) : inProgressCourses.length === 0 ? (
           <div className="glass p-10 rounded-3xl border border-white/10 text-center flex flex-col items-center justify-center min-h-[300px]">
             <div className="w-16 h-16 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center mb-4 text-primary">
@@ -191,16 +284,11 @@ export default function Dashboard() {
               >
                 <div className="aspect-video relative overflow-hidden bg-black flex items-center justify-center">
                   {course.thumbnail_url ? (
-                    <img
-                      src={course.thumbnail_url}
-                      alt={course.title}
-                      className="w-full h-full object-cover opacity-80"
-                    />
+                    <img src={course.thumbnail_url} alt={course.title} className="w-full h-full object-cover opacity-80" />
                   ) : (
                     <BookOpen className="w-10 h-10 text-white/20" />
                   )}
                   <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-
                   <div className="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity bg-black/40">
                     <Link href={`/dashboard/courses/${course.id}`}>
                       <Button size="icon" className="rounded-full w-12 h-12 bg-primary text-black hover:opacity-90 shadow-lg">
@@ -209,7 +297,6 @@ export default function Dashboard() {
                     </Link>
                   </div>
                 </div>
-
                 <div className="p-5 flex-1 flex flex-col justify-between">
                   <div>
                     <h3 className="font-bold text-lg mb-1 line-clamp-1">{course.title}</h3>
@@ -217,7 +304,6 @@ export default function Dashboard() {
                       {course.description || "Workshop da metodologia Ink Authority."}
                     </p>
                   </div>
-
                   <Link href={`/dashboard/courses/${course.id}`}>
                     <Button size="sm" className="w-full rounded-xl bg-white/5 hover:bg-primary hover:text-black transition-colors font-bold text-xs">
                       Continuar Estudando <ChevronRight className="w-4 h-4 ml-1" />
