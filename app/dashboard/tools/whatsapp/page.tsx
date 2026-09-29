@@ -45,7 +45,7 @@ export default function AssistantPage() {
     if (user?.id) {
       checkAccess();
       fetchSettings();
-      checkConnectionStatus();
+      checkConnectionStatus(user.id);
     }
   }, [user?.id]);
 
@@ -71,31 +71,24 @@ export default function AssistantPage() {
     }
   };
 
-  useEffect(() => {
-    let interval: NodeJS.Timeout;
-    if (connectionStatus === "Aguardando leitura do QR Code" || connectionStatus === "Carregando...") {
-      interval = setInterval(() => {
-        checkConnectionStatus();
-      }, 3000);
-    }
-    return () => clearInterval(interval);
-  }, [connectionStatus, user?.id]);
-
-  const checkConnectionStatus = async () => {
-    if (!user) return;
+  const checkConnectionStatus = async (uid?: string) => {
+    const id = uid || user?.id;
+    if (!id) return;
     try {
       const res = await fetch("/api/whatsapp/instance", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ instanceName: user.id, action: "status" })
+        body: JSON.stringify({ instanceName: id, action: "status" })
       });
       const data = await res.json();
-      
-      if (data.state === "open") {
+      const state = (data.state || '').toLowerCase();
+      if (state === "open") {
         setConnectionStatus("Conectado");
         setQrCodeData(null);
-      } else if (data.state === "connecting") {
+      } else if (state === "connecting") {
         setConnectionStatus("Aguardando leitura do QR Code");
+      } else if (state === "not_found" || state === "unknown" || state === "close") {
+        setConnectionStatus("Desconectado");
       } else {
         setConnectionStatus("Desconectado");
       }
@@ -103,6 +96,17 @@ export default function AssistantPage() {
       setConnectionStatus("Erro na conexão");
     }
   };
+
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (connectionStatus === "Aguardando leitura do QR Code" || connectionStatus === "Carregando...") {
+      const id = user?.id;
+      if (id) {
+        interval = setInterval(() => checkConnectionStatus(id), 3000);
+      }
+    }
+    return () => clearInterval(interval);
+  }, [connectionStatus, user?.id]);
 
   const handleGenerateQr = async () => {
     if (!user) return;

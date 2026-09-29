@@ -17,19 +17,22 @@ export async function POST(req: Request) {
     }
 
     const payload = await req.json();
+    console.log('[WPP] event:', payload.event, 'instance:', payload.instance);
 
-    const eventName = payload.event?.toLowerCase().replace('.', '_');
+    const eventName = (payload.event || '').toLowerCase().replace(/\./g, '_');
     if (eventName !== 'messages_upsert') {
       return NextResponse.json({ status: 'ignored' });
     }
 
     const messageData = payload.data;
-    const remoteJid = messageData.key.remoteJid; // Number of the client
-    const fromMe = messageData.key.fromMe;
-    const instanceName = payload.instance; // This is the clerk_user_id of the artist
-    const clerk_user_id = instanceName; 
+    const remoteJid = messageData?.key?.remoteJid;
+    const fromMe = messageData?.key?.fromMe;
+    const instanceName = payload.instance || payload.instanceName;
+    const clerk_user_id = instanceName;
 
-    if (fromMe || remoteJid.includes('@g.us')) {
+    console.log('[WPP] remoteJid:', remoteJid, 'fromMe:', fromMe, 'instance:', instanceName);
+
+    if (!remoteJid || fromMe || remoteJid.includes('@g.us')) {
       return NextResponse.json({ status: 'ignored' });
     }
 
@@ -102,9 +105,9 @@ export async function POST(req: Request) {
       .eq('clerk_user_id', clerk_user_id)
       .single();
 
+    console.log('[WPP] settings found:', !!settings, 'is_active:', settings?.is_active, 'bot_mode:', settings?.bot_mode);
     if (!settings || !settings.is_active) {
-       console.log("Bot is disabled or settings not found.");
-       return NextResponse.json({ status: 'inactive' });
+      return NextResponse.json({ status: 'inactive' });
     }
 
     // 2. Manage CRM (Upsert Customer)

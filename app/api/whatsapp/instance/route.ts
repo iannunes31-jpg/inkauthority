@@ -32,7 +32,9 @@ export async function POST(req: Request) {
          return NextResponse.json({ state: 'not_found' });
       }
       const data = await response.json();
-      return NextResponse.json({ state: data?.instance?.state || 'unknown' });
+      const state = data?.instance?.state || data?.state || 'unknown';
+      console.log('[WPP status]', JSON.stringify(data).slice(0, 200));
+      return NextResponse.json({ state });
     }
 
     // 2. CONNECT / CREATE
