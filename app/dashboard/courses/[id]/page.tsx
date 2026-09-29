@@ -113,11 +113,11 @@ export default function StudentCoursePlayer() {
   }
 
   return (
-    <div className="max-w-[1600px] mx-auto pb-20 p-4 lg:p-6 h-[calc(100vh-80px)]">
-      
-      <div className="grid grid-cols-1 lg:grid-cols-3 xl:grid-cols-4 gap-6 h-full">
+    <div className="max-w-[1600px] mx-auto pb-20 p-3 md:p-4 lg:p-6">
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 xl:grid-cols-4 gap-4 lg:gap-6">
         {/* Lado Esquerdo - Player */}
-        <div className="lg:col-span-2 xl:col-span-3 flex flex-col gap-6">
+        <div className="lg:col-span-2 xl:col-span-3 flex flex-col gap-4 lg:gap-6">
           <div className="rounded-2xl overflow-hidden bg-black border border-white/10 shadow-2xl">
             {activeLesson ? (
               <VideoPlayer
@@ -146,7 +146,7 @@ export default function StudentCoursePlayer() {
         </div>
 
         {/* Lado Direito - Módulos + Materiais */}
-        <div className="lg:col-span-1 xl:col-span-1 glass rounded-2xl border border-white/10 flex flex-col h-full overflow-hidden">
+        <div className="lg:col-span-1 xl:col-span-1 glass rounded-2xl border border-white/10 flex flex-col lg:h-[calc(100vh-120px)] overflow-hidden">
           <div className="p-5 border-b border-white/10 bg-black/40">
             <h2 className="text-lg font-bold">Conteúdo do Workshop</h2>
             <div className="text-sm text-muted-foreground mt-1">

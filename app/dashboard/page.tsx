@@ -171,7 +171,7 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="p-6 md:p-10 max-w-6xl mx-auto pb-20">
+    <div className="p-4 md:p-6 lg:p-10 max-w-6xl mx-auto pb-20">
       {/* Header */}
       <div className="mb-10">
         <h1 className="text-3xl md:text-4xl font-bold mb-2 tracking-tighter">
@@ -287,44 +287,45 @@ export default function Dashboard() {
             </Link>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {inProgressCourses.map((course, i) => (
-              <motion.div
-                key={course.id || i}
-                initial={{ opacity: 0, y: 15 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="glass rounded-2xl overflow-hidden border border-white/10 hover:border-primary/50 transition-all duration-300 flex flex-col"
-              >
-                <div className="aspect-video relative overflow-hidden bg-black flex items-center justify-center">
-                  {course.thumbnail_url ? (
-                    <img src={course.thumbnail_url} alt={course.title} className="w-full h-full object-cover opacity-80" />
-                  ) : (
-                    <BookOpen className="w-10 h-10 text-white/20" />
-                  )}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-                  <div className="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity bg-black/40">
-                    <Link href={`/dashboard/courses/${course.id}`}>
-                      <Button size="icon" className="rounded-full w-12 h-12 bg-primary text-black hover:opacity-90 shadow-lg">
-                        <PlayCircle className="w-6 h-6 ml-0.5" />
-                      </Button>
-                    </Link>
-                  </div>
-                </div>
-                <div className="p-5 flex-1 flex flex-col justify-between">
-                  <div>
-                    <h3 className="font-bold text-lg mb-1 line-clamp-1">{course.title}</h3>
-                    <p className="text-[12px] text-muted-foreground line-clamp-2 mb-4 font-light">
-                      {course.description || "Workshop da metodologia Ink Authority."}
-                    </p>
-                  </div>
-                  <Link href={`/dashboard/courses/${course.id}`}>
-                    <Button size="sm" className="w-full rounded-xl bg-white/5 hover:bg-primary hover:text-black transition-colors font-bold text-xs">
-                      Continuar Estudando <ChevronRight className="w-4 h-4 ml-1" />
-                    </Button>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+            {inProgressCourses.map((course, i) => {
+              const thumb = course.thumbnail_url ||
+                (course.firstVideoId ? `https://videodelivery.net/${course.firstVideoId}/thumbnails/thumbnail.jpg?time=3s&height=400` : null);
+              return (
+                <motion.div
+                  key={course.id || i}
+                  initial={{ opacity: 0, y: 15 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="rounded-2xl overflow-hidden border border-white/10 hover:border-white/30 hover:shadow-[0_0_30px_rgba(163,163,163,0.15)] transition-all duration-300 flex flex-col bg-black/40 backdrop-blur-sm group"
+                >
+                  <Link href={`/dashboard/courses/${course.id}`} className="flex flex-col flex-1">
+                    <div className="aspect-video relative overflow-hidden bg-black">
+                      {thumb ? (
+                        <img src={thumb} alt={course.title} className="absolute inset-0 w-full h-full object-cover opacity-70 group-hover:opacity-90 group-hover:scale-105 transition-all duration-500"
+                          onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                      ) : (
+                        <div className="absolute inset-0 flex items-center justify-center"><BookOpen className="w-10 h-10 text-white/10" /></div>
+                      )}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent" />
+                      <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                        <div className="w-14 h-14 rounded-full bg-primary flex items-center justify-center shadow-xl">
+                          <PlayCircle className="w-7 h-7 text-black ml-0.5" />
+                        </div>
+                      </div>
+                    </div>
+                    <div className="p-5 flex-1 flex flex-col justify-between">
+                      <h3 className="font-bold text-base mb-1 line-clamp-1 group-hover:text-primary transition-colors">{course.title}</h3>
+                      <p className="text-[11px] text-muted-foreground line-clamp-2 mb-4 font-light">
+                        {course.description || "Workshop da metodologia Ink Authority."}
+                      </p>
+                      <div className="flex items-center gap-1.5 text-primary text-xs font-bold">
+                        Continuar Estudando <ChevronRight className="w-3.5 h-3.5" />
+                      </div>
+                    </div>
                   </Link>
-                </div>
-              </motion.div>
-            ))}
+                </motion.div>
+              );
+            })}
           </div>
         )}
       </section>

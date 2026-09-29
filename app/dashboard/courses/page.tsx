@@ -98,7 +98,7 @@ export default function MyCoursesPage() {
   };
 
   return (
-    <div className="max-w-5xl mx-auto pb-20 p-6 lg:p-10">
+    <div className="max-w-5xl mx-auto pb-20 p-4 md:p-6 lg:p-10">
       <div className="mb-10">
         <h1 className="text-3xl font-black uppercase tracking-tighter mb-2">Workshop</h1>
         <p className="text-muted-foreground">Acesse seus treinamentos ou descubra novos conteúdos para evoluir sua arte.</p>
