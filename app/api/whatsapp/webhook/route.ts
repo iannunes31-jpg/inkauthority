@@ -261,6 +261,17 @@ Esta e a estrategia de conversao que voce DEVE seguir rigidamente:
       { clerk_user_id, phone_number: remoteJid, role: 'assistant', content: finalResponse }
     ]);
 
+    // Copilot mode: store suggestion for artist review, don't auto-send
+    if (settings.bot_mode === 'copilot') {
+      await supabase.from('chat_history').insert({
+        clerk_user_id,
+        phone_number: remoteJid,
+        role: 'copilot',
+        content: finalResponse
+      });
+      return NextResponse.json({ status: 'copilot_suggestion_saved' });
+    }
+
     // Send text response via Evolution API
     try {
       await fetch(`${evolutionUrl}/message/sendText/${instanceName}`, {

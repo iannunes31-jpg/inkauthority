@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Users, ArrowLeft, ArrowRight, CheckCircle2, Bot, User, Send, Loader2 } from "lucide-react";
+import { ChatMarkdown } from "@/components/ChatMarkdown";
 import Link from "next/link";
 import { useChat, Chat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
@@ -241,12 +242,12 @@ Por favor, faça uma análise completa do meu público-alvo e personas.`;
                         <Users className="w-4 h-4 text-purple-400" />
                       )}
                     </div>
-                    <div className={`p-4 rounded-2xl text-[14px] leading-relaxed max-w-[85%] whitespace-pre-wrap ${
+                    <div className={`p-4 rounded-2xl max-w-[85%] ${
                       m.role === "user"
                         ? "bg-foreground/5 border border-border/10 rounded-tr-none"
                         : "bg-purple-500/5 border border-purple-400/10 rounded-tl-none"
                     }`}>
-                      {textContent}
+                      <ChatMarkdown text={textContent} />
                     </div>
                   </div>
                 );

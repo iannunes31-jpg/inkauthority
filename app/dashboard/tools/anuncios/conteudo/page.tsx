@@ -1,6 +1,7 @@
 "use client";
 
 import { PenLine, ArrowLeft, User, Send, Loader2, Lightbulb, Calendar, FileText, Hash, Video } from "lucide-react";
+import { ChatMarkdown } from "@/components/ChatMarkdown";
 import Link from "next/link";
 import { useChat, Chat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
@@ -103,8 +104,8 @@ export default function ConteudoPage() {
                     <div className={`w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 border ${m.role === "user" ? "bg-foreground/10 border-border/20" : "bg-amber-500/20 border-amber-400/30"}`}>
                       {m.role === "user" ? <User className="w-4 h-4" /> : <PenLine className="w-4 h-4 text-amber-400" />}
                     </div>
-                    <div className={`p-4 rounded-2xl text-[14px] leading-relaxed max-w-[85%] whitespace-pre-wrap ${m.role === "user" ? "bg-foreground/5 border border-border/10 rounded-tr-none" : "bg-amber-500/5 border border-amber-400/10 rounded-tl-none"}`}>
-                      {text}
+                    <div className={`p-4 rounded-2xl max-w-[85%] ${m.role === "user" ? "bg-foreground/5 border border-border/10 rounded-tr-none" : "bg-amber-500/5 border border-amber-400/10 rounded-tl-none"}`}>
+                      <ChatMarkdown text={text} />
                     </div>
                   </div>
                 );
