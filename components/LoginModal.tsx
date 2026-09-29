@@ -134,37 +134,22 @@ export function LoginModal({ isOpen, onClose, initialView = "login" }: LoginModa
         unsafeMetadata: { telefone, instagram }
       });
 
-      if (result && result.status === "complete") {
+      // Se o Clerk retornou complete, não precisa de verificação
+      if (result?.status === "complete" || signUp.status === "complete") {
+        await setActive({ session: result?.createdSessionId ?? signUp.createdSessionId });
         onClose();
-        window.location.reload();
-        return;
-      }
-      
-      // Fallback para caso o signUp já esteja completo
-      if (signUp.status === "complete") {
-        onClose();
-        window.location.reload();
+        router.push("/dashboard");
         return;
       }
 
-      // 2. Prepara a verificação por código no email
-      try {
-        if (signUp.verifications && typeof signUp.verifications.sendEmailCode === 'function') {
-           await signUp.verifications.sendEmailCode();
-        } else if (signUp.prepareEmailAddressVerification) {
-           await signUp.prepareEmailAddressVerification({ strategy: "email_code" });
-        } else if (result && (result as any).prepareEmailAddressVerification) {
-           await (result as any).prepareEmailAddressVerification({ strategy: "email_code" });
-        } else {
-           await (signUp as any).prepareVerification({ strategy: "email_code" });
-        }
-      } catch (e: any) {
-         console.error("Falha ao preparar verificação:", e);
-         throw new Error(`Erro ao enviar código: ${e.message}`);
+      // Clerk ainda exige verificação (não deveria acontecer com OTP desligado)
+      if (result?.status === "missing_requirements" || signUp.status === "missing_requirements") {
+        try {
+          await signUp.prepareEmailAddressVerification({ strategy: "email_code" });
+        } catch {}
+        setPendingVerification(true);
+        setResendCooldown(30);
       }
-
-      setPendingVerification(true);
-      setResendCooldown(30);
     } catch (err: any) {
       console.error("Erro no Clerk Sign Up:", err);
       const errorMessage = err.errors?.[0]?.longMessage || err.errors?.[0]?.message || err.message || "Erro de conexão com o servidor de autenticação.";
