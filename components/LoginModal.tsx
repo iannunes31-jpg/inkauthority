@@ -142,13 +142,33 @@ export function LoginModal({ isOpen, onClose, initialView = "login" }: LoginModa
         return;
       }
 
-      // Clerk ainda exige verificação (não deveria acontecer com OTP desligado)
+      // Clerk ainda exige alguma coisa
       if (result?.status === "missing_requirements" || signUp.status === "missing_requirements") {
-        try {
-          await signUp.prepareEmailAddressVerification({ strategy: "email_code" });
-        } catch {}
-        setPendingVerification(true);
-        setResendCooldown(30);
+        const unverified = signUp.unverifiedFields || [];
+        const missing = signUp.missingFields || [];
+
+        // Só envia código se o email realmente está pendente de verificação
+        if (unverified.includes("email_address")) {
+          try {
+            await signUp.prepareEmailAddressVerification({ strategy: "email_code" });
+          } catch {}
+          setPendingVerification(true);
+          setResendCooldown(30);
+        } else if (missing.length > 0) {
+          setErrorMsg(`Campos obrigatórios faltando: ${missing.join(", ")}. Verifique as configurações do Clerk.`);
+        } else {
+          // unverifiedFields não tem email — tenta completar direto
+          try {
+            const completed = await (signUp as any).update({});
+            if (completed?.status === "complete" || signUp.status === "complete") {
+              await setActive({ session: completed?.createdSessionId ?? signUp.createdSessionId });
+              onClose();
+              router.push("/dashboard");
+            }
+          } catch {
+            setErrorMsg("Erro ao finalizar cadastro. Tente novamente.");
+          }
+        }
       }
     } catch (err: any) {
       console.error("Erro no Clerk Sign Up:", err);
