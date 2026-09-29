@@ -45,7 +45,7 @@ export function VideoPlayer({ videoId, poster, className = "", lessonId, onProgr
   return (
     <div className={`w-full aspect-video rounded-xl overflow-hidden shadow-2xl bg-black relative ${className}`}>
       <iframe
-        src={`https://iframe.cloudflarestream.com/${videoId}?controls=true&preload=true${poster ? `&poster=${encodeURIComponent(poster)}` : ""}`}
+        src={`https://iframe.cloudflarestream.com/${videoId}?controls=true&preload=true&defaultTextTrack=pt${poster ? `&poster=${encodeURIComponent(poster)}` : ""}`}
         allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture;"
         allowFullScreen
         className="absolute inset-0 w-full h-full"

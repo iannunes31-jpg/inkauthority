@@ -1,13 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Search, ChevronDown, User, ShieldAlert, MoreHorizontal, Download, X, Phone, Instagram, Mail } from "lucide-react";
+import { Search, ChevronDown, User, ShieldAlert, ShieldCheck, ShieldOff, MoreHorizontal, Download, X, Phone, Instagram, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export default function AdminUsers() {
   const [users, setUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedUser, setSelectedUser] = useState<any | null>(null);
+  const [togglingAdmin, setTogglingAdmin] = useState<string | null>(null);
 
   useEffect(() => {
     async function fetchUsers() {
@@ -25,6 +26,23 @@ export default function AdminUsers() {
     }
     fetchUsers();
   }, []);
+
+  const handleToggleAdmin = async (e: React.MouseEvent, user: any) => {
+    e.stopPropagation();
+    const isAdmin = user.role === 'Admin';
+    setTogglingAdmin(user.id);
+    try {
+      const res = await fetch('/api/admin/set-role', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: user.id, role: isAdmin ? null : 'admin' }),
+      });
+      if (res.ok) {
+        setUsers(prev => prev.map(u => u.id === user.id ? { ...u, role: isAdmin ? 'Usuário' : 'Admin' } : u));
+      }
+    } catch {}
+    setTogglingAdmin(null);
+  };
 
   const downloadCSV = () => {
     if (users.length === 0) return;
@@ -149,8 +167,19 @@ export default function AdminUsers() {
                     </td>
                     <td className="py-4 text-muted-foreground text-sm">{user.joinDate}</td>
                     <td className="py-4 text-right">
-                      <button className="p-2 hover:bg-white/10 rounded-lg text-muted-foreground hover:text-white transition-colors">
-                        <MoreHorizontal className="w-4 h-4" />
+                      <button
+                        onClick={(e) => handleToggleAdmin(e, user)}
+                        disabled={togglingAdmin === user.id}
+                        title={user.role === 'Admin' ? 'Remover Admin' : 'Tornar Admin'}
+                        className={`p-2 rounded-lg transition-colors ${user.role === 'Admin' ? 'text-white/60 hover:text-red-400 hover:bg-red-400/10' : 'text-muted-foreground hover:text-primary hover:bg-white/10'} disabled:opacity-40`}
+                      >
+                        {togglingAdmin === user.id ? (
+                          <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                        ) : user.role === 'Admin' ? (
+                          <ShieldOff className="w-4 h-4" />
+                        ) : (
+                          <ShieldCheck className="w-4 h-4" />
+                        )}
                       </button>
                     </td>
                   </tr>
@@ -213,7 +242,16 @@ export default function AdminUsers() {
             </div>
             
             <div className="mt-6 flex gap-3">
-              <Button className="w-full metallic-gradient text-black font-bold">Enviar Mensagem</Button>
+              <Button
+                onClick={(e) => { handleToggleAdmin(e, selectedUser); setSelectedUser(null); }}
+                disabled={togglingAdmin === selectedUser.id}
+                variant="outline"
+                className={`flex-1 border-white/10 ${selectedUser.role === 'Admin' ? 'text-red-400 hover:border-red-400/30' : 'text-primary hover:border-primary/30'}`}
+              >
+                {selectedUser.role === 'Admin' ? <ShieldOff className="w-4 h-4 mr-2" /> : <ShieldCheck className="w-4 h-4 mr-2" />}
+                {selectedUser.role === 'Admin' ? 'Remover Admin' : 'Tornar Admin'}
+              </Button>
+              <Button className="flex-1 metallic-gradient text-black font-bold">Enviar Mensagem</Button>
             </div>
           </div>
         </div>
