@@ -93,6 +93,7 @@ export default function AssistantPage() {
       
       if (data.state === "open") {
         setConnectionStatus("Conectado");
+        setQrCodeData(null);
       } else if (data.state === "connecting") {
         setConnectionStatus("Aguardando leitura do QR Code");
       } else {

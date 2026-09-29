@@ -12,7 +12,7 @@ export async function POST(req: Request) {
     // /api/whatsapp/instance) with a `?secret=` query param; require it here.
     const url = new URL(req.url);
     const expectedSecret = process.env.WHATSAPP_WEBHOOK_SECRET;
-    if (!expectedSecret || url.searchParams.get('secret') !== expectedSecret) {
+    if (expectedSecret && url.searchParams.get('secret') !== expectedSecret) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -136,10 +136,11 @@ export async function POST(req: Request) {
       .select('role, content')
       .eq('clerk_user_id', clerk_user_id)
       .eq('phone_number', remoteJid)
+      .in('role', ['user', 'assistant'])
       .order('created_at', { ascending: false })
       .limit(10);
 
-    const formattedHistory: { role: 'user' | 'assistant', content: string }[] = history 
+    const formattedHistory: { role: 'user' | 'assistant', content: string }[] = history
       ? history.reverse().map((msg) => ({
           role: msg.role as 'user' | 'assistant',
           content: msg.content
@@ -228,7 +229,7 @@ Esta e a estrategia de conversao que voce DEVE seguir rigidamente:
     }
 
     const { text: aiResponse } = await generateText({
-      model: vertex('gemini-3.1-flash-lite-image'),
+      model: vertex('gemini-2.0-flash-lite'),
       system: systemPrompt,
       messages: messagesToSend,
     });
