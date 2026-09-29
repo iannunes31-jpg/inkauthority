@@ -5,7 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ArrowLeft, Plus, PlayCircle, Save, X, Layers, Settings, Trash2, Link2, BookOpen } from "lucide-react";
+import { ArrowLeft, Plus, PlayCircle, Save, X, Layers, Settings, Trash2, Link2, BookOpen, Subtitles } from "lucide-react";
 import Link from "next/link";
 import { VideoUploader } from "@/components/admin/VideoUploader";
 
@@ -31,6 +31,33 @@ export default function CourseManagerPage() {
   const [matUrl, setMatUrl] = useState("");
   const [eqName, setEqName] = useState("");
   const [eqUrl, setEqUrl] = useState("");
+  const [generatingCaptions, setGeneratingCaptions] = useState<string | null>(null);
+  const [captionStatus, setCaptionStatus] = useState<Record<string, string>>({});
+
+  const handleGenerateCaptions = async (lesson: any) => {
+    if (!lesson.video_url) return alert("Essa aula não tem vídeo cadastrado.");
+    setGeneratingCaptions(lesson.id);
+    setCaptionStatus(prev => ({ ...prev, [lesson.id]: "Gerando..." }));
+    try {
+      const res = await fetch("/api/admin/generate-captions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ videoId: lesson.video_url }),
+      });
+      const data = await res.json();
+      if (data.status === "done") {
+        setCaptionStatus(prev => ({ ...prev, [lesson.id]: "✓ PT / EN / ES" }));
+      } else if (data.status === "processing") {
+        setCaptionStatus(prev => ({ ...prev, [lesson.id]: "⏳ " + data.message }));
+      } else {
+        setCaptionStatus(prev => ({ ...prev, [lesson.id]: "Erro: " + data.error }));
+      }
+    } catch {
+      setCaptionStatus(prev => ({ ...prev, [lesson.id]: "Erro de conexão" }));
+    } finally {
+      setGeneratingCaptions(null);
+    }
+  };
 
   useEffect(() => {
     fetchCourseData();
@@ -236,8 +263,21 @@ export default function CourseManagerPage() {
                               <PlayCircle className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
                               <span className="text-sm font-medium">{lIndex + 1}. {lesson.title}</span>
                            </div>
-                           <div className="flex items-center gap-3">
-                              <span className="text-xs font-mono text-white/30 hidden md:block">{lesson.video_url}</span>
+                           <div className="flex items-center gap-2">
+                              {captionStatus[lesson.id] && (
+                                <span className="text-[10px] text-primary font-medium">{captionStatus[lesson.id]}</span>
+                              )}
+                              <Button
+                                variant="ghost" size="sm"
+                                onClick={() => handleGenerateCaptions(lesson)}
+                                disabled={generatingCaptions === lesson.id}
+                                className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-primary transition-all h-8 text-xs gap-1.5"
+                                title="Gerar legendas automáticas (PT/EN/ES)"
+                              >
+                                <Subtitles className="w-3.5 h-3.5" />
+                                {generatingCaptions === lesson.id ? "Gerando..." : "Legendas"}
+                              </Button>
+                              <span className="text-xs font-mono text-white/20 hidden md:block">{lesson.video_url}</span>
                               <Button variant="ghost" size="icon" onClick={() => handleDeleteLesson(lesson.id)} className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-red-400 transition-all h-8 w-8">
                                 <Trash2 className="w-4 h-4" />
                               </Button>
