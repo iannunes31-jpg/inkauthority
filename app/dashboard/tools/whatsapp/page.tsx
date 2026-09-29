@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Bot, Save, Calendar, Users, MapPin, Instagram, CreditCard, Link as LinkIcon, MessageSquare, Clock, Power, QrCode, Zap, Edit3, Loader2, Lock } from "lucide-react";
+import { CopilotInbox } from "@/components/CopilotInbox";
 import { Button } from "@/components/ui/button";
 import { useUser } from "@clerk/nextjs";
 import { supabase } from "@/lib/supabase";
@@ -11,7 +12,7 @@ import { isAdminUser } from "@/lib/admin";
 
 export default function AssistantPage() {
   const { user } = useUser();
-  const [activeTab, setActiveTab] = useState<"settings" | "crm" | "agenda">("settings");
+  const [activeTab, setActiveTab] = useState<"settings" | "crm" | "agenda" | "copilot">("settings");
   const [isSaving, setIsSaving] = useState(false);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [qrCodeData, setQrCodeData] = useState<string | null>(null);
@@ -330,6 +331,15 @@ export default function AssistantPage() {
           )}
         >
           <Calendar className="w-4 h-4" /> Agenda
+        </button>
+        <button
+          onClick={() => setActiveTab("copilot")}
+          className={cn(
+            "px-4 py-2 rounded-lg text-sm font-semibold transition-all flex items-center gap-2",
+            activeTab === "copilot" ? "bg-primary/20 text-primary border border-primary/30" : "text-white/50 hover:text-white hover:bg-white/5"
+          )}
+        >
+          <Edit3 className="w-4 h-4" /> Copilot
         </button>
       </div>
 
@@ -709,7 +719,7 @@ export default function AssistantPage() {
         )}
 
         {activeTab === "agenda" && (
-          <motion.div 
+          <motion.div
             key="agenda"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -721,6 +731,25 @@ export default function AssistantPage() {
             <p className="text-muted-foreground max-w-md mx-auto">
               Aqui ficarão os agendamentos marcados pelo robô. A IA cruza automaticamente as suas regras de negócio e os horários livres.
             </p>
+          </motion.div>
+        )}
+
+        {activeTab === "copilot" && (
+          <motion.div
+            key="copilot"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+          >
+            <div className="mb-5">
+              <h2 className="text-xl font-bold flex items-center gap-2 mb-1">
+                <Edit3 className="w-5 h-5 text-primary" /> Inbox Copilot
+              </h2>
+              <p className="text-sm text-muted-foreground">
+                A IA escreve as respostas. Você revisa, edita se quiser, e clica em Enviar. Atualiza automaticamente a cada 15s.
+              </p>
+            </div>
+            <CopilotInbox />
           </motion.div>
         )}
       </AnimatePresence>
