@@ -17,22 +17,26 @@ export async function POST(req: Request) {
     }
 
     const payload = await req.json();
-    console.log('[WPP] event:', payload.event, 'instance:', payload.instance);
+    console.log('[WPP] raw:', JSON.stringify(payload).slice(0, 500));
 
-    const eventName = (payload.event || '').toLowerCase().replace(/\./g, '_');
+    const eventName = (payload.event || payload.type || '').toLowerCase().replace(/\./g, '_');
     if (eventName !== 'messages_upsert') {
+      console.log('[WPP] ignored event:', payload.event);
       return NextResponse.json({ status: 'ignored' });
     }
 
-    const messageData = payload.data;
+    // Evolution API can send data as object or array
+    const rawData = payload.data;
+    const messageData = Array.isArray(rawData) ? rawData[0] : rawData;
     const remoteJid = messageData?.key?.remoteJid;
     const fromMe = messageData?.key?.fromMe;
     const instanceName = payload.instance || payload.instanceName;
     const clerk_user_id = instanceName;
 
-    console.log('[WPP] remoteJid:', remoteJid, 'fromMe:', fromMe, 'instance:', instanceName);
+    console.log('[WPP] remoteJid:', remoteJid, 'fromMe:', fromMe, 'instance:', instanceName, 'msgKeys:', Object.keys(messageData || {}));
 
     if (!remoteJid || fromMe || remoteJid.includes('@g.us')) {
+      console.log('[WPP] ignored: fromMe or group or no jid');
       return NextResponse.json({ status: 'ignored' });
     }
 
