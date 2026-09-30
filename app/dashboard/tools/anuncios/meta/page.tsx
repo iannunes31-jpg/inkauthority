@@ -42,13 +42,17 @@ export default function MetaAdsPage() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
+  const lastAssistantRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     const c = scrollContainerRef.current;
     if (!c) return;
-    if (c.scrollHeight - c.scrollTop - c.clientHeight < 200) {
-      messagesEndRef.current?.scrollIntoView({ behavior: "instant" });
+    if (isLoading) {
+      c.scrollTop = c.scrollHeight;
+    } else {
+      lastAssistantRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
     }
-  }, [messages]);
+  }, [messages, isLoading]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -88,10 +92,11 @@ export default function MetaAdsPage() {
         <div className="flex-1 flex flex-col overflow-hidden">
           <div ref={scrollContainerRef} className="flex-1 overflow-y-auto p-6">
             <div className="max-w-2xl mx-auto space-y-5">
-              {messages.map((m) => {
+              {messages.map((m, i) => {
                 const text = m.parts?.filter((p: any) => p.type === "text").map((p: any) => p.text).join("") ?? (m as any).content ?? "";
+                const isLastAssistant = m.role === "assistant" && i === messages.length - 1;
                 return (
-                  <div key={m.id} className={`flex gap-3 ${m.role === "user" ? "flex-row-reverse" : ""}`}>
+                  <div key={m.id} ref={isLastAssistant ? lastAssistantRef : undefined} className={`flex gap-3 ${m.role === "user" ? "flex-row-reverse" : ""}`}>
                     <div className={`w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 border ${m.role === "user" ? "bg-foreground/10 border-border/20" : "bg-pink-500/20 border-pink-400/30"}`}>
                       {m.role === "user" ? <User className="w-4 h-4" /> : <Instagram className="w-4 h-4 text-pink-400" />}
                     </div>
