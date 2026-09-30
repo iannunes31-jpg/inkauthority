@@ -1,8 +1,16 @@
 import { NextResponse } from "next/server";
 import { clerkClient } from "@clerk/nextjs/server";
+import { checkIsAdmin } from "@/lib/auth-server";
+import { isAdminUser } from "@/lib/admin";
 
 export async function GET() {
   try {
+    // This lists every user's name, email, phone and Instagram handle —
+    // admin-only. It used to have no auth check at all.
+    if (!(await checkIsAdmin())) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
     const client = await clerkClient();
     const response = await client.users.getUserList();
     
@@ -13,7 +21,7 @@ export async function GET() {
       id: user.id,
       name: `${user.firstName || ""} ${user.lastName || ""}`.trim() || "Usuário",
       email: user.emailAddresses[0]?.emailAddress || "Sem email",
-      role: user.publicMetadata?.role || "Aluno",
+      role: isAdminUser(user.emailAddresses[0]?.emailAddress, user.publicMetadata) ? "Admin" : (user.publicMetadata?.role || "Aluno"),
       status: "Ativo", // Clerk users are active unless banned
       joinDate: new Date(user.createdAt).toLocaleDateString("pt-BR"),
       imageUrl: user.imageUrl,

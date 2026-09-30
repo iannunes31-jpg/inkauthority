@@ -1,27 +1,42 @@
 import { NextResponse } from 'next/server';
 import { createVertex } from '@ai-sdk/google-vertex';
 import { generateText } from 'ai';
-import { createClient } from '@supabase/supabase-js';
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-const supabase = createClient(supabaseUrl, supabaseKey);
+import { supabaseAdmin as supabase } from '@/lib/supabase-admin';
 
 export async function POST(req: Request) {
   try {
-    const payload = await req.json();
+    // Evolution API doesn't sign its webhook payloads, so anyone who found
+    // this URL could POST a fake payload — spoof messages, insert fake
+    // "appointments", or make the app send arbitrary WhatsApp messages
+    // through the studio's own number. We register the webhook URL (see
+    // /api/whatsapp/instance) with a `?secret=` query param; require it here.
+    const url = new URL(req.url);
+    const expectedSecret = process.env.WHATSAPP_WEBHOOK_SECRET;
+    if (expectedSecret && url.searchParams.get('secret') !== expectedSecret) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
 
-    if (payload.event?.toLowerCase() !== 'messages.upsert') {
+    const payload = await req.json();
+    console.log('[WPP] raw:', JSON.stringify(payload).slice(0, 500));
+
+    const eventName = (payload.event || payload.type || '').toLowerCase().replace(/\./g, '_');
+    if (eventName !== 'messages_upsert') {
+      console.log('[WPP] ignored event:', payload.event);
       return NextResponse.json({ status: 'ignored' });
     }
 
-    const messageData = payload.data;
-    const remoteJid = messageData.key.remoteJid; // Number of the client
-    const fromMe = messageData.key.fromMe;
-    const instanceName = payload.instance; // This is the clerk_user_id of the artist
-    const clerk_user_id = instanceName; 
+    // Evolution API can send data as object or array
+    const rawData = payload.data;
+    const messageData = Array.isArray(rawData) ? rawData[0] : rawData;
+    const remoteJid = messageData?.key?.remoteJid;
+    const fromMe = messageData?.key?.fromMe;
+    const instanceName = payload.instance || payload.instanceName;
+    const clerk_user_id = instanceName;
 
-    if (fromMe || remoteJid.includes('@g.us')) {
+    console.log('[WPP] remoteJid:', remoteJid, 'fromMe:', fromMe, 'instance:', instanceName, 'msgKeys:', Object.keys(messageData || {}));
+
+    if (!remoteJid || fromMe || remoteJid.includes('@g.us')) {
+      console.log('[WPP] ignored: fromMe or group or no jid');
       return NextResponse.json({ status: 'ignored' });
     }
 
@@ -56,7 +71,14 @@ export async function POST(req: Request) {
 
     let base64Media: string | null = null;
     const evolutionUrl = process.env.EVOLUTION_API_URL || 'https://evolution-api-production-fbfd.up.railway.app'; 
-    const apiKey = process.env.EVOLUTION_API_KEY || '42A5C9B31000-47F6-8B1E-F7C6656BE1D5';
+    // No hardcoded fallback: that literal key was committed to the repo in
+    // git history and should be treated as leaked — rotate it in Evolution
+    // API if it's still the one in use.
+    const apiKey = process.env.EVOLUTION_API_KEY;
+    if (!apiKey) {
+      console.error('EVOLUTION_API_KEY not configured');
+      return NextResponse.json({ error: 'Server misconfigured' }, { status: 500 });
+    }
 
     if (hasImage) {
       try {
@@ -87,45 +109,53 @@ export async function POST(req: Request) {
       .eq('clerk_user_id', clerk_user_id)
       .single();
 
+    console.log('[WPP] settings found:', !!settings, 'is_active:', settings?.is_active, 'bot_mode:', settings?.bot_mode);
     if (!settings || !settings.is_active) {
-       console.log("Bot is disabled or settings not found.");
-       return NextResponse.json({ status: 'inactive' });
+      return NextResponse.json({ status: 'inactive' });
     }
 
-    // 2. Manage CRM (Upsert Customer)
-    let { data: customer } = await supabase
-      .from('customers')
-      .select('id, name, status')
-      .eq('clerk_user_id', clerk_user_id)
-      .eq('phone_number', remoteJid)
-      .single();
-
-    if (!customer) {
-      const { data: newCustomer } = await supabase
+    // 2. Manage CRM (Upsert Customer) — wrapped so errors don't stop the bot
+    console.log('[WPP] step: CRM');
+    let customer: any = null;
+    try {
+      const { data: existingCustomer, error: selectErr } = await supabase
         .from('customers')
-        .insert({
-          clerk_user_id,
-          phone_number: remoteJid,
-          status: 'lead'
-        })
-        .select()
+        .select('id, name, status')
+        .eq('clerk_user_id', clerk_user_id)
+        .eq('phone_number', remoteJid)
         .single();
-      customer = newCustomer;
+      if (selectErr) console.log('[WPP] CRM select error:', selectErr.message);
+      if (existingCustomer) {
+        customer = existingCustomer;
+      } else {
+        const { data: newCustomer, error: insertErr } = await supabase
+          .from('customers')
+          .insert({ clerk_user_id, phone_number: remoteJid, status: 'lead' })
+          .select()
+          .single();
+        if (insertErr) console.log('[WPP] CRM insert error:', insertErr.message);
+        customer = newCustomer;
+      }
+    } catch (crmErr: any) {
+      console.log('[WPP] CRM exception:', crmErr.message);
     }
 
     // Determine if it's a foreign number
     const isForeign = !remoteJid.startsWith('55');
 
     // 4. Fetch Conversation History
-    const { data: history } = await supabase
+    console.log('[WPP] step: history');
+    const { data: history, error: histErr } = await supabase
       .from('chat_history')
       .select('role, content')
       .eq('clerk_user_id', clerk_user_id)
       .eq('phone_number', remoteJid)
+      .in('role', ['user', 'assistant'])
       .order('created_at', { ascending: false })
       .limit(10);
+    if (histErr) console.log('[WPP] history error:', histErr.message);
 
-    const formattedHistory: { role: 'user' | 'assistant', content: string }[] = history 
+    const formattedHistory: { role: 'user' | 'assistant', content: string }[] = history
       ? history.reverse().map((msg) => ({
           role: msg.role as 'user' | 'assistant',
           content: msg.content
@@ -133,11 +163,12 @@ export async function POST(req: Request) {
       : [];
 
     // 5. Build the massive High-Ticket Prompt with the new Rules
-    const systemPrompt = `Voce e o assistente virtual do estudio de tatuagem "${settings.studio_name}".
+    const systemPrompt = `Voce e Dante, o assistente virtual do estudio de tatuagem "${settings.studio_name}".
 Seu tom de voz e: "${settings.bot_personality}".
 Estilos de Tatuagem que voce faz: ${settings.styles}
 Valor Base Minimo: ${settings.base_price ? `R$ ${settings.base_price}` : 'N/A'}
 Valor por Hora: ${settings.hourly_rate ? `R$ ${settings.hourly_rate}` : 'N/A'}
+Valor por Sessao: ${settings.price_session ? `R$ ${settings.price_session}` : 'N/A'}
 Metodos de Pagamento: ${settings.payment_methods}
 Endereco do Estudio: ${settings.address}
 
@@ -206,18 +237,20 @@ Esta e a estrategia de conversao que voce DEVE seguir rigidamente:
       const credentials = JSON.parse(process.env.GOOGLE_VERTEX_CREDENTIALS);
       vertex = createVertex({
         project: credentials.project_id,
-        location: 'us-central1',
+        location: 'global',
         googleAuthOptions: { credentials }
       });
     } catch (e: any) {
       return NextResponse.json({ error: 'Vertex AI config error' }, { status: 500 });
     }
 
+    console.log('[WPP] calling AI, messages count:', messagesToSend.length);
     const { text: aiResponse } = await generateText({
-      model: vertex('gemini-2.5-flash'),
+      model: vertex('gemini-3.1-flash-lite'),
       system: systemPrompt,
       messages: messagesToSend,
     });
+    console.log('[WPP] AI response length:', aiResponse?.length, 'preview:', aiResponse?.slice(0, 80));
 
     let finalResponse = aiResponse;
 
@@ -247,17 +280,33 @@ Esta e a estrategia de conversao que voce DEVE seguir rigidamente:
       { clerk_user_id, phone_number: remoteJid, role: 'assistant', content: finalResponse }
     ]);
 
+    // Copilot mode: store suggestion for artist review, don't auto-send
+    if (settings.bot_mode === 'copilot') {
+      await supabase.from('chat_history').insert({
+        clerk_user_id,
+        phone_number: remoteJid,
+        role: 'copilot',
+        content: finalResponse
+      });
+      return NextResponse.json({ status: 'copilot_suggestion_saved' });
+    }
+
     // Send text response via Evolution API
+    // Evolution API expects just the phone number, not the full JID
+    const phoneNumber = remoteJid.split('@')[0];
+    console.log('[WPP] sending to', phoneNumber, 'via instance', instanceName);
     try {
-      await fetch(`${evolutionUrl}/message/sendText/${instanceName}`, {
+      const sendRes = await fetch(`${evolutionUrl}/message/sendText/${instanceName}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'apikey': apiKey },
         body: JSON.stringify({
-          number: remoteJid,
-          options: { delay: 1500, presence: 'composing' },
-          textMessage: { text: finalResponse }
+          number: phoneNumber,
+          text: finalResponse,
+          delay: 1500
         })
       });
+      const sendData = await sendRes.json().catch(() => ({}));
+      console.log('[WPP] send result:', sendRes.status, JSON.stringify(sendData).slice(0, 200));
 
       // Send photo example if tag was present
       if (needsExamplePhoto) {

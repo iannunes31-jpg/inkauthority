@@ -2,7 +2,17 @@ import { NextResponse } from 'next/server';
 import { headers } from 'next/headers';
 import { Webhook } from 'svix';
 import { WebhookEvent } from '@clerk/nextjs/server';
-import { supabase } from '@/lib/supabase';
+import { supabaseAdmin as supabase } from '@/lib/supabase-admin';
+
+// NOTE: there are two Clerk webhook routes in this app —
+// /api/webhook/clerk (this one) and /api/webhooks/clerk (plural). Only
+// whichever URL is actually registered in the Clerk dashboard receives
+// events; the other is dead code. This route previously wrote to columns
+// (`clerk_user_id`, `name`) that don't exist on the `users` table (see
+// supabase_schema.sql: it's `id` and `first_name`/`last_name`), so if this
+// was the one actually configured, every user sync was silently failing.
+// Fixed to match the real schema — but consider deleting whichever of the
+// two routes isn't registered in Clerk, to stop this from drifting again.
 
 export async function POST(req: Request) {
   const WEBHOOK_SECRET = process.env.CLERK_WEBHOOK_SECRET;
@@ -39,38 +49,35 @@ export async function POST(req: Request) {
 
   const eventType = evt.type;
 
-  if (eventType === 'user.created') {
-    const { id, email_addresses, first_name, last_name, image_url } = evt.data;
+  if (eventType === 'user.created' || eventType === 'user.updated') {
+    const { id, email_addresses, first_name, last_name, image_url, public_metadata } = evt.data;
     const email = email_addresses?.[0]?.email_address || '';
-    const name = `${first_name || ''} ${last_name || ''}`.trim();
+    const role = (public_metadata as { role?: string } | undefined)?.role || 'aluno';
 
-    await supabase.from('users').upsert([
-      {
-        clerk_user_id: id,
-        email,
-        name,
-        avatar_url: image_url || '',
-        created_at: new Date().toISOString(),
-      }
-    ], { onConflict: 'clerk_user_id' });
-  }
+    const { error } = await supabase.from('users').upsert(
+      [
+        {
+          id,
+          email,
+          first_name: first_name || '',
+          last_name: last_name || '',
+          avatar_url: image_url || '',
+          role,
+        },
+      ],
+      { onConflict: 'id' }
+    );
 
-  if (eventType === 'user.updated') {
-    const { id, email_addresses, first_name, last_name, image_url } = evt.data;
-    const email = email_addresses?.[0]?.email_address || '';
-    const name = `${first_name || ''} ${last_name || ''}`.trim();
-
-    await supabase.from('users').update({
-      email,
-      name,
-      avatar_url: image_url || '',
-    }).eq('clerk_user_id', id);
+    if (error) {
+      console.error('Erro ao salvar usuário no Supabase:', error);
+      return NextResponse.json({ error: 'Database error' }, { status: 500 });
+    }
   }
 
   if (eventType === 'user.deleted') {
     const { id } = evt.data;
     if (id) {
-      await supabase.from('users').delete().eq('clerk_user_id', id);
+      await supabase.from('users').delete().eq('id', id);
     }
   }
 

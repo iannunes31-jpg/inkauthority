@@ -1,6 +1,16 @@
+import { redirect } from "next/navigation";
 import { AdminSidebar } from "@/components/AdminSidebar";
+import { checkIsAdmin } from "@/lib/auth-server";
 
-export default function AdminLayout({ children }: { children: React.ReactNode }) {
+export default async function AdminLayout({ children }: { children: React.ReactNode }) {
+  // Middleware only checks that someone is logged in. Without this check,
+  // any signed-up student could open /admin directly and see the full
+  // admin dashboard (courses, users, affiliates, settings).
+  const isAdmin = await checkIsAdmin();
+  if (!isAdmin) {
+    redirect("/");
+  }
+
   return (
     <div className="min-h-screen bg-background">
       <AdminSidebar />

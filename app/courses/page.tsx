@@ -12,7 +12,7 @@ export default function CoursesPage() {
   const [isLoadingCheckout, setIsLoadingCheckout] = useState(false);
   const { isSignedIn } = useAuth();
 
-  const handleCheckout = async (productName: string, price: number) => {
+  const handleCheckout = async (productId: string) => {
     if (!isSignedIn) {
       setIsLoginOpen(true);
       return;
@@ -22,7 +22,7 @@ export default function CoursesPage() {
       const response = await fetch('/api/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ productName, price, isSubscription: false, returnUrl: '/courses' }),
+        body: JSON.stringify({ productId, productType: 'catalog', returnUrl: '/courses' }),
       });
       const data = await response.json();
       if (data.url) {
@@ -107,7 +107,7 @@ export default function CoursesPage() {
               </div>
 
               <Button 
-                onClick={() => handleCheckout("Curso Marketing & Posicionamento", 997)}
+                onClick={() => handleCheckout("marketing_posicionamento")}
                 disabled={isLoadingCheckout}
                 className="w-full md:w-auto metallic-gradient text-black font-bold uppercase tracking-[0.2em] text-[11px] h-14 px-8 rounded-xl hover:scale-105 transition-transform border-0 group"
                 style={{ boxShadow: '0 0 30px rgba(139, 122, 102, 0.3)' }}
@@ -131,35 +131,14 @@ export default function CoursesPage() {
           transition={{ duration: 0.7, delay: 0.2 }}
           className="flex-1 w-full max-w-[500px] lg:max-w-none relative z-10"
         >
-          <div className="relative rounded-[2rem] overflow-hidden border border-border/20 shadow-2xl glass group aspect-[4/5] lg:aspect-auto lg:h-[700px]">
-            <video 
-              autoPlay 
-              muted 
-              loop 
-              playsInline
-              className="w-full h-full object-cover opacity-90 transition-opacity duration-500"
-              poster="/isabella_poster.jpg"
-            >
-              <source src="/video_badini.mp4" type="video/mp4" />
-              Seu navegador não suporta vídeos.
-            </video>
-            
-            {/* Elegant overlay gradient to make it blend with the theme */}
-            <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-background/20 to-transparent pointer-events-none" />
-            <div className="absolute inset-0 bg-gradient-to-r from-background/40 via-transparent to-background/40 pointer-events-none" />
-            
-            {/* Play overlay just for aesthetics (video is autoplaying) */}
-            <div className="absolute bottom-8 left-8 right-8 flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-full bg-foreground/10 backdrop-blur-md border border-border/20 flex items-center justify-center pointer-events-none">
-                  <Play className="w-5 h-5 text-foreground ml-1" />
-                </div>
-                <div>
-                  <p className="text-foreground font-bold text-sm uppercase tracking-wider">Assista ao Vídeo</p>
-                  <p className="text-muted-foreground text-xs">Aumente o som</p>
-                </div>
-              </div>
-            </div>
+          <div className="relative rounded-[2rem] overflow-hidden border border-border/20 shadow-2xl glass group aspect-video">
+            <iframe
+              src="https://iframe.cloudflarestream.com/f2a135026e57c0f0fe20dd0b355c0202?autoplay=true&muted=true&loop=true&controls=true&preload=true"
+              allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture;"
+              allowFullScreen
+              className="absolute inset-0 w-full h-full"
+              style={{ border: 'none' }}
+            />
           </div>
         </motion.div>
 

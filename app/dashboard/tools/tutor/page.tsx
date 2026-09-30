@@ -4,11 +4,24 @@ import { useChat, Chat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
 import { Bot, User, Send, Loader2, Sparkles, Lock } from "lucide-react";
 import { useEffect, useRef, useState, useMemo } from "react";
+import { ChatMarkdown } from "@/components/ChatMarkdown";
 import { Button } from "@/components/ui/button";
 import { useUser } from "@clerk/nextjs";
 import { supabase } from "@/lib/supabase";
+import { isAdminUser } from "@/lib/admin";
 
 export default function AssistantPage() {
+  const STORAGE_KEY = "tutor-chat-v1";
+  const WELCOME = "Olá! Sou o Tutor IA Especialista da Ink Authority. Posso te ajudar com **sugestão de agulhas**, **escolha de pigmentos**, **planejamento de sessão** e qualquer dúvida técnica sobre tatuagem. Como posso ajudar hoje?";
+
+  const savedMessages = useMemo(() => {
+    try {
+      const saved = sessionStorage.getItem(STORAGE_KEY);
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return [{ id: "welcome", role: "assistant", parts: [{ type: "text", text: WELCOME }] }];
+  }, []);
+
   const chat = useMemo(
     () =>
       new Chat({
@@ -16,13 +29,7 @@ export default function AssistantPage() {
         onError: (err: Error) => {
           alert("Erro na IA: " + err.message);
         },
-        messages: [
-          {
-            id: "welcome",
-            role: "assistant",
-            parts: [{ type: "text", text: "Ola! Sou o seu Tutor IA Especialista da Ink Authority. Como posso ajudar voce a elevar o nivel da sua tatuagem hoje?" }],
-          } as any,
-        ],
+        messages: savedMessages,
       }),
     []
   );
@@ -30,13 +37,16 @@ export default function AssistantPage() {
   const { messages, sendMessage, status } = useChat({ chat });
   const isLoading = status === "submitted" || status === "streaming";
 
+  // Persist chat across tool navigation (cleared on browser close)
+  useEffect(() => {
+    try { sessionStorage.setItem(STORAGE_KEY, JSON.stringify(messages)); } catch {}
+  }, [messages]);
+
   const { user } = useUser();
   const [hasAccess, setHasAccess] = useState<boolean | null>(null);
   const [inputValue, setInputValue] = useState("");
 
-  const isAdmin =
-    user?.primaryEmailAddress?.emailAddress === "yurilojavirtual@gmail.com" ||
-    user?.primaryEmailAddress?.emailAddress === "o9.yuri@gmail.com";
+  const isAdmin = isAdminUser(user?.primaryEmailAddress?.emailAddress, user?.publicMetadata);
 
   useEffect(() => {
     if (user?.id) checkAccess();
@@ -85,8 +95,14 @@ export default function AssistantPage() {
   };
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    const container = scrollContainerRef.current;
+    if (!container) return;
+    const isNearBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 200;
+    if (isNearBottom) {
+      messagesEndRef.current?.scrollIntoView({ behavior: "instant" });
+    }
   }, [messages]);
 
   if (hasAccess === null) {
@@ -124,13 +140,13 @@ export default function AssistantPage() {
             <h1 className="text-2xl font-black uppercase tracking-tighter flex items-center gap-2">
               Tutor IA Especialista <Sparkles className="w-5 h-5 text-primary" />
             </h1>
-            <p className="text-sm text-muted-foreground">Tire duvidas sobre agulhas, pigmentos, tecnicas e marketing.</p>
+            <p className="text-sm text-muted-foreground">Sugestão de agulhas, pigmentos, planejamento de sessão e dúvidas técnicas sobre tatuagem.</p>
           </div>
         </div>
       </div>
 
       {/* Messages Area */}
-      <div className="flex-1 overflow-y-auto p-8">
+      <div ref={scrollContainerRef} className="flex-1 overflow-y-auto p-8">
         <div className="max-w-4xl mx-auto space-y-8">
           {messages.map((m) => {
             const textContent =
@@ -146,14 +162,12 @@ export default function AssistantPage() {
                 }`}>
                   {m.role === "user" ? <User className="w-5 h-5 text-foreground" /> : <Bot className="w-5 h-5 text-primary" />}
                 </div>
-                <div className={`p-5 rounded-2xl text-[15px] leading-relaxed max-w-[85%] ${
+                <div className={`p-5 rounded-2xl max-w-[85%] ${
                   m.role === "user"
                     ? "bg-foreground/5 text-foreground border border-border/10 rounded-tr-none"
                     : "bg-primary/5 text-foreground border border-primary/10 rounded-tl-none"
                 }`}>
-                  {textContent.split("\n").map((line: string, i: number) => (
-                    <p key={i} className="mb-2 last:mb-0">{line}</p>
-                  ))}
+                  <ChatMarkdown text={textContent} />
                 </div>
               </div>
             );

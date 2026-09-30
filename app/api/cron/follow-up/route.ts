@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
+import { supabaseAdmin as supabase } from '@/lib/supabase-admin';
 import { createVertex } from '@ai-sdk/google-vertex';
 import { generateText } from 'ai';
 
@@ -66,12 +66,12 @@ export async function GET(req: Request) {
           const credentials = JSON.parse(process.env.GOOGLE_VERTEX_CREDENTIALS);
           const vertex = createVertex({
             project: credentials.project_id,
-            location: 'us-central1',
+            location: 'global',
             googleAuthOptions: { credentials }
           });
 
           const { text } = await generateText({
-            model: vertex('gemini-2.5-flash'),
+            model: vertex('gemini-3.1-flash-lite-image'),
             system: `Voce e um assistente de vendas de um estudio de tatuagem. Seu objetivo e escolher a MELHOR mensagem de follow-up para um cliente que parou de responder ha 2 dias.
 O nome do cliente e ${lead.name || 'Cliente'}.
 Aqui esta o historico final da conversa:

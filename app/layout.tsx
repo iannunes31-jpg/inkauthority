@@ -1,8 +1,6 @@
 import type {Metadata} from 'next';
 import { Inter, Orbitron } from 'next/font/google';
-import { Navbar } from '@/components/Navbar';
-import { ChatWidget } from '@/components/ChatWidget';
-import { FloatingMenu } from '@/components/FloatingMenu';
+import ConditionalNav from '@/components/ConditionalNav';
 import { ClerkProvider } from '@clerk/nextjs';
 import { dark } from '@clerk/themes';
 import './globals.css';
@@ -22,12 +20,10 @@ export default function RootLayout({
 }>) {
   return (
     <ClerkProvider>
-      <html lang="pt-BR" className="notranslate" translate="no">
+      <html lang="pt-BR">
         <body className={`${inter.variable} ${orbitron.variable} font-sans antialiased min-h-screen bg-background text-foreground`} suppressHydrationWarning>
-          <Navbar />
+          <ConditionalNav />
           {children}
-          <FloatingMenu />
-          <ChatWidget />
         </body>
       </html>
     </ClerkProvider>

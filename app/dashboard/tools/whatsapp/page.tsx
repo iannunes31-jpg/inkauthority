@@ -2,25 +2,27 @@
 
 import { useState, useEffect } from "react";
 import { Bot, Save, Calendar, Users, MapPin, Instagram, CreditCard, Link as LinkIcon, MessageSquare, Clock, Power, QrCode, Zap, Edit3, Loader2, Lock } from "lucide-react";
+import { CopilotInbox } from "@/components/CopilotInbox";
 import { Button } from "@/components/ui/button";
 import { useUser } from "@clerk/nextjs";
 import { supabase } from "@/lib/supabase";
 import { motion, AnimatePresence } from "motion/react";
 import { cn } from "@/lib/utils";
+import { isAdminUser } from "@/lib/admin";
 
 export default function AssistantPage() {
   const { user } = useUser();
-  const [activeTab, setActiveTab] = useState<"settings" | "crm" | "agenda">("settings");
+  const [activeTab, setActiveTab] = useState<"settings" | "crm" | "agenda" | "copilot">("settings");
   const [isSaving, setIsSaving] = useState(false);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [qrCodeData, setQrCodeData] = useState<string | null>(null);
-  const [connectionStatus, setConnectionStatus] = useState<string>("Carregando...");
+  const [connectionStatus, setConnectionStatus] = useState<string>(() => {
+    try { return localStorage.getItem("wpp-status") || "Carregando..."; } catch { return "Carregando..."; }
+  });
   const [isGeneratingQr, setIsGeneratingQr] = useState(false);
   const [hasAccess, setHasAccess] = useState<boolean | null>(null);
 
-  const isAdmin = 
-    user?.primaryEmailAddress?.emailAddress === "yurilojavirtual@gmail.com" || 
-    user?.primaryEmailAddress?.emailAddress === "o9.yuri@gmail.com";
+  const isAdmin = isAdminUser(user?.primaryEmailAddress?.emailAddress, user?.publicMetadata);
 
   const [formData, setFormData] = useState({
     studio_name: "",
@@ -35,6 +37,7 @@ export default function AssistantPage() {
     bot_personality: "Profissional e educado",
     is_active: false,
     bot_mode: "copilot",
+    price_session: "",
     price_arm: "",
     price_leg: "",
     price_front: "",
@@ -45,7 +48,7 @@ export default function AssistantPage() {
     if (user?.id) {
       checkAccess();
       fetchSettings();
-      checkConnectionStatus();
+      checkConnectionStatus(user.id);
     }
   }, [user?.id]);
 
@@ -71,37 +74,37 @@ export default function AssistantPage() {
     }
   };
 
-  useEffect(() => {
-    let interval: NodeJS.Timeout;
-    if (connectionStatus === "Aguardando leitura do QR Code" || connectionStatus === "Carregando...") {
-      interval = setInterval(() => {
-        checkConnectionStatus();
-      }, 3000);
-    }
-    return () => clearInterval(interval);
-  }, [connectionStatus, user?.id]);
-
-  const checkConnectionStatus = async () => {
-    if (!user) return;
+  const checkConnectionStatus = async (uid?: string) => {
+    const id = uid || user?.id;
+    if (!id) return;
     try {
       const res = await fetch("/api/whatsapp/instance", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ instanceName: user.id, action: "status" })
+        body: JSON.stringify({ instanceName: id, action: "status" })
       });
       const data = await res.json();
-      
-      if (data.state === "open") {
-        setConnectionStatus("Conectado");
-      } else if (data.state === "connecting") {
-        setConnectionStatus("Aguardando leitura do QR Code");
-      } else {
-        setConnectionStatus("Desconectado");
-      }
+      const state = (data.state || '').toLowerCase();
+      let newStatus = "Desconectado";
+      if (state === "open") { newStatus = "Conectado"; setQrCodeData(null); }
+      else if (state === "connecting") { newStatus = "Aguardando leitura do QR Code"; }
+      setConnectionStatus(newStatus);
+      try { localStorage.setItem("wpp-status", newStatus); } catch {}
     } catch (e) {
       setConnectionStatus("Erro na conexão");
     }
   };
+
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (connectionStatus === "Aguardando leitura do QR Code" || connectionStatus === "Carregando...") {
+      const id = user?.id;
+      if (id) {
+        interval = setInterval(() => checkConnectionStatus(id), 3000);
+      }
+    }
+    return () => clearInterval(interval);
+  }, [connectionStatus, user?.id]);
 
   const handleGenerateQr = async () => {
     if (!user) return;
@@ -113,21 +116,23 @@ export default function AssistantPage() {
         body: JSON.stringify({ instanceName: user.id, action: "connect" })
       });
       const data = await res.json();
-      
-      if (data?.base64) {
-        setQrCodeData(data.base64);
-        setConnectionStatus("Aguardando leitura do QR Code");
-      } else if (data?.qrcode) {
-        setQrCodeData(data.qrcode);
-        setConnectionStatus("Aguardando leitura do QR Code");
-      } else if (data?.qrcode?.base64) {
-        setQrCodeData(data.qrcode.base64);
-        setConnectionStatus("Aguardando leitura do QR Code");
-      } else if (data?.hash?.qrcode) {
-        setQrCodeData(data.hash.qrcode);
+
+      // Extrai o base64 do QR code — a Evolution API pode retornar em vários formatos
+      const qrBase64 =
+        data?.base64 ||                  // /instance/connect → { code, base64 }
+        data?.qrcode?.base64 ||          // /instance/create  → { qrcode: { code, base64 } }
+        (typeof data?.qrcode === "string" ? data.qrcode : null) || // formato string direto
+        data?.hash?.qrcode ||            // formato legado
+        null;
+
+      if (qrBase64) {
+        setQrCodeData(qrBase64);
         setConnectionStatus("Aguardando leitura do QR Code");
       } else {
-        alert("Erro ao buscar QR Code. Verifique os logs.");
+        // Mostra o que a API retornou para facilitar debug
+        const detail = data?.message || data?.error || data?.status || JSON.stringify(data).slice(0, 120);
+        alert(`Erro ao buscar QR Code.\n\nResposta da API: ${detail}\n\nVerifique se EVOLUTION_API_KEY está configurada no Vercel.`);
+        console.error("[WhatsApp QR] Resposta inesperada:", data);
       }
     } catch (e) {
       console.error(e);
@@ -138,11 +143,8 @@ export default function AssistantPage() {
 
   const fetchSettings = async () => {
     if (!user) return;
-    const { data, error } = await supabase
-      .from("ai_settings")
-      .select("*")
-      .eq("clerk_user_id", user.id)
-      .single();
+    const res = await fetch("/api/ai-settings");
+    const data = res.ok ? await res.json() : null;
 
     if (data) {
       setFormData({
@@ -158,6 +160,7 @@ export default function AssistantPage() {
         bot_personality: data.bot_personality || "Profissional e educado",
         is_active: data.is_active || false,
         bot_mode: data.bot_mode || "copilot",
+        price_session: data.price_session || "",
         price_arm: data.price_arm || "",
         price_leg: data.price_leg || "",
         price_front: data.price_front || "",
@@ -215,41 +218,27 @@ export default function AssistantPage() {
     setIsSaving(true);
 
     const payload = {
-      clerk_user_id: user.id,
       ...formData,
       base_price: Number(formData.base_price) || 0,
       hourly_rate: Number(formData.hourly_rate) || 0,
+      price_session: Number(formData.price_session) || null,
       price_arm: Number(formData.price_arm) || null,
       price_leg: Number(formData.price_leg) || null,
       price_front: Number(formData.price_front) || null,
       price_back: Number(formData.price_back) || null,
-      updated_at: new Date().toISOString()
     };
 
-    const { error } = await supabase
-      .from("ai_settings")
-      .upsert(payload, { onConflict: "clerk_user_id" });
-
     try {
-      const payload = {
-        clerk_user_id: user.id,
-        ...formData,
-        base_price: Number(formData.base_price) || 0,
-        hourly_rate: Number(formData.hourly_rate) || 0,
-        price_arm: Number(formData.price_arm) || null,
-        price_leg: Number(formData.price_leg) || null,
-        price_front: Number(formData.price_front) || null,
-        price_back: Number(formData.price_back) || null,
-        updated_at: new Date().toISOString()
-      };
+      const res = await fetch("/api/ai-settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const result = await res.json();
 
-      const { error } = await supabase
-        .from("ai_settings")
-        .upsert(payload, { onConflict: "clerk_user_id" });
-
-      if (error) {
-        console.error("Erro ao salvar configurações", error);
-        alert(`⚠️ ATENÇÃO: Erro ao salvar! ${error.message} - ${error.details || ""}\n\nA tabela 'ai_settings' pode estar faltando colunas ou permissões.`);
+      if (!res.ok) {
+        console.error("Erro ao salvar configurações", result);
+        alert(`⚠️ Erro ao salvar!\n\nErro: ${result.error || ""}\nServiceKey: ${result.hasServiceKey}\nKeyRole: ${result.keyRole}\nKeyRef: ${result.keyRef}\nUrlRef: ${result.urlRef}`);
       } else {
         alert("Configurações do Assistente salvas com sucesso!");
       }
@@ -315,7 +304,7 @@ export default function AssistantPage() {
         </div>
         <div>
           <h1 className="text-3xl font-black uppercase tracking-tighter mb-1">Cérebro da IA</h1>
-          <p className="text-muted-foreground text-sm">Gerencie o conhecimento, clientes e a agenda do seu assistente virtual.</p>
+          <p className="text-muted-foreground text-sm">Gerencie o conhecimento, clientes e a agenda do <strong>Dante</strong>, seu assistente virtual.</p>
         </div>
       </div>
 
@@ -347,6 +336,15 @@ export default function AssistantPage() {
           )}
         >
           <Calendar className="w-4 h-4" /> Agenda
+        </button>
+        <button
+          onClick={() => setActiveTab("copilot")}
+          className={cn(
+            "px-4 py-2 rounded-lg text-sm font-semibold transition-all flex items-center gap-2",
+            activeTab === "copilot" ? "bg-primary/20 text-primary border border-primary/30" : "text-white/50 hover:text-white hover:bg-white/5"
+          )}
+        >
+          <Edit3 className="w-4 h-4" /> Copilot
         </button>
       </div>
 
@@ -412,70 +410,95 @@ export default function AssistantPage() {
 
                 {/* QR Code de Conexão */}
                 <div className="border-t border-white/10 pt-6">
-                  <h3 className="text-sm font-bold flex items-center gap-2 mb-4">
+                  <h3 className="text-sm font-bold flex items-center gap-2 mb-5">
                     <QrCode className="w-4 h-4 text-primary" /> Conectar WhatsApp
+                    <div className={cn(
+                      "ml-auto flex items-center gap-1.5 text-xs font-semibold px-3 py-1 rounded-full",
+                      connectionStatus === "Conectado" ? "bg-green-500/15 text-green-400" :
+                      connectionStatus === "Desconectado" ? "bg-red-500/15 text-red-400" :
+                      "bg-yellow-500/15 text-yellow-400"
+                    )}>
+                      <span className={cn(
+                        "w-1.5 h-1.5 rounded-full",
+                        connectionStatus === "Conectado" ? "bg-green-400 animate-pulse" :
+                        connectionStatus === "Desconectado" ? "bg-red-400" :
+                        "bg-yellow-400 animate-pulse"
+                      )} />
+                      {connectionStatus}
+                    </div>
                   </h3>
-                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6">
-                    <button 
-                      onClick={handleGenerateQr}
-                      disabled={isGeneratingQr || connectionStatus === "Conectado"}
-                      className="w-64 h-64 bg-white rounded-xl flex items-center justify-center p-2 relative overflow-hidden group cursor-pointer border-2 border-transparent hover:border-primary transition-all disabled:cursor-not-allowed disabled:hover:border-transparent shrink-0"
-                    >
-                      {isGeneratingQr ? (
-                        <div className="flex flex-col items-center">
-                          <Loader2 className="w-8 h-8 animate-spin text-black mb-2" />
-                          <span className="text-xs font-bold text-black text-center">Gerando...</span>
+
+                  {connectionStatus === "Conectado" ? (
+                    <div className="flex flex-col items-center gap-3 py-6 text-center">
+                      <div className="w-16 h-16 rounded-full bg-green-500/15 flex items-center justify-center">
+                        <Zap className="w-8 h-8 text-green-400" />
+                      </div>
+                      <p className="text-sm font-semibold text-green-400">WhatsApp Conectado!</p>
+                      <p className="text-xs text-white/50 max-w-xs">Seu assistente está ativo e pronto para atender clientes automaticamente.</p>
+                      <button
+                        onClick={handleGenerateQr}
+                        disabled={isGeneratingQr}
+                        className="mt-2 text-xs text-white/30 hover:text-white/60 underline transition-colors"
+                      >
+                        Reconectar com outro número
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {/* Passos */}
+                      <div className="space-y-3">
+                        <div className={cn("flex items-start gap-3 p-3 rounded-xl transition-colors", !qrCodeData ? "bg-primary/10 border border-primary/30" : "opacity-40")}>
+                          <div className="w-6 h-6 rounded-full bg-primary/20 text-primary text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">1</div>
+                          <div>
+                            <p className="text-xs font-semibold text-white">Gere o QR Code</p>
+                            <p className="text-[11px] text-white/50 mt-0.5">Clique no botão abaixo para gerar seu código de conexão</p>
+                          </div>
                         </div>
-                      ) : qrCodeData ? (
-                        <img src={qrCodeData} alt="QR Code" className="w-full h-full object-contain" />
-                      ) : connectionStatus === "Conectado" ? (
-                        <div className="flex flex-col items-center">
-                          <Zap className="w-12 h-12 text-green-500 mb-2" />
-                          <span className="text-sm font-bold text-black text-center">Conectado!</span>
+                        <div className={cn("flex items-start gap-3 p-3 rounded-xl transition-colors", qrCodeData ? "bg-primary/10 border border-primary/30" : "opacity-40")}>
+                          <div className="w-6 h-6 rounded-full bg-primary/20 text-primary text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">2</div>
+                          <div>
+                            <p className="text-xs font-semibold text-white">Abra o WhatsApp no celular</p>
+                            <p className="text-[11px] text-white/50 mt-0.5">Vá em <strong className="text-white/70">⋮ Menu → Aparelhos Conectados → Conectar Aparelho</strong></p>
+                          </div>
+                        </div>
+                        <div className="flex items-start gap-3 p-3 rounded-xl opacity-40">
+                          <div className="w-6 h-6 rounded-full bg-primary/20 text-primary text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">3</div>
+                          <div>
+                            <p className="text-xs font-semibold text-white">Escaneie o QR Code</p>
+                            <p className="text-[11px] text-white/50 mt-0.5">Aponte a câmera do celular para o QR Code que aparecer</p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* QR Code ou Botão */}
+                      {qrCodeData ? (
+                        <div className="flex flex-col items-center gap-3">
+                          <div className="bg-white p-3 rounded-2xl shadow-lg">
+                            <img src={qrCodeData} alt="QR Code" className="w-52 h-52 object-contain" />
+                          </div>
+                          <p className="text-xs text-yellow-400 animate-pulse font-medium">📱 Aguardando leitura do QR Code...</p>
                         </div>
                       ) : (
-                        <>
-                          <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10 text-white">
-                            <QrCode className="w-8 h-8 mb-2" />
-                            <span className="text-xs font-bold text-center">Gerar QR Code</span>
-                          </div>
-                          {/* Placeholder Image */}
-                          <div className="w-full h-full bg-[url('https://upload.wikimedia.org/wikipedia/commons/d/d0/QR_code_for_mobile_English_Wikipedia.svg')] bg-cover opacity-20"></div>
-                        </>
-                      )}
-                    </button>
-                    <div className="flex-1">
-                      <p className="text-sm text-muted-foreground mb-4 leading-relaxed">
-                        {connectionStatus === "Conectado" 
-                          ? "Seu Assistente está conectado e pronto para responder clientes!"
-                          : "Clique no quadrado para gerar o QR Code. Depois, escaneie com seu WhatsApp (Aparelhos Conectados)."
-                        }
-                      </p>
-                      
-                      {connectionStatus !== "Conectado" && (
-                        <div className="bg-yellow-500/10 border border-yellow-500/20 p-3 rounded-lg mb-4">
-                          <p className="text-[11px] text-yellow-500 font-medium">
-                            ⚠️ <strong>Atenção:</strong> O WhatsApp permite no máximo 4 aparelhos conectados simultaneamente (como WhatsApp Web e Desktop). Se der erro de "não é possível conectar mais dispositivos", desconecte um aparelho no seu celular antes de ler este QR.
-                          </p>
-                        </div>
+                        <button
+                          onClick={handleGenerateQr}
+                          disabled={isGeneratingQr}
+                          className="w-full flex items-center justify-center gap-2 bg-primary/10 hover:bg-primary/20 border border-primary/40 hover:border-primary text-primary font-semibold py-4 rounded-xl transition-all text-sm disabled:opacity-50"
+                        >
+                          {isGeneratingQr ? (
+                            <><Loader2 className="w-4 h-4 animate-spin" /> Gerando QR Code...</>
+                          ) : (
+                            <><QrCode className="w-4 h-4" /> Gerar QR Code</>
+                          )}
+                        </button>
                       )}
 
-                      <div className={cn(
-                        "flex items-center gap-2 text-xs font-semibold px-3 py-1.5 rounded-full w-fit",
-                        connectionStatus === "Conectado" ? "bg-green-500/10 text-green-500" : 
-                        connectionStatus === "Desconectado" ? "bg-red-500/10 text-red-500" :
-                        "bg-yellow-500/10 text-yellow-500"
-                      )}>
-                        <span className={cn(
-                          "w-2 h-2 rounded-full animate-pulse",
-                          connectionStatus === "Conectado" ? "bg-green-500" : 
-                          connectionStatus === "Desconectado" ? "bg-red-500" :
-                          "bg-yellow-500"
-                        )}></span>
-                        {connectionStatus}
+                      <div className="bg-yellow-500/8 border border-yellow-500/20 p-3 rounded-lg">
+                        <p className="text-[11px] text-yellow-500/80">
+                          ⚠️ O WhatsApp permite no máximo 4 aparelhos conectados. Se der erro, desconecte um aparelho no celular em <strong>Aparelhos Conectados</strong>.
+                        </p>
                       </div>
                     </div>
-                  </div>
+                  )}
                 </div>
               </div>
 
@@ -568,11 +591,11 @@ export default function AssistantPage() {
                 </h2>
                 
                 <div className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-3 gap-4">
                     <div>
                       <label className="text-xs font-semibold text-white/70 uppercase tracking-widest mb-1 block">Valor Mínimo (R$)</label>
-                      <input 
-                        type="number" 
+                      <input
+                        type="number"
                         value={formData.base_price}
                         onChange={(e) => setFormData({...formData, base_price: e.target.value})}
                         className="w-full bg-black/50 border border-white/10 rounded-lg py-2 px-3 text-sm focus:border-primary focus:outline-none transition-colors"
@@ -581,12 +604,22 @@ export default function AssistantPage() {
                     </div>
                     <div>
                       <label className="text-xs font-semibold text-white/70 uppercase tracking-widest mb-1 block">Valor Hora (R$)</label>
-                      <input 
-                        type="number" 
+                      <input
+                        type="number"
                         value={formData.hourly_rate}
                         onChange={(e) => setFormData({...formData, hourly_rate: e.target.value})}
                         className="w-full bg-black/50 border border-white/10 rounded-lg py-2 px-3 text-sm focus:border-primary focus:outline-none transition-colors"
                         placeholder="Ex: 400"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs font-semibold text-white/70 uppercase tracking-widest mb-1 block">Valor por Sessão (R$)</label>
+                      <input
+                        type="number"
+                        value={formData.price_session}
+                        onChange={(e) => setFormData({...formData, price_session: e.target.value})}
+                        className="w-full bg-black/50 border border-white/10 rounded-lg py-2 px-3 text-sm focus:border-primary focus:outline-none transition-colors"
+                        placeholder="Ex: 800"
                       />
                     </div>
                   </div>
@@ -726,7 +759,7 @@ export default function AssistantPage() {
         )}
 
         {activeTab === "agenda" && (
-          <motion.div 
+          <motion.div
             key="agenda"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -738,6 +771,25 @@ export default function AssistantPage() {
             <p className="text-muted-foreground max-w-md mx-auto">
               Aqui ficarão os agendamentos marcados pelo robô. A IA cruza automaticamente as suas regras de negócio e os horários livres.
             </p>
+          </motion.div>
+        )}
+
+        {activeTab === "copilot" && (
+          <motion.div
+            key="copilot"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+          >
+            <div className="mb-5">
+              <h2 className="text-xl font-bold flex items-center gap-2 mb-1">
+                <Edit3 className="w-5 h-5 text-primary" /> Inbox Copilot
+              </h2>
+              <p className="text-sm text-muted-foreground">
+                A IA escreve as respostas. Você revisa, edita se quiser, e clica em Enviar. Atualiza automaticamente a cada 15s.
+              </p>
+            </div>
+            <CopilotInbox />
           </motion.div>
         )}
       </AnimatePresence>

@@ -4,13 +4,14 @@ import Link from "next/link";
 import { Button } from "./ui/button";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "motion/react";
-import { Menu, X, Search, Bell } from "lucide-react";
-import { useState, useEffect } from "react";
+import { Menu, X, Search, Bell, BookOpen, Compass, Users, Bot, Download, User, Radio, Globe, Sun, Moon } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { NotificationPanel } from "./NotificationPanel";
 import { useAuth, useUser, useClerk } from "@clerk/nextjs";
 import { LogOut, LayoutDashboard, Settings } from "lucide-react";
 import { LoginModal } from "./LoginModal";
+import { isAdminUser } from "@/lib/admin";
 
 function UserDropdown() {
   const { user } = useUser();
@@ -19,9 +20,7 @@ function UserDropdown() {
   
   if (!user) return null;
 
-  const isAdmin = 
-    user.primaryEmailAddress?.emailAddress === "yurilojavirtual@gmail.com" || 
-    user.primaryEmailAddress?.emailAddress === "o9.yuri@gmail.com";
+  const isAdmin = isAdminUser(user.primaryEmailAddress?.emailAddress, user.publicMetadata);
 
   return (
     <div className="relative">
@@ -87,6 +86,35 @@ function UserDropdown() {
   );
 }
 
+const LANGUAGES = [
+  { code: "pt", name: "Português" },
+  { code: "en", name: "English" },
+  { code: "es", name: "Español" },
+  { code: "fr", name: "Français" },
+  { code: "de", name: "Deutsch" },
+  { code: "it", name: "Italiano" },
+  { code: "ja", name: "日本語" },
+  { code: "ru", name: "Русский" },
+];
+
+function applyTheme(newTheme: string) {
+  const html = document.documentElement;
+  if (newTheme === "light") {
+    html.classList.remove("dark");
+    html.classList.add("light");
+    document.body.style.backgroundColor = "#f6f7f9";
+    document.body.style.color = "#111116";
+  } else {
+    html.classList.remove("light");
+    html.classList.add("dark");
+    document.body.style.backgroundColor = "#050505";
+    document.body.style.color = "#ffffff";
+  }
+  document.querySelectorAll<HTMLIFrameElement>('iframe').forEach(iframe => {
+    iframe.contentWindow?.postMessage({ type: 'SET_THEME', theme: newTheme }, '*');
+  });
+}
+
 export function Navbar() {
   const pathname = usePathname();
   const router = useRouter();
@@ -95,7 +123,41 @@ export function Navbar() {
   const [authView, setAuthView] = useState<"login" | "register">("login");
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [theme, setTheme] = useState("dark");
+  const [isLangOpen, setIsLangOpen] = useState(false);
+  const langRef = useRef<HTMLDivElement>(null);
   const { isSignedIn: isLoggedIn } = useAuth();
+
+  useEffect(() => {
+    const saved = localStorage.getItem("theme") || "dark";
+    setTheme(saved);
+    applyTheme(saved);
+  }, []);
+
+  useEffect(() => {
+    const handleClick = (e: MouseEvent) => {
+      if (langRef.current && !langRef.current.contains(e.target as Node)) {
+        setIsLangOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
+
+  const toggleTheme = () => {
+    const next = theme === "dark" ? "light" : "dark";
+    setTheme(next);
+    localStorage.setItem("theme", next);
+    applyTheme(next);
+  };
+
+  const changeLanguage = (code: string) => {
+    localStorage.setItem("lang", code);
+    document.querySelectorAll<HTMLIFrameElement>('iframe').forEach(iframe => {
+      iframe.contentWindow?.postMessage({ type: 'SET_LANG', lang: code }, '*');
+    });
+    setIsLangOpen(false);
+  };
 
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
@@ -111,9 +173,24 @@ export function Navbar() {
 
   const navLinks = [
     { name: "HOME", path: "/" },
-    { name: "CURSOS", path: "/courses" },
+    { name: "WORKSHOPS", path: "/courses" },
     { name: "TOOLS", path: "/tools" },
     ...(isLoggedIn ? [{ name: "DASHBOARD", path: "/dashboard" }] : []),
+  ];
+
+  // Same sections as the dashboard sidebar (components handled in
+  // app/dashboard/layout.tsx) -- that sidebar is desktop-only (`hidden
+  // lg:flex`), so on mobile this menu is the ONLY way a logged-in user can
+  // reach Aulas/Ferramentas/etc. It was missing entirely before, which is
+  // what surfaced as "no menu after logging in on mobile."
+  const dashboardLinks = [
+    { name: "Meu Aprendizado", path: "/dashboard", icon: <BookOpen className="w-4 h-4" /> },
+    { name: "Ao Vivo", path: "/dashboard/lives", icon: <Radio className="w-4 h-4" /> },
+    { name: "Comunidade", path: "/dashboard/community", icon: <Users className="w-4 h-4" /> },
+    { name: "Especialistas", path: "/dashboard/tools", icon: <Bot className="w-4 h-4" /> },
+    { name: "Workshop", path: "/dashboard/courses", icon: <Compass className="w-4 h-4" /> },
+    { name: "Biblioteca", path: "/dashboard/library", icon: <Download className="w-4 h-4" /> },
+    { name: "Meu Perfil", path: "/dashboard/profile", icon: <User className="w-4 h-4" /> },
   ];
 
   return (
@@ -195,6 +272,49 @@ export function Navbar() {
 
                   <div className="ml-2 flex items-center justify-center">
                     <UserDropdown />
+                  </div>
+
+                  {/* Language + Theme toggles — to the right of the profile photo */}
+                  <div className="flex items-center gap-1 ml-1">
+                    <div ref={langRef} className="relative">
+                      <button
+                        onClick={() => setIsLangOpen(!isLangOpen)}
+                        className="p-2 text-muted-foreground hover:text-white transition-colors notranslate"
+                        title="Mudar Idioma"
+                      >
+                        <Globe className="w-4 h-4" />
+                      </button>
+                      <AnimatePresence>
+                        {isLangOpen && (
+                          <motion.div
+                            initial={{ opacity: 0, y: 8, scale: 0.95 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            exit={{ opacity: 0, y: 8, scale: 0.95 }}
+                            className="absolute right-0 top-full mt-2 w-40 glass rounded-xl border border-white/10 shadow-2xl py-2 z-50 flex flex-col notranslate"
+                          >
+                            {LANGUAGES.map((lang) => (
+                              <button
+                                key={lang.code}
+                                onClick={() => changeLanguage(lang.code)}
+                                className="text-left px-4 py-2 text-sm text-white/70 hover:text-white hover:bg-white/5 transition-colors"
+                              >
+                                {lang.name}
+                              </button>
+                            ))}
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
+
+                    <button
+                      onClick={toggleTheme}
+                      className="p-2 text-muted-foreground hover:text-white transition-colors"
+                      title="Alternar Modo Claro/Escuro"
+                    >
+                      {theme === "dark"
+                        ? <Sun className="w-4 h-4 text-yellow-400" />
+                        : <Moon className="w-4 h-4 text-blue-400" />}
+                    </button>
                   </div>
                 </>
               )}
@@ -290,10 +410,27 @@ export function Navbar() {
                   </Button>
                 </>
               ) : (
-                <div className="flex items-center gap-4 px-4 py-2 justify-between">
-                  <span className="text-sm font-medium text-white/60">Minha Conta</span>
-                  <UserDropdown />
-                </div>
+                <>
+                  {dashboardLinks.map((link) => (
+                    <Link
+                      key={link.path}
+                      href={link.path}
+                      onClick={() => setIsOpen(false)}
+                      className={cn(
+                        "flex items-center gap-3 text-sm font-medium px-4 py-2 rounded-lg transition-colors",
+                        pathname === link.path ? "bg-white/10 text-white" : "text-white/60 hover:bg-white/5 hover:text-white"
+                      )}
+                    >
+                      {link.icon}
+                      {link.name}
+                    </Link>
+                  ))}
+                  <div className="h-px w-full bg-white/10 my-2" />
+                  <div className="flex items-center gap-4 px-4 py-2 justify-between">
+                    <span className="text-sm font-medium text-white/60">Minha Conta</span>
+                    <UserDropdown />
+                  </div>
+                </>
               )}
             </motion.div>
           )}

@@ -35,8 +35,8 @@ export default function AdminCourses() {
   const handleDeleteCourse = async (id: string) => {
     if (!confirm("Tem certeza que deseja apagar este curso inteiro, com todos os módulos e aulas?")) return;
     try {
-      const { error } = await supabase.from("courses").delete().eq("id", id);
-      if (error) throw error;
+      const res = await fetch(`/api/admin/courses?id=${id}`, { method: "DELETE" });
+      if (!res.ok) throw new Error((await res.json()).error);
       fetchCourses();
     } catch (err) {
       console.error(err);
