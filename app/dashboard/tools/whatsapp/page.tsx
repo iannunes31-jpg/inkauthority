@@ -235,7 +235,7 @@ export default function AssistantPage() {
 
       if (!res.ok) {
         console.error("Erro ao salvar configurações", result);
-        alert(`⚠️ ATENÇÃO: Erro ao salvar! ${result.error || ""} - ${result.details || ""}\n\nA tabela 'ai_settings' pode estar faltando colunas ou permissões.`);
+        alert(`⚠️ Erro ao salvar!\n\nErro: ${result.error || ""}\nDetalhes: ${result.details || ""}\nCódigo: ${result.code || ""}\nHint: ${result.hint || ""}\nServiceKey: ${result.hasServiceKey}`);
       } else {
         alert("Configurações do Assistente salvas com sucesso!");
       }

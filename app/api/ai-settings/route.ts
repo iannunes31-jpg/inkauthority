@@ -45,13 +45,23 @@ export async function POST(req: Request) {
     updated_at: new Date().toISOString(),
   };
 
+  const hasServiceKey = !!process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  console.log('[ai-settings] hasServiceKey:', hasServiceKey, 'url:', supabaseUrl?.slice(0, 40));
+
   const { error } = await supabaseAdmin
     .from('ai_settings')
     .upsert(payload, { onConflict: 'clerk_user_id' });
 
   if (error) {
-    console.error('Erro ao salvar ai_settings:', error);
-    return NextResponse.json({ error: error.message, details: error.details }, { status: 500 });
+    console.error('[ai-settings] upsert error:', JSON.stringify(error));
+    return NextResponse.json({
+      error: error.message,
+      details: error.details,
+      hint: error.hint,
+      code: error.code,
+      hasServiceKey,
+    }, { status: 500 });
   }
 
   return NextResponse.json({ success: true });
