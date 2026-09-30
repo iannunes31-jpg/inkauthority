@@ -235,7 +235,7 @@ export default function AssistantPage() {
 
       if (!res.ok) {
         console.error("Erro ao salvar configurações", result);
-        alert(`⚠️ Erro ao salvar!\n\nErro: ${result.error || ""}\nDetalhes: ${result.details || ""}\nCódigo: ${result.code || ""}\nHint: ${result.hint || ""}\nServiceKey: ${result.hasServiceKey}`);
+        alert(`⚠️ Erro ao salvar!\n\nErro: ${result.error || ""}\nHint: ${result.hint || ""}\nServiceKey: ${result.hasServiceKey}\nKeyRole: ${result.keyRole}`);
       } else {
         alert("Configurações do Assistente salvas com sucesso!");
       }
