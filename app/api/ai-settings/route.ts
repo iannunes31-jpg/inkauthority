@@ -49,10 +49,12 @@ export async function POST(req: Request) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   // Decode JWT payload to verify which role the key has
   let keyRole = 'unknown';
+  let keyRef = 'unknown';
   try {
     const key = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
     const payload = JSON.parse(Buffer.from(key.split('.')[1], 'base64').toString());
     keyRole = payload.role || 'no_role';
+    keyRef = payload.ref || 'no_ref';
   } catch { keyRole = 'decode_failed'; }
   console.log('[ai-settings] hasServiceKey:', hasServiceKey, 'keyRole:', keyRole, 'url:', supabaseUrl?.slice(0, 40));
 
@@ -69,6 +71,8 @@ export async function POST(req: Request) {
       code: error.code,
       hasServiceKey,
       keyRole,
+      keyRef,
+      urlRef: supabaseUrl?.match(/https:\/\/([^.]+)\./)?.[1],
     }, { status: 500 });
   }
 
