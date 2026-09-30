@@ -16,7 +16,9 @@ export default function AssistantPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [qrCodeData, setQrCodeData] = useState<string | null>(null);
-  const [connectionStatus, setConnectionStatus] = useState<string>("Carregando...");
+  const [connectionStatus, setConnectionStatus] = useState<string>(() => {
+    try { return localStorage.getItem("wpp-status") || "Carregando..."; } catch { return "Carregando..."; }
+  });
   const [isGeneratingQr, setIsGeneratingQr] = useState(false);
   const [hasAccess, setHasAccess] = useState<boolean | null>(null);
 
@@ -82,16 +84,11 @@ export default function AssistantPage() {
       });
       const data = await res.json();
       const state = (data.state || '').toLowerCase();
-      if (state === "open") {
-        setConnectionStatus("Conectado");
-        setQrCodeData(null);
-      } else if (state === "connecting") {
-        setConnectionStatus("Aguardando leitura do QR Code");
-      } else if (state === "not_found" || state === "unknown" || state === "close") {
-        setConnectionStatus("Desconectado");
-      } else {
-        setConnectionStatus("Desconectado");
-      }
+      let newStatus = "Desconectado";
+      if (state === "open") { newStatus = "Conectado"; setQrCodeData(null); }
+      else if (state === "connecting") { newStatus = "Aguardando leitura do QR Code"; }
+      setConnectionStatus(newStatus);
+      try { localStorage.setItem("wpp-status", newStatus); } catch {}
     } catch (e) {
       setConnectionStatus("Erro na conexão");
     }

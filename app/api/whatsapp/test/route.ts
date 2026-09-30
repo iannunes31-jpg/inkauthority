@@ -70,11 +70,11 @@ export async function GET() {
       results.vertex_project = credentials.project_id || 'no project_id';
       const vertex = createVertex({
         project: credentials.project_id,
-        location: 'us-central1',
+        location: 'global',
         googleAuthOptions: { credentials },
       });
       const { text } = await generateText({
-        model: vertex('gemini-2.0-flash-lite'),
+        model: vertex('gemini-3.1-flash-lite'),
         messages: [{ role: 'user', content: 'Responda só "ok"' }],
       });
       results.ai_test = { ok: true, response: text.slice(0, 100) };
