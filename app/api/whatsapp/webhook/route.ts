@@ -300,8 +300,8 @@ Esta e a estrategia de conversao que voce DEVE seguir rigidamente:
         headers: { 'Content-Type': 'application/json', 'apikey': apiKey },
         body: JSON.stringify({
           number: phoneNumber,
-          options: { delay: 1500, presence: 'composing' },
-          textMessage: { text: finalResponse }
+          text: finalResponse,
+          delay: 1500
         })
       });
       const sendData = await sendRes.json().catch(() => ({}));
