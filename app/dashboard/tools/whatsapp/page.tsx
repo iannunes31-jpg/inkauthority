@@ -37,6 +37,7 @@ export default function AssistantPage() {
     bot_personality: "Profissional e educado",
     is_active: false,
     bot_mode: "copilot",
+    price_session: "",
     price_arm: "",
     price_leg: "",
     price_front: "",
@@ -159,6 +160,7 @@ export default function AssistantPage() {
         bot_personality: data.bot_personality || "Profissional e educado",
         is_active: data.is_active || false,
         bot_mode: data.bot_mode || "copilot",
+        price_session: data.price_session || "",
         price_arm: data.price_arm || "",
         price_leg: data.price_leg || "",
         price_front: data.price_front || "",
@@ -219,6 +221,7 @@ export default function AssistantPage() {
       ...formData,
       base_price: Number(formData.base_price) || 0,
       hourly_rate: Number(formData.hourly_rate) || 0,
+      price_session: Number(formData.price_session) || null,
       price_arm: Number(formData.price_arm) || null,
       price_leg: Number(formData.price_leg) || null,
       price_front: Number(formData.price_front) || null,
@@ -588,11 +591,11 @@ export default function AssistantPage() {
                 </h2>
                 
                 <div className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-3 gap-4">
                     <div>
                       <label className="text-xs font-semibold text-white/70 uppercase tracking-widest mb-1 block">Valor Mínimo (R$)</label>
-                      <input 
-                        type="number" 
+                      <input
+                        type="number"
                         value={formData.base_price}
                         onChange={(e) => setFormData({...formData, base_price: e.target.value})}
                         className="w-full bg-black/50 border border-white/10 rounded-lg py-2 px-3 text-sm focus:border-primary focus:outline-none transition-colors"
@@ -601,12 +604,22 @@ export default function AssistantPage() {
                     </div>
                     <div>
                       <label className="text-xs font-semibold text-white/70 uppercase tracking-widest mb-1 block">Valor Hora (R$)</label>
-                      <input 
-                        type="number" 
+                      <input
+                        type="number"
                         value={formData.hourly_rate}
                         onChange={(e) => setFormData({...formData, hourly_rate: e.target.value})}
                         className="w-full bg-black/50 border border-white/10 rounded-lg py-2 px-3 text-sm focus:border-primary focus:outline-none transition-colors"
                         placeholder="Ex: 400"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs font-semibold text-white/70 uppercase tracking-widest mb-1 block">Valor por Sessão (R$)</label>
+                      <input
+                        type="number"
+                        value={formData.price_session}
+                        onChange={(e) => setFormData({...formData, price_session: e.target.value})}
+                        className="w-full bg-black/50 border border-white/10 rounded-lg py-2 px-3 text-sm focus:border-primary focus:outline-none transition-colors"
+                        placeholder="Ex: 800"
                       />
                     </div>
                   </div>

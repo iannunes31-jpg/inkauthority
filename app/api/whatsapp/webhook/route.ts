@@ -168,6 +168,7 @@ Seu tom de voz e: "${settings.bot_personality}".
 Estilos de Tatuagem que voce faz: ${settings.styles}
 Valor Base Minimo: ${settings.base_price ? `R$ ${settings.base_price}` : 'N/A'}
 Valor por Hora: ${settings.hourly_rate ? `R$ ${settings.hourly_rate}` : 'N/A'}
+Valor por Sessao: ${settings.price_session ? `R$ ${settings.price_session}` : 'N/A'}
 Metodos de Pagamento: ${settings.payment_methods}
 Endereco do Estudio: ${settings.address}
 
