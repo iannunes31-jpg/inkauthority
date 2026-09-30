@@ -70,7 +70,7 @@ export async function GET() {
       results.vertex_project = credentials.project_id || 'no project_id';
       const vertex = createVertex({
         project: credentials.project_id,
-        location: 'global',
+        location: 'us-central1',
         googleAuthOptions: { credentials },
       });
       const { text } = await generateText({

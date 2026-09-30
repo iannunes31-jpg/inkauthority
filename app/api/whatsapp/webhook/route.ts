@@ -225,7 +225,7 @@ Esta e a estrategia de conversao que voce DEVE seguir rigidamente:
       const credentials = JSON.parse(process.env.GOOGLE_VERTEX_CREDENTIALS);
       vertex = createVertex({
         project: credentials.project_id,
-        location: 'global',
+        location: 'us-central1',
         googleAuthOptions: { credentials }
       });
     } catch (e: any) {
