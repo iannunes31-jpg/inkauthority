@@ -407,70 +407,95 @@ export default function AssistantPage() {
 
                 {/* QR Code de Conexão */}
                 <div className="border-t border-white/10 pt-6">
-                  <h3 className="text-sm font-bold flex items-center gap-2 mb-4">
+                  <h3 className="text-sm font-bold flex items-center gap-2 mb-5">
                     <QrCode className="w-4 h-4 text-primary" /> Conectar WhatsApp
+                    <div className={cn(
+                      "ml-auto flex items-center gap-1.5 text-xs font-semibold px-3 py-1 rounded-full",
+                      connectionStatus === "Conectado" ? "bg-green-500/15 text-green-400" :
+                      connectionStatus === "Desconectado" ? "bg-red-500/15 text-red-400" :
+                      "bg-yellow-500/15 text-yellow-400"
+                    )}>
+                      <span className={cn(
+                        "w-1.5 h-1.5 rounded-full",
+                        connectionStatus === "Conectado" ? "bg-green-400 animate-pulse" :
+                        connectionStatus === "Desconectado" ? "bg-red-400" :
+                        "bg-yellow-400 animate-pulse"
+                      )} />
+                      {connectionStatus}
+                    </div>
                   </h3>
-                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6">
-                    <button 
-                      onClick={handleGenerateQr}
-                      disabled={isGeneratingQr || connectionStatus === "Conectado"}
-                      className="w-64 h-64 bg-white rounded-xl flex items-center justify-center p-2 relative overflow-hidden group cursor-pointer border-2 border-transparent hover:border-primary transition-all disabled:cursor-not-allowed disabled:hover:border-transparent shrink-0"
-                    >
-                      {isGeneratingQr ? (
-                        <div className="flex flex-col items-center">
-                          <Loader2 className="w-8 h-8 animate-spin text-black mb-2" />
-                          <span className="text-xs font-bold text-black text-center">Gerando...</span>
+
+                  {connectionStatus === "Conectado" ? (
+                    <div className="flex flex-col items-center gap-3 py-6 text-center">
+                      <div className="w-16 h-16 rounded-full bg-green-500/15 flex items-center justify-center">
+                        <Zap className="w-8 h-8 text-green-400" />
+                      </div>
+                      <p className="text-sm font-semibold text-green-400">WhatsApp Conectado!</p>
+                      <p className="text-xs text-white/50 max-w-xs">Seu assistente está ativo e pronto para atender clientes automaticamente.</p>
+                      <button
+                        onClick={handleGenerateQr}
+                        disabled={isGeneratingQr}
+                        className="mt-2 text-xs text-white/30 hover:text-white/60 underline transition-colors"
+                      >
+                        Reconectar com outro número
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {/* Passos */}
+                      <div className="space-y-3">
+                        <div className={cn("flex items-start gap-3 p-3 rounded-xl transition-colors", !qrCodeData ? "bg-primary/10 border border-primary/30" : "opacity-40")}>
+                          <div className="w-6 h-6 rounded-full bg-primary/20 text-primary text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">1</div>
+                          <div>
+                            <p className="text-xs font-semibold text-white">Gere o QR Code</p>
+                            <p className="text-[11px] text-white/50 mt-0.5">Clique no botão abaixo para gerar seu código de conexão</p>
+                          </div>
                         </div>
-                      ) : qrCodeData ? (
-                        <img src={qrCodeData} alt="QR Code" className="w-full h-full object-contain" />
-                      ) : connectionStatus === "Conectado" ? (
-                        <div className="flex flex-col items-center">
-                          <Zap className="w-12 h-12 text-green-500 mb-2" />
-                          <span className="text-sm font-bold text-black text-center">Conectado!</span>
+                        <div className={cn("flex items-start gap-3 p-3 rounded-xl transition-colors", qrCodeData ? "bg-primary/10 border border-primary/30" : "opacity-40")}>
+                          <div className="w-6 h-6 rounded-full bg-primary/20 text-primary text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">2</div>
+                          <div>
+                            <p className="text-xs font-semibold text-white">Abra o WhatsApp no celular</p>
+                            <p className="text-[11px] text-white/50 mt-0.5">Vá em <strong className="text-white/70">⋮ Menu → Aparelhos Conectados → Conectar Aparelho</strong></p>
+                          </div>
+                        </div>
+                        <div className="flex items-start gap-3 p-3 rounded-xl opacity-40">
+                          <div className="w-6 h-6 rounded-full bg-primary/20 text-primary text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">3</div>
+                          <div>
+                            <p className="text-xs font-semibold text-white">Escaneie o QR Code</p>
+                            <p className="text-[11px] text-white/50 mt-0.5">Aponte a câmera do celular para o QR Code que aparecer</p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* QR Code ou Botão */}
+                      {qrCodeData ? (
+                        <div className="flex flex-col items-center gap-3">
+                          <div className="bg-white p-3 rounded-2xl shadow-lg">
+                            <img src={qrCodeData} alt="QR Code" className="w-52 h-52 object-contain" />
+                          </div>
+                          <p className="text-xs text-yellow-400 animate-pulse font-medium">📱 Aguardando leitura do QR Code...</p>
                         </div>
                       ) : (
-                        <>
-                          <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10 text-white">
-                            <QrCode className="w-8 h-8 mb-2" />
-                            <span className="text-xs font-bold text-center">Gerar QR Code</span>
-                          </div>
-                          {/* Placeholder Image */}
-                          <div className="w-full h-full bg-[url('https://upload.wikimedia.org/wikipedia/commons/d/d0/QR_code_for_mobile_English_Wikipedia.svg')] bg-cover opacity-20"></div>
-                        </>
-                      )}
-                    </button>
-                    <div className="flex-1">
-                      <p className="text-sm text-muted-foreground mb-4 leading-relaxed">
-                        {connectionStatus === "Conectado" 
-                          ? "Seu Assistente está conectado e pronto para responder clientes!"
-                          : "Clique no quadrado para gerar o QR Code. Depois, escaneie com seu WhatsApp (Aparelhos Conectados)."
-                        }
-                      </p>
-                      
-                      {connectionStatus !== "Conectado" && (
-                        <div className="bg-yellow-500/10 border border-yellow-500/20 p-3 rounded-lg mb-4">
-                          <p className="text-[11px] text-yellow-500 font-medium">
-                            ⚠️ <strong>Atenção:</strong> O WhatsApp permite no máximo 4 aparelhos conectados simultaneamente (como WhatsApp Web e Desktop). Se der erro de "não é possível conectar mais dispositivos", desconecte um aparelho no seu celular antes de ler este QR.
-                          </p>
-                        </div>
+                        <button
+                          onClick={handleGenerateQr}
+                          disabled={isGeneratingQr}
+                          className="w-full flex items-center justify-center gap-2 bg-primary/10 hover:bg-primary/20 border border-primary/40 hover:border-primary text-primary font-semibold py-4 rounded-xl transition-all text-sm disabled:opacity-50"
+                        >
+                          {isGeneratingQr ? (
+                            <><Loader2 className="w-4 h-4 animate-spin" /> Gerando QR Code...</>
+                          ) : (
+                            <><QrCode className="w-4 h-4" /> Gerar QR Code</>
+                          )}
+                        </button>
                       )}
 
-                      <div className={cn(
-                        "flex items-center gap-2 text-xs font-semibold px-3 py-1.5 rounded-full w-fit",
-                        connectionStatus === "Conectado" ? "bg-green-500/10 text-green-500" : 
-                        connectionStatus === "Desconectado" ? "bg-red-500/10 text-red-500" :
-                        "bg-yellow-500/10 text-yellow-500"
-                      )}>
-                        <span className={cn(
-                          "w-2 h-2 rounded-full animate-pulse",
-                          connectionStatus === "Conectado" ? "bg-green-500" : 
-                          connectionStatus === "Desconectado" ? "bg-red-500" :
-                          "bg-yellow-500"
-                        )}></span>
-                        {connectionStatus}
+                      <div className="bg-yellow-500/8 border border-yellow-500/20 p-3 rounded-lg">
+                        <p className="text-[11px] text-yellow-500/80">
+                          ⚠️ O WhatsApp permite no máximo 4 aparelhos conectados. Se der erro, desconecte um aparelho no celular em <strong>Aparelhos Conectados</strong>.
+                        </p>
                       </div>
                     </div>
-                  </div>
+                  )}
                 </div>
               </div>
 
