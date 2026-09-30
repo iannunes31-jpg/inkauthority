@@ -236,11 +236,13 @@ Esta e a estrategia de conversao que voce DEVE seguir rigidamente:
       return NextResponse.json({ error: 'Vertex AI config error' }, { status: 500 });
     }
 
+    console.log('[WPP] calling AI, messages count:', messagesToSend.length);
     const { text: aiResponse } = await generateText({
       model: vertex('gemini-3.1-flash-lite'),
       system: systemPrompt,
       messages: messagesToSend,
     });
+    console.log('[WPP] AI response length:', aiResponse?.length, 'preview:', aiResponse?.slice(0, 80));
 
     let finalResponse = aiResponse;
 
@@ -282,8 +284,9 @@ Esta e a estrategia de conversao que voce DEVE seguir rigidamente:
     }
 
     // Send text response via Evolution API
+    console.log('[WPP] sending to', remoteJid, 'via instance', instanceName);
     try {
-      await fetch(`${evolutionUrl}/message/sendText/${instanceName}`, {
+      const sendRes = await fetch(`${evolutionUrl}/message/sendText/${instanceName}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'apikey': apiKey },
         body: JSON.stringify({
@@ -292,6 +295,8 @@ Esta e a estrategia de conversao que voce DEVE seguir rigidamente:
           textMessage: { text: finalResponse }
         })
       });
+      const sendData = await sendRes.json().catch(() => ({}));
+      console.log('[WPP] send result:', sendRes.status, JSON.stringify(sendData).slice(0, 200));
 
       // Send photo example if tag was present
       if (needsExamplePhoto) {
