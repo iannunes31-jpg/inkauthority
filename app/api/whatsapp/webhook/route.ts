@@ -291,13 +291,15 @@ Esta e a estrategia de conversao que voce DEVE seguir rigidamente:
     }
 
     // Send text response via Evolution API
-    console.log('[WPP] sending to', remoteJid, 'via instance', instanceName);
+    // Evolution API expects just the phone number, not the full JID
+    const phoneNumber = remoteJid.split('@')[0];
+    console.log('[WPP] sending to', phoneNumber, 'via instance', instanceName);
     try {
       const sendRes = await fetch(`${evolutionUrl}/message/sendText/${instanceName}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'apikey': apiKey },
         body: JSON.stringify({
-          number: remoteJid,
+          number: phoneNumber,
           options: { delay: 1500, presence: 'composing' },
           textMessage: { text: finalResponse }
         })
