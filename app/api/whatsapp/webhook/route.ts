@@ -114,32 +114,38 @@ export async function POST(req: Request) {
       return NextResponse.json({ status: 'inactive' });
     }
 
-    // 2. Manage CRM (Upsert Customer)
-    let { data: customer } = await supabase
-      .from('customers')
-      .select('id, name, status')
-      .eq('clerk_user_id', clerk_user_id)
-      .eq('phone_number', remoteJid)
-      .single();
-
-    if (!customer) {
-      const { data: newCustomer } = await supabase
+    // 2. Manage CRM (Upsert Customer) — wrapped so errors don't stop the bot
+    console.log('[WPP] step: CRM');
+    let customer: any = null;
+    try {
+      const { data: existingCustomer, error: selectErr } = await supabase
         .from('customers')
-        .insert({
-          clerk_user_id,
-          phone_number: remoteJid,
-          status: 'lead'
-        })
-        .select()
+        .select('id, name, status')
+        .eq('clerk_user_id', clerk_user_id)
+        .eq('phone_number', remoteJid)
         .single();
-      customer = newCustomer;
+      if (selectErr) console.log('[WPP] CRM select error:', selectErr.message);
+      if (existingCustomer) {
+        customer = existingCustomer;
+      } else {
+        const { data: newCustomer, error: insertErr } = await supabase
+          .from('customers')
+          .insert({ clerk_user_id, phone_number: remoteJid, status: 'lead' })
+          .select()
+          .single();
+        if (insertErr) console.log('[WPP] CRM insert error:', insertErr.message);
+        customer = newCustomer;
+      }
+    } catch (crmErr: any) {
+      console.log('[WPP] CRM exception:', crmErr.message);
     }
 
     // Determine if it's a foreign number
     const isForeign = !remoteJid.startsWith('55');
 
     // 4. Fetch Conversation History
-    const { data: history } = await supabase
+    console.log('[WPP] step: history');
+    const { data: history, error: histErr } = await supabase
       .from('chat_history')
       .select('role, content')
       .eq('clerk_user_id', clerk_user_id)
@@ -147,6 +153,7 @@ export async function POST(req: Request) {
       .in('role', ['user', 'assistant'])
       .order('created_at', { ascending: false })
       .limit(10);
+    if (histErr) console.log('[WPP] history error:', histErr.message);
 
     const formattedHistory: { role: 'user' | 'assistant', content: string }[] = history
       ? history.reverse().map((msg) => ({
