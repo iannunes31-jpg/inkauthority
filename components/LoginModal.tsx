@@ -296,60 +296,28 @@ export function LoginModal({ isOpen, onClose, initialView = "login" }: LoginModa
     setErrorMsg("");
 
     try {
-      // Step 1: identify the user (email only — no password yet)
-      const step1 = await signIn.create({ identifier: email });
       const s = signIn as any;
 
-      const afterStep1 = step1?.status || s.status;
+      // Use strategy: "password" directly — this is the correct Clerk API for
+      // email+password sign-in. Passing identifier+password without strategy
+      // causes Clerk to return needs_identifier and ignore the credentials.
+      const result = await signIn.create({
+        strategy: "password",
+        identifier: email,
+        password: password,
+      } as any);
 
-      if (afterStep1 === "complete") {
-        // Rare: Clerk completed without needing any factor
+      const status = result?.status || s.status;
+
+      if (status === "complete") {
+        await setActive({ session: result?.createdSessionId || s.createdSessionId });
         onClose();
         window.location.reload();
         return;
       }
 
-      // Step 2: attempt password as the first factor
-      if (afterStep1 === "needs_first_factor") {
-        let result: any;
-        try {
-          result = await s.attemptFirstFactor({ strategy: "password", password });
-        } catch (pwErr: any) {
-          // Password wrong or not enabled — fall through to email-code factor below
-          const pwMsg = pwErr.errors?.[0]?.longMessage || pwErr.errors?.[0]?.message;
-          if (pwMsg) { setErrorMsg(pwMsg); setIsLoading(false); return; }
-          throw pwErr;
-        }
-
-        const finalStatus = result?.status || s.status;
-        if (finalStatus === "complete") {
-          onClose();
-          window.location.reload();
-          return;
-        }
-
-        // Needs email verification after password (MFA / email_code second factor)
-        if (finalStatus === "needs_second_factor" || finalStatus === "needs_first_factor") {
-          await s.prepareSecondFactor?.({ strategy: "email_code" }) ||
-            await s.prepareFirstFactor?.({ strategy: "email_code", emailAddressId: s.supportedFirstFactors?.find((f: any) => f.strategy === "email_code")?.emailAddressId });
-          setVerificationType("signin");
-          setPendingVerification(true);
-          setResendCooldown(30);
-          return;
-        }
-
-        setErrorMsg(`Status inesperado: ${finalStatus}`);
-        return;
-      }
-
-      // Fallback: try email code flow (password not enabled in Clerk)
-      if (afterStep1 === "needs_identifier") {
-        setErrorMsg("Email não encontrado. Verifique o endereço digitado.");
-        return;
-      }
-
-      // needs_second_factor directly after identifier step
-      if (afterStep1 === "needs_second_factor") {
+      // MFA: needs a second factor (email code)
+      if (status === "needs_second_factor") {
         await s.prepareSecondFactor?.({ strategy: "email_code" });
         setVerificationType("signin");
         setPendingVerification(true);
@@ -357,7 +325,7 @@ export function LoginModal({ isOpen, onClose, initialView = "login" }: LoginModa
         return;
       }
 
-      setErrorMsg(`Erro ao fazer login. Status: ${afterStep1}`);
+      setErrorMsg(`Erro ao fazer login. Status: ${status}`);
     } catch (err: any) {
       console.error("Erro no Clerk Sign In:", err);
       setErrorMsg(err.errors?.[0]?.longMessage || err.errors?.[0]?.message || err.message || "Email ou senha incorretos.");
