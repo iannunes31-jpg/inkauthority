@@ -296,43 +296,40 @@ export function LoginModal({ isOpen, onClose, initialView = "login" }: LoginModa
     setErrorMsg("");
 
     try {
-      const s = signIn as any;
-
-      // Step 1: identify the user
-      await signIn.create({ identifier: email });
-      const afterIdent = s.status;
+      // Step 1: identify the user — always read status from the return value
+      const identResult = (await signIn.create({ identifier: email })) as any;
+      const afterIdent = identResult?.status;
 
       if (afterIdent === "complete") {
-        await setActive({ session: s.createdSessionId });
+        await setActive({ session: identResult.createdSessionId });
         onClose(); window.location.reload(); return;
       }
 
       if (afterIdent === "needs_first_factor") {
-        // Check if password is supported; if not fall back to email_code
-        const supportsPassword = s.supportedFirstFactors?.some((f: any) => f.strategy === "password");
+        const supportsPassword = identResult.supportedFirstFactors?.some((f: any) => f.strategy === "password");
 
         if (supportsPassword) {
-          const result = await s.attemptFirstFactor({ strategy: "password", password });
-          const st = result?.status || s.status;
+          const result = (await identResult.attemptFirstFactor({ strategy: "password", password })) as any;
+          const st = result?.status;
           if (st === "complete") {
-            await setActive({ session: result?.createdSessionId || s.createdSessionId });
+            await setActive({ session: result.createdSessionId });
             onClose(); window.location.reload(); return;
           }
           if (st === "needs_second_factor") {
-            await s.prepareSecondFactor?.({ strategy: "email_code" });
+            await result.prepareSecondFactor?.({ strategy: "email_code" });
             setVerificationType("signin"); setPendingVerification(true); setResendCooldown(30); return;
           }
           setErrorMsg(`Status inesperado: ${st}`); return;
         }
 
         // Password not enabled — send email code instead
-        const emailFactor = s.supportedFirstFactors?.find((f: any) => f.strategy === "email_code");
-        await s.prepareFirstFactor({ strategy: "email_code", emailAddressId: emailFactor?.emailAddressId });
+        const emailFactor = identResult.supportedFirstFactors?.find((f: any) => f.strategy === "email_code");
+        await identResult.prepareFirstFactor({ strategy: "email_code", emailAddressId: emailFactor?.emailAddressId });
         setVerificationType("signin"); setPendingVerification(true); setResendCooldown(30); return;
       }
 
       if (afterIdent === "needs_second_factor") {
-        await s.prepareSecondFactor?.({ strategy: "email_code" });
+        await identResult.prepareSecondFactor?.({ strategy: "email_code" });
         setVerificationType("signin"); setPendingVerification(true); setResendCooldown(30); return;
       }
 
