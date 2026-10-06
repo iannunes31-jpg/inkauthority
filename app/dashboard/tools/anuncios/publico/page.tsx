@@ -8,6 +8,7 @@ import { useChat, Chat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
 import { useEffect, useRef, useMemo } from "react";
 import { Button } from "@/components/ui/button";
+import { AdsAccessGate } from "@/components/AdsAccessGate";
 
 const WELCOME = "Olá! Sou o Agente de Público da Ink Authority. Vou te ajudar a entender quem é o seu cliente ideal e como falar com ele. Preencha o formulário ao lado para eu começar a análise do seu perfil! 🎯";
 
@@ -84,6 +85,7 @@ Por favor, faça uma análise completa do meu público-alvo e personas.`;
   };
 
   return (
+    <AdsAccessGate>
     <div className="h-[calc(100vh-80px)] flex flex-col">
       {/* Header */}
       <div className="px-6 py-4 border-b border-border/20 flex items-center gap-4 bg-background/95 backdrop-blur-sm sticky top-0 z-10">
@@ -293,5 +295,6 @@ Por favor, faça uma análise completa do meu público-alvo e personas.`;
         </div>
       </div>
     </div>
+    </AdsAccessGate>
   );
 }

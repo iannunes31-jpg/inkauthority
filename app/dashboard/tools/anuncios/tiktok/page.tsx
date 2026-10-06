@@ -7,6 +7,7 @@ import { useChat, Chat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
 import { useEffect, useRef, useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
+import { AdsAccessGate } from "@/components/AdsAccessGate";
 
 const WELCOME = `Fala! Sou o Agente de TikTok da Ink Authority. 🎵
 
@@ -59,6 +60,7 @@ export default function TikTokAdsPage() {
   };
 
   return (
+    <AdsAccessGate>
     <div className="h-[calc(100vh-80px)] flex flex-col">
       <div className="px-6 py-4 border-b border-border/20 flex items-center gap-4 bg-background/95 backdrop-blur-sm sticky top-0 z-10">
         <Link href="/dashboard/tools/anuncios" className="p-2 rounded-xl hover:bg-white/5 transition-colors">
@@ -133,5 +135,6 @@ export default function TikTokAdsPage() {
         </div>
       </div>
     </div>
+    </AdsAccessGate>
   );
 }

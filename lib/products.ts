@@ -20,6 +20,11 @@ export const PRODUCT_CATALOG: Record<string, CatalogProduct> = {
     price: 97.0,
     isSubscription: true,
   },
+  anuncios_premium: {
+    name: "Central de Anúncios IA",
+    price: 97.0, // TODO: definir preço real
+    isSubscription: true,
+  },
   marketing_posicionamento: {
     name: "Curso Marketing & Posicionamento",
     price: 997,
