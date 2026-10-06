@@ -296,47 +296,30 @@ export function LoginModal({ isOpen, onClose, initialView = "login" }: LoginModa
     setErrorMsg("");
 
     try {
-      // Step 1: identify the user — always read status from the return value
-      const identResult = (await signIn.create({ identifier: email })) as any;
-      const afterIdent = identResult?.status;
+      const result = await signIn.create({ identifier: email, password } as any);
 
-      if (afterIdent === "complete") {
-        await setActive({ session: identResult.createdSessionId });
+      if (result.status === "complete") {
+        await setActive({ session: result.createdSessionId });
         onClose(); window.location.reload(); return;
       }
 
-      if (afterIdent === "needs_first_factor") {
-        const supportsPassword = identResult.supportedFirstFactors?.some((f: any) => f.strategy === "password");
-
-        if (supportsPassword) {
-          const result = (await identResult.attemptFirstFactor({ strategy: "password", password })) as any;
-          const st = result?.status;
-          if (st === "complete") {
-            await setActive({ session: result.createdSessionId });
-            onClose(); window.location.reload(); return;
-          }
-          if (st === "needs_second_factor") {
-            await result.prepareSecondFactor?.({ strategy: "email_code" });
-            setVerificationType("signin"); setPendingVerification(true); setResendCooldown(30); return;
-          }
-          setErrorMsg(`Status inesperado: ${st}`); return;
-        }
-
-        // Password not enabled — send email code instead
-        const emailFactor = identResult.supportedFirstFactors?.find((f: any) => f.strategy === "email_code");
-        await identResult.prepareFirstFactor({ strategy: "email_code", emailAddressId: emailFactor?.emailAddressId });
+      if (result.status === "needs_second_factor") {
+        const r = result as any;
+        await r.prepareSecondFactor?.({ strategy: "email_code" });
         setVerificationType("signin"); setPendingVerification(true); setResendCooldown(30); return;
       }
 
-      if (afterIdent === "needs_second_factor") {
-        await identResult.prepareSecondFactor?.({ strategy: "email_code" });
-        setVerificationType("signin"); setPendingVerification(true); setResendCooldown(30); return;
-      }
-
-      setErrorMsg(`Erro ao fazer login. Status: ${afterIdent}`);
+      setErrorMsg("Email ou senha incorretos.");
     } catch (err: any) {
       console.error("Erro no Clerk Sign In:", err);
-      setErrorMsg(err.errors?.[0]?.longMessage || err.errors?.[0]?.message || err.message || "Email ou senha incorretos.");
+      const msg = err.errors?.[0]?.longMessage || err.errors?.[0]?.message || err.message || "";
+      if (msg.toLowerCase().includes("password") || msg.toLowerCase().includes("incorrect") || msg.toLowerCase().includes("invalid")) {
+        setErrorMsg("Email ou senha incorretos.");
+      } else if (msg.toLowerCase().includes("not found") || msg.toLowerCase().includes("identifier")) {
+        setErrorMsg("Email não encontrado. Verifique o endereço digitado.");
+      } else {
+        setErrorMsg(msg || "Erro ao fazer login. Tente novamente.");
+      }
     } finally {
       setIsLoading(false);
     }
