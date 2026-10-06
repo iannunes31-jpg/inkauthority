@@ -296,48 +296,68 @@ export function LoginModal({ isOpen, onClose, initialView = "login" }: LoginModa
     setErrorMsg("");
 
     try {
-      const result = await signIn.create({
-        identifier: email,
-        password: password,
-      });
+      // Step 1: identify the user (email only — no password yet)
+      const step1 = await signIn.create({ identifier: email });
+      const s = signIn as any;
 
-      const status = result?.status || signIn.status;
-      const sessionId = result?.createdSessionId || signIn.createdSessionId;
+      const afterStep1 = step1?.status || s.status;
 
-      if (status === "complete") {
+      if (afterStep1 === "complete") {
+        // Rare: Clerk completed without needing any factor
         onClose();
         window.location.reload();
-      } else if (status === "needs_first_factor" || status === "needs_second_factor" || status === "needs_client_trust") {
-        // Envia o código para o email do usuário
-        try {
-           const s = signIn as any;
-           if (typeof s.prepareFirstFactor === "function") {
-              await s.prepareFirstFactor({ strategy: "email_code", emailAddressId: s.supportedFirstFactors?.find((f:any) => f.strategy === "email_code")?.emailAddressId });
-           } else if (s.prepareSecondFactor && typeof s.prepareSecondFactor === "function") {
-              await s.prepareSecondFactor({ strategy: "email_code" });
-           } else if (s.prepareVerification && typeof s.prepareVerification === "function") {
-              await s.prepareVerification({ strategy: "email_code" });
-           } else if (s.emailCode && typeof s.emailCode.sendCode === "function") {
-              await s.emailCode.sendCode();
-           } else if (s.verifications && typeof s.verifications.sendEmailCode === "function") {
-              await s.verifications.sendEmailCode();
-           } else {
-              throw new Error(`Método não encontrado. Chaves do signIn: ${Object.keys(s).join(", ")}`);
-           }
-           
-           setVerificationType("signin");
-           setPendingVerification(true);
-           setResendCooldown(30);
-        } catch (e: any) {
-           console.error("Erro ao preparar fator:", e);
-           const errs = e.errors || [];
-           const msg = errs.length > 0 ? errs[0].longMessage : e.message;
-           setErrorMsg(`Erro ao enviar código: ${msg || JSON.stringify(e)}`);
-        }
-      } else {
-        setErrorMsg(`Erro inesperado ao fazer login. Status: ${status}`);
-        console.error("DUMP SignIn result:", JSON.stringify(result));
+        return;
       }
+
+      // Step 2: attempt password as the first factor
+      if (afterStep1 === "needs_first_factor") {
+        let result: any;
+        try {
+          result = await s.attemptFirstFactor({ strategy: "password", password });
+        } catch (pwErr: any) {
+          // Password wrong or not enabled — fall through to email-code factor below
+          const pwMsg = pwErr.errors?.[0]?.longMessage || pwErr.errors?.[0]?.message;
+          if (pwMsg) { setErrorMsg(pwMsg); setIsLoading(false); return; }
+          throw pwErr;
+        }
+
+        const finalStatus = result?.status || s.status;
+        if (finalStatus === "complete") {
+          onClose();
+          window.location.reload();
+          return;
+        }
+
+        // Needs email verification after password (MFA / email_code second factor)
+        if (finalStatus === "needs_second_factor" || finalStatus === "needs_first_factor") {
+          await s.prepareSecondFactor?.({ strategy: "email_code" }) ||
+            await s.prepareFirstFactor?.({ strategy: "email_code", emailAddressId: s.supportedFirstFactors?.find((f: any) => f.strategy === "email_code")?.emailAddressId });
+          setVerificationType("signin");
+          setPendingVerification(true);
+          setResendCooldown(30);
+          return;
+        }
+
+        setErrorMsg(`Status inesperado: ${finalStatus}`);
+        return;
+      }
+
+      // Fallback: try email code flow (password not enabled in Clerk)
+      if (afterStep1 === "needs_identifier") {
+        setErrorMsg("Email não encontrado. Verifique o endereço digitado.");
+        return;
+      }
+
+      // needs_second_factor directly after identifier step
+      if (afterStep1 === "needs_second_factor") {
+        await s.prepareSecondFactor?.({ strategy: "email_code" });
+        setVerificationType("signin");
+        setPendingVerification(true);
+        setResendCooldown(30);
+        return;
+      }
+
+      setErrorMsg(`Erro ao fazer login. Status: ${afterStep1}`);
     } catch (err: any) {
       console.error("Erro no Clerk Sign In:", err);
       setErrorMsg(err.errors?.[0]?.longMessage || err.errors?.[0]?.message || err.message || "Email ou senha incorretos.");
@@ -443,15 +463,17 @@ export function LoginModal({ isOpen, onClose, initialView = "login" }: LoginModa
                 <form className="space-y-4 relative z-10" onSubmit={async (e) => {
                   e.preventDefault();
                   if (!email) { setErrorMsg("Digite seu e-mail."); return; }
+                  if (!signIn) { setErrorMsg("Conectando ao servidor... aguarde um segundo e tente novamente."); return; }
                   setIsLoading(true); setErrorMsg("");
                   try {
-                    await signIn?.create({
+                    const result = await signIn.create({
                       strategy: "reset_password_email_code",
                       identifier: email,
                     });
-                    setPendingVerification(true); // Usado aqui para mostrar a tela de codigo do reset
+                    if (!result) throw new Error("Sem resposta do servidor de autenticação.");
+                    setPendingVerification(true);
                   } catch (err: any) {
-                    setErrorMsg(err.errors?.[0]?.message || "Erro ao solicitar reset.");
+                    setErrorMsg(err.errors?.[0]?.longMessage || err.errors?.[0]?.message || err.message || "Erro ao solicitar reset. Verifique o e-mail digitado.");
                   } finally {
                     setIsLoading(false);
                   }

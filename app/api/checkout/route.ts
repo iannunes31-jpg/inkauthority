@@ -116,6 +116,12 @@ export async function POST(req: NextRequest) {
           productId: String(productId),
           productType: String(productType || 'general'),
         },
+        // PIX requires an expiration window; 3600s (1h) is the minimum Stripe accepts.
+        ...(!isSubscription ? {
+          payment_method_options: {
+            pix: { expires_after_seconds: 3600 },
+          },
+        } : {}),
         success_url: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}${returnUrl || '/dashboard'}?success=true`,
         cancel_url: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}${returnUrl || '/dashboard'}?canceled=true`,
       },
