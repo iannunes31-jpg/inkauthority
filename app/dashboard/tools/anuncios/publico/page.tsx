@@ -53,11 +53,7 @@ export default function PublicoPage() {
   useEffect(() => {
     const c = scrollContainerRef.current;
     if (!c) return;
-    if (isLoading) {
-      c.scrollTop = c.scrollHeight;
-    } else {
-      lastAssistantRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-    }
+    c.scrollTop = c.scrollHeight;
   }, [messages, isLoading]);
 
   const handleFormSubmit = (e: React.FormEvent) => {

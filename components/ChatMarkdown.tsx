@@ -3,8 +3,11 @@
 import React from "react";
 
 function renderInline(text: string): React.ReactNode[] {
-  const parts = text.split(/(\*\*[^*]+\*\*|\*[^*]+\*)/g);
+  const parts = text.split(/(\*\*\*[^*]+\*\*\*|\*\*[^*]+\*\*|\*[^*]+\*)/g);
   return parts.map((part, i) => {
+    if (part.startsWith("***") && part.endsWith("***")) {
+      return <strong key={i}><em>{part.slice(3, -3)}</em></strong>;
+    }
     if (part.startsWith("**") && part.endsWith("**")) {
       return <strong key={i}>{part.slice(2, -2)}</strong>;
     }
