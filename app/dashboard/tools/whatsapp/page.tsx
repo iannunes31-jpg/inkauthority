@@ -199,18 +199,32 @@ export default function AssistantPage() {
         currentUrls.push(publicUrlData.publicUrl);
       }
 
-      setFormData(prev => ({ ...prev, style_image_url: currentUrls.join(",") }));
+      const newImageUrl = currentUrls.join(",");
+      setFormData(prev => ({ ...prev, style_image_url: newImageUrl }));
+      // Auto-save so images persist on refresh
+      await saveImageUrl(newImageUrl);
     } catch (err) {
       console.error(err);
     }
-    
+
     setIsUploadingImage(false);
   };
 
-  const removeImage = (indexToRemove: number) => {
+  const saveImageUrl = async (imageUrl: string) => {
+    if (!user?.id) return;
+    await fetch("/api/ai-settings", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ...formData, style_image_url: imageUrl }),
+    });
+  };
+
+  const removeImage = async (indexToRemove: number) => {
     let currentUrls = formData.style_image_url ? formData.style_image_url.split(",").filter(u => u.trim() !== "") : [];
     currentUrls = currentUrls.filter((_, idx) => idx !== indexToRemove);
-    setFormData(prev => ({ ...prev, style_image_url: currentUrls.join(",") }));
+    const newImageUrl = currentUrls.join(",");
+    setFormData(prev => ({ ...prev, style_image_url: newImageUrl }));
+    await saveImageUrl(newImageUrl);
   };
 
   const handleSave = async () => {
