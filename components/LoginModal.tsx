@@ -482,6 +482,7 @@ export function LoginModal({ isOpen, onClose, initialView = "login" }: LoginModa
                         type="button" 
                         onClick={async () => {
                           if (!code || !password) { setErrorMsg("Preencha o código e a nova senha."); return; }
+                          if (password.length < 8) { setErrorMsg("A senha deve ter pelo menos 8 caracteres."); return; }
                           setIsLoading(true); setErrorMsg("");
                           try {
                             const result = await signIn?.attemptFirstFactor({
@@ -490,12 +491,23 @@ export function LoginModal({ isOpen, onClose, initialView = "login" }: LoginModa
                               password,
                             });
                             if (result?.status === "complete") {
-                              setActive({ session: result.createdSessionId });
+                              await setActive({ session: result.createdSessionId });
                               onClose();
                               window.location.reload();
+                            } else if (result?.status === "needs_second_factor") {
+                              setErrorMsg("Verificação em dois fatores necessária. Entre em contato com o suporte.");
+                            } else {
+                              setErrorMsg(`Erro inesperado. Status: ${result?.status || "desconhecido"}`);
                             }
                           } catch (err: any) {
-                            setErrorMsg(err.errors?.[0]?.message || "Código inválido ou erro ao redefinir.");
+                            const msg = err.errors?.[0]?.longMessage || err.errors?.[0]?.message || err.message || "";
+                            if (msg.toLowerCase().includes("incorrect") || msg.toLowerCase().includes("invalid") || msg.toLowerCase().includes("expired")) {
+                              setErrorMsg("Código incorreto ou expirado. Solicite um novo código.");
+                            } else if (msg.toLowerCase().includes("password")) {
+                              setErrorMsg("Senha inválida: " + msg);
+                            } else {
+                              setErrorMsg(msg || "Código inválido ou erro ao redefinir.");
+                            }
                           } finally {
                             setIsLoading(false);
                           }
