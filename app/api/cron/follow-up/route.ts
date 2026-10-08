@@ -71,7 +71,7 @@ export async function GET(req: Request) {
           });
 
           const { text } = await generateText({
-            model: vertex('gemini-3.1-flash-lite-image'),
+            model: vertex('gemini-3.1-flash-lite'),
             system: `Voce e um assistente de vendas de um estudio de tatuagem. Seu objetivo e escolher a MELHOR mensagem de follow-up para um cliente que parou de responder ha 2 dias.
 O nome do cliente e ${lead.name || 'Cliente'}.
 Aqui esta o historico final da conversa:

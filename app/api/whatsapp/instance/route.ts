@@ -1,15 +1,9 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
+import { registerWebhook } from '@/lib/evolution-webhook';
 
 const evolutionUrl = process.env.EVOLUTION_API_URL || 'https://evolution-api-production-fbfd.up.railway.app';
 const apiKey = process.env.EVOLUTION_API_KEY!;
-// TODO: Trocar para a URL real da Vercel quando for para produção 100%
-const webhookBaseUrl = process.env.NEXT_PUBLIC_APP_URL ? `${process.env.NEXT_PUBLIC_APP_URL}/api/whatsapp/webhook` : 'https://inkauthority.com.br/api/whatsapp/webhook';
-// Shared secret so /api/whatsapp/webhook can verify a request really came
-// from our own Evolution instance (Evolution doesn't sign its payloads).
-const webhookUrl = process.env.WHATSAPP_WEBHOOK_SECRET
-  ? `${webhookBaseUrl}?secret=${process.env.WHATSAPP_WEBHOOK_SECRET}`
-  : webhookBaseUrl;
 
 export async function POST(req: Request) {
   try {
@@ -34,6 +28,9 @@ export async function POST(req: Request) {
       const data = await response.json();
       const state = data?.instance?.state || data?.state || 'unknown';
       console.log('[WPP status]', JSON.stringify(data).slice(0, 200));
+      if (state === 'open') {
+        await registerWebhook(instanceName);
+      }
       return NextResponse.json({ state });
     }
 
@@ -65,19 +62,7 @@ export async function POST(req: Request) {
         console.log('[WhatsApp] create response', createResponse.status, JSON.stringify(connectData).slice(0, 300));
       }
 
-      // Seta o Webhook sempre que conectar para garantir a URL correta
-      await fetch(`${evolutionUrl}/webhook/set/${instanceName}`, {
-        method: 'POST',
-        headers: { 'apikey': apiKey, 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          webhook: {
-            url: webhookUrl,
-            webhook_by_events: false,
-            webhook_base64: false,
-            events: ["MESSAGES_UPSERT"]
-          }
-        })
-      });
+      await registerWebhook(instanceName);
 
       return NextResponse.json(connectData);
     }

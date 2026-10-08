@@ -55,7 +55,7 @@ export async function GET() {
           googleAuthOptions: { credentials }
         });
         const { text } = await generateText({
-          model: vertex('gemini-3.1-flash-lite-image'),
+          model: vertex('gemini-3.1-flash-lite'),
           prompt: 'Say the word OK',
         });
         diagnostics.tests.gemini = 'success';

@@ -172,7 +172,7 @@ export async function POST(req: Request) {
     });
 
     const result = streamText({
-      model: vertex('gemini-3.1-flash-lite-image'),
+      model: vertex('gemini-3.1-flash-lite'),
       messages: formattedMessages,
       system: systemPrompt,
     });

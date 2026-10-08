@@ -58,7 +58,7 @@ export async function POST(req: Request) {
     });
 
     const result = streamText({
-      model: vertex('gemini-3.1-flash-lite-image'),
+      model: vertex('gemini-3.1-flash-lite'),
       messages: formattedMessages,
       system: `Voce e o Tutor Oficial de Inteligencia Artificial da "Ink Authority", uma plataforma online de cursos de tatuagem para tatuadores profissionais e iniciantes.
       Seu tom deve ser amigavel, direto, respeitoso e focado em arte e tecnica de tatuagem.

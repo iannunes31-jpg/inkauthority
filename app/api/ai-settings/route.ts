@@ -3,15 +3,32 @@ import { auth } from '@clerk/nextjs/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 
 /**
- * Reads/writes the signed-in artist's own ai_settings row.
- *
- * Previously the WhatsApp tool page wrote straight to Supabase from the
- * browser with the anon key, sending `clerk_user_id: user.id` itself — an
- * attacker who found the anon key (public in every page's JS bundle) could
- * upsert any clerk_user_id and read or overwrite another artist's bot
- * config (pricing, address, WhatsApp bot personality). Here the row is
- * always scoped to the real, server-verified session user.
+ * Reads/writes the signed-in artist's own ai_settings row. The row is always
+ * scoped to the server-verified session user, never a client-sent id.
  */
+
+const TEXT_FIELDS = [
+  'studio_name', 'styles', 'style_image_url', 'address', 'instagram_url',
+  'google_review_url', 'payment_methods', 'bot_personality', 'bot_mode',
+] as const;
+const NUMERIC_FIELDS = [
+  'base_price', 'hourly_rate', 'price_session', 'price_arm', 'price_leg', 'price_front', 'price_back',
+] as const;
+
+function sanitize(body: any) {
+  const out: Record<string, any> = {};
+  for (const k of TEXT_FIELDS) {
+    if (k in body) out[k] = body[k] == null ? '' : String(body[k]);
+  }
+  for (const k of NUMERIC_FIELDS) {
+    if (k in body) {
+      const n = body[k] === '' || body[k] == null ? NaN : Number(body[k]);
+      out[k] = Number.isFinite(n) ? n : null;
+    }
+  }
+  if ('is_active' in body) out.is_active = !!body.is_active;
+  return out;
+}
 
 export async function GET() {
   const { userId } = await auth();
@@ -21,59 +38,45 @@ export async function GET() {
     .from('ai_settings')
     .select('*')
     .eq('clerk_user_id', userId)
+    .order('updated_at', { ascending: false })
+    .limit(1)
     .maybeSingle();
 
   if (error) {
-    console.error('Erro ao buscar ai_settings:', error);
+    console.error('[ai-settings] GET error:', error);
     return NextResponse.json({ error: 'Erro ao buscar configurações' }, { status: 500 });
   }
 
   return NextResponse.json(data);
 }
 
+// Partial update: only the fields sent are written, so saving the images
+// alone never wipes the rest of the config.
 export async function POST(req: Request) {
   const { userId } = await auth();
   if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const body = await req.json();
-  // clerk_user_id is never taken from the client — always the real session user.
-  const { clerk_user_id: _ignored, ...settings } = body || {};
+  const fields = sanitize((await req.json()) || {});
+  const updated_at = new Date().toISOString();
 
-  const payload = {
-    ...settings,
-    clerk_user_id: userId,
-    updated_at: new Date().toISOString(),
-  };
-
-  const hasServiceKey = !!process.env.SUPABASE_SERVICE_ROLE_KEY;
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  // Decode JWT payload to verify which role the key has
-  let keyRole = 'unknown';
-  let keyRef = 'unknown';
-  try {
-    const key = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
-    const payload = JSON.parse(Buffer.from(key.split('.')[1], 'base64').toString());
-    keyRole = payload.role || 'no_role';
-    keyRef = payload.ref || 'no_ref';
-  } catch { keyRole = 'decode_failed'; }
-  console.log('[ai-settings] hasServiceKey:', hasServiceKey, 'keyRole:', keyRole, 'url:', supabaseUrl?.slice(0, 40));
-
-  const { error } = await supabaseAdmin
+  const { data: existing, error: findError } = await supabaseAdmin
     .from('ai_settings')
-    .upsert(payload, { onConflict: 'clerk_user_id' });
+    .select('clerk_user_id')
+    .eq('clerk_user_id', userId)
+    .limit(1);
+
+  if (findError) {
+    console.error('[ai-settings] find error:', findError);
+    return NextResponse.json({ error: findError.message }, { status: 500 });
+  }
+
+  const { error } = existing && existing.length > 0
+    ? await supabaseAdmin.from('ai_settings').update({ ...fields, updated_at }).eq('clerk_user_id', userId)
+    : await supabaseAdmin.from('ai_settings').insert({ studio_name: '', ...fields, clerk_user_id: userId, updated_at });
 
   if (error) {
-    console.error('[ai-settings] upsert error:', JSON.stringify(error));
-    return NextResponse.json({
-      error: error.message,
-      details: error.details,
-      hint: error.hint,
-      code: error.code,
-      hasServiceKey,
-      keyRole,
-      keyRef,
-      urlRef: supabaseUrl?.match(/https:\/\/([^.]+)\./)?.[1],
-    }, { status: 500 });
+    console.error('[ai-settings] save error:', JSON.stringify(error));
+    return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
   return NextResponse.json({ success: true });

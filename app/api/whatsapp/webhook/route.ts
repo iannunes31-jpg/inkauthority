@@ -107,10 +107,13 @@ export async function POST(req: Request) {
       .from('ai_settings')
       .select('*')
       .eq('clerk_user_id', clerk_user_id)
-      .single();
+      .order('updated_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
 
-    console.log('[WPP] settings found:', !!settings, 'is_active:', settings?.is_active, 'bot_mode:', settings?.bot_mode);
+    console.log('[WPP] settings found:', !!settings, 'is_active:', settings?.is_active, 'bot_mode:', settings?.bot_mode, 'clerk_user_id:', clerk_user_id);
     if (!settings || !settings.is_active) {
+      console.log('[WPP] inactive or no settings — clerk_user_id:', clerk_user_id);
       return NextResponse.json({ status: 'inactive' });
     }
 
@@ -123,7 +126,8 @@ export async function POST(req: Request) {
         .select('id, name, status')
         .eq('clerk_user_id', clerk_user_id)
         .eq('phone_number', remoteJid)
-        .single();
+        .limit(1)
+        .maybeSingle();
       if (selectErr) console.log('[WPP] CRM select error:', selectErr.message);
       if (existingCustomer) {
         customer = existingCustomer;
@@ -261,7 +265,7 @@ Esta e a estrategia de conversao que voce DEVE seguir rigidamente:
       
       await supabase.from('appointments').insert({
         tatuador_id: clerk_user_id,
-        client_id: customer!.id,
+        client_id: customer?.id ?? null,
         appointment_date: new Date(Date.now() + 86400000 * 7).toISOString(), 
         status: 'Confirmado',
         description: agendamentoMatch[1].trim()

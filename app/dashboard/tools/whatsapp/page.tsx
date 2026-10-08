@@ -172,51 +172,73 @@ export default function AssistantPage() {
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || e.target.files.length === 0) return;
     
-    const files = Array.from(e.target.files).slice(0, 10); // Limita a 10 arquivos
+    const input = e.target;
+    const currentUrls = formData.style_image_url ? formData.style_image_url.split(",").filter(u => u.trim() !== "") : [];
+    const files = Array.from(input.files!).slice(0, Math.max(0, 10 - currentUrls.length));
+    if (files.length === 0) {
+      alert("Limite de 10 imagens atingido. Remova alguma antes de adicionar outra.");
+      input.value = "";
+      return;
+    }
     setIsUploadingImage(true);
-    
-    let currentUrls = formData.style_image_url ? formData.style_image_url.split(",").filter(u => u.trim() !== "") : [];
 
     try {
-      for (const file of files) {
-        const fileExt = file.name.split('.').pop();
-        const fileName = `${user?.id}-${Math.random()}.${fileExt}`;
-        const filePath = `style-references/${fileName}`;
+      const res = await fetch("/api/ai-settings/upload-url", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ files: files.map(f => ({ ext: f.name.split(".").pop() || "jpg" })) }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || "Falha ao preparar o upload.");
 
-        const { error } = await supabase.storage
-          .from('assets')
-          .upload(filePath, file);
-
+      const uploaded: string[] = [];
+      const failed: string[] = [];
+      for (let i = 0; i < files.length; i++) {
+        const { path, token, publicUrl } = data.uploads[i];
+        const { error } = await supabase.storage.from("assets").uploadToSignedUrl(path, token, files[i], {
+          contentType: files[i].type || undefined,
+        });
         if (error) {
-          console.error("Erro no upload do arquivo", file.name, ":", error);
-          continue; // Pula este arquivo se der erro
+          console.error("Erro no upload do arquivo", files[i].name, error);
+          failed.push(files[i].name);
+        } else {
+          uploaded.push(publicUrl);
         }
-
-        const { data: publicUrlData } = supabase.storage
-          .from('assets')
-          .getPublicUrl(filePath);
-
-        currentUrls.push(publicUrlData.publicUrl);
       }
 
-      const newImageUrl = currentUrls.join(",");
-      setFormData(prev => ({ ...prev, style_image_url: newImageUrl }));
-      // Auto-save so images persist on refresh
-      await saveImageUrl(newImageUrl);
-    } catch (err) {
+      if (uploaded.length > 0) {
+        const newImageUrl = [...currentUrls, ...uploaded].join(",");
+        setFormData(prev => ({ ...prev, style_image_url: newImageUrl }));
+        await saveImageUrl(newImageUrl);
+      }
+      if (failed.length > 0) {
+        alert(`⚠️ Não foi possível enviar: ${failed.join(", ")}`);
+      }
+    } catch (err: any) {
       console.error(err);
+      alert(`⚠️ Erro ao enviar imagens: ${err.message}`);
+    } finally {
+      setIsUploadingImage(false);
+      input.value = "";
     }
-
-    setIsUploadingImage(false);
   };
 
   const saveImageUrl = async (imageUrl: string) => {
     if (!user?.id) return;
-    await fetch("/api/ai-settings", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...formData, style_image_url: imageUrl }),
-    });
+    try {
+      const res = await fetch("/api/ai-settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ style_image_url: imageUrl }),
+      });
+      if (!res.ok) {
+        const result = await res.json().catch(() => ({}));
+        alert(`⚠️ Erro ao salvar imagem!\n\n${result.error || "Erro desconhecido"}`);
+      }
+    } catch (err: any) {
+      console.error("[saveImageUrl] Exceção:", err);
+      alert(`⚠️ Erro de rede ao salvar imagem: ${err.message}`);
+    }
   };
 
   const removeImage = async (indexToRemove: number) => {
@@ -252,7 +274,7 @@ export default function AssistantPage() {
 
       if (!res.ok) {
         console.error("Erro ao salvar configurações", result);
-        alert(`⚠️ Erro ao salvar!\n\nErro: ${result.error || ""}\nServiceKey: ${result.hasServiceKey}\nKeyRole: ${result.keyRole}\nKeyRef: ${result.keyRef}\nUrlRef: ${result.urlRef}`);
+        alert(`⚠️ Erro ao salvar!\n\n${result.error || "Erro desconhecido"}`);
       } else {
         alert("Configurações do Assistente salvas com sucesso!");
       }

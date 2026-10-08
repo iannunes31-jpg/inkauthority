@@ -1,11 +1,10 @@
-// @ts-nocheck
 "use client";
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { X, Mail, Lock, ArrowRight, User, Phone, Instagram, Upload, ShieldCheck, Eye, EyeOff } from "lucide-react";
 import { Button } from "./ui/button";
-import { useSignUp, useSignIn, useClerk } from "@clerk/nextjs";
+import { useSignUp, useSignIn } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 
 interface LoginModalProps {
@@ -14,11 +13,43 @@ interface LoginModalProps {
   initialView?: "login" | "register";
 }
 
+// Clerk v7 errors come back as { error } instead of being thrown.
+function clerkCode(err: any): string {
+  return err?.errors?.[0]?.code || err?.code || "";
+}
+function clerkText(err: any): string {
+  return err?.errors?.[0]?.longMessage || err?.errors?.[0]?.message || err?.longMessage || err?.message || "";
+}
+function friendlyError(err: any, fallback: string): string {
+  const code = clerkCode(err);
+  switch (code) {
+    case "form_password_incorrect":
+      return "Senha incorreta. Tente de novo ou use \"Esqueceu a senha?\".";
+    case "form_identifier_not_found":
+      return "Email não encontrado. Verifique o endereço digitado.";
+    case "form_code_incorrect":
+      return "Código incorreto. Confira o código enviado para o seu e-mail.";
+    case "verification_expired":
+      return "Código expirado. Peça um novo código.";
+    case "verification_failed":
+      return "Muitas tentativas com código errado. Peça um novo código.";
+    case "form_password_pwned":
+      return "Essa senha apareceu em vazamentos de dados. Escolha outra senha.";
+    case "form_password_length_too_short":
+      return "A senha deve ter pelo menos 8 caracteres.";
+    case "form_identifier_exists":
+      return "Já existe uma conta com esse e-mail. Faça login.";
+    case "too_many_requests":
+    case "user_locked":
+      return "Muitas tentativas. Aguarde alguns minutos e tente novamente.";
+  }
+  return clerkText(err) || fallback;
+}
+
 export function LoginModal({ isOpen, onClose, initialView = "login" }: LoginModalProps) {
   const router = useRouter();
-  const { setActive } = useClerk();
-  const { isLoaded: isSignUpLoaded, signUp } = useSignUp();
-  const { isLoaded: isSignInLoaded, signIn } = useSignIn();
+  const { signUp } = useSignUp();
+  const { signIn } = useSignIn();
 
   const [view, setView] = useState<"login" | "register" | "forgot">(initialView);
   const [pendingVerification, setPendingVerification] = useState(false);
@@ -35,7 +66,7 @@ export function LoginModal({ isOpen, onClose, initialView = "login" }: LoginModa
   const [code, setCode] = useState("");
   const [foto, setFoto] = useState<File | null>(null);
   const [fotoPreview, setFotoPreview] = useState<string | null>(null);
-  
+
   const [errorMsg, setErrorMsg] = useState("");
   const [infoMsg, setInfoMsg] = useState("");
   const [resendCooldown, setResendCooldown] = useState(0);
@@ -53,10 +84,6 @@ export function LoginModal({ isOpen, onClose, initialView = "login" }: LoginModa
     }
   }, [isOpen, initialView]);
 
-  // Countdown for the "Reenviar código" button, so it isn't spammable
-  // (Clerk itself also rate-limits OTP sends, but a visible cooldown
-  // avoids the confusing "nothing happened" feeling when someone taps it
-  // repeatedly while waiting for a slow email).
   useEffect(() => {
     if (resendCooldown <= 0) return;
     const timer = setInterval(() => {
@@ -65,45 +92,50 @@ export function LoginModal({ isOpen, onClose, initialView = "login" }: LoginModa
     return () => clearInterval(timer);
   }, [resendCooldown]);
 
-  // The code sometimes not arriving is a real, known limitation (Clerk's
-  // shared email-sending domain gets flagged as spam by some providers,
-  // and/or its own OTP rate limits) -- there used to be no way to ask for
-  // a new one short of closing the whole modal and starting over. This
-  // reuses the exact same "prepare verification" calls already used when
-  // the code is first sent (handleSignUp / handleSignIn below).
+  const finishSignIn = async () => {
+    const { error } = await signIn.finalize();
+    if (error) {
+      setErrorMsg(friendlyError(error, "Erro ao concluir o login."));
+      return;
+    }
+    onClose();
+    window.location.reload();
+  };
+
+  // A new device (needs_client_trust) or MFA (needs_second_factor) asks for
+  // an email code before the session is created.
+  const startSignInEmailCode = async () => {
+    const { error } = await signIn.mfa.sendEmailCode();
+    if (error) {
+      setErrorMsg(friendlyError(error, "Erro ao enviar o código de verificação."));
+      return;
+    }
+    setVerificationType("signin");
+    setPendingVerification(true);
+    setResendCooldown(30);
+    setInfoMsg("Enviamos um código para o seu e-mail (confira o spam).");
+  };
+
   const handleResendCode = async () => {
     if (resendCooldown > 0 || isResending) return;
     setIsResending(true);
     setErrorMsg("");
     setInfoMsg("");
     try {
-      if (verificationType === "signup" && signUp) {
-        if (signUp.verifications && typeof signUp.verifications.sendEmailCode === 'function') {
-          await signUp.verifications.sendEmailCode();
-        } else if (signUp.prepareEmailAddressVerification) {
-          await signUp.prepareEmailAddressVerification({ strategy: "email_code" });
-        } else {
-          await (signUp as any).prepareVerification({ strategy: "email_code" });
-        }
-      } else if (verificationType === "signin" && signIn) {
-        const s = signIn as any;
-        if (typeof s.prepareFirstFactor === "function") {
-          await s.prepareFirstFactor({ strategy: "email_code", emailAddressId: s.supportedFirstFactors?.find((f: any) => f.strategy === "email_code")?.emailAddressId });
-        } else if (typeof s.prepareSecondFactor === "function") {
-          await s.prepareSecondFactor({ strategy: "email_code" });
-        } else if (typeof s.prepareVerification === "function") {
-          await s.prepareVerification({ strategy: "email_code" });
-        } else if (s.emailCode && typeof s.emailCode.sendCode === "function") {
-          await s.emailCode.sendCode();
-        } else if (s.verifications && typeof s.verifications.sendEmailCode === "function") {
-          await s.verifications.sendEmailCode();
-        }
+      let error;
+      if (view === "forgot") {
+        ({ error } = await signIn.resetPasswordEmailCode.sendCode());
+      } else if (verificationType === "signup") {
+        ({ error } = await signUp.verifications.sendEmailCode());
+      } else {
+        ({ error } = await signIn.mfa.sendEmailCode());
+      }
+      if (error) {
+        setErrorMsg(friendlyError(error, "Erro ao reenviar código."));
+        return;
       }
       setInfoMsg("Código reenviado! Confira sua caixa de entrada (e o spam).");
       setResendCooldown(30);
-    } catch (e: any) {
-      const errs = e.errors || [];
-      setErrorMsg(errs.length > 0 ? (errs[0].longMessage || errs[0].message) : (e.message || "Erro ao reenviar código."));
     } finally {
       setIsResending(false);
     }
@@ -111,69 +143,56 @@ export function LoginModal({ isOpen, onClose, initialView = "login" }: LoginModa
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!email || !nome || !password) {
       setErrorMsg("Por favor, preencha Nome, E-mail e Senha.");
       return;
     }
-
     if (!signUp) {
       setErrorMsg("Conectando ao servidor de segurança... aguarde um segundo e tente novamente.");
       return;
     }
-    
+
     setIsLoading(true);
     setErrorMsg("");
 
     try {
-      const result = await signUp.create({
+      const { error } = await signUp.password({
         emailAddress: email,
-        password: password,
+        password,
         firstName: nome.split(" ")[0] || "",
         lastName: nome.split(" ").slice(1).join(" ") || "",
-        unsafeMetadata: { telefone, instagram }
+        unsafeMetadata: { telefone, instagram },
       });
-
-      // Se o Clerk retornou complete, não precisa de verificação
-      if (result?.status === "complete" || signUp.status === "complete") {
-        await setActive({ session: result?.createdSessionId ?? signUp.createdSessionId });
-        onClose();
-        router.push("/dashboard");
+      if (error) {
+        setErrorMsg(friendlyError(error, "Erro ao criar conta."));
         return;
       }
 
-      // Clerk ainda exige alguma coisa
-      if (result?.status === "missing_requirements" || signUp.status === "missing_requirements") {
-        const unverified = signUp.unverifiedFields || [];
-        const missing = signUp.missingFields || [];
-
-        // Só envia código se o email realmente está pendente de verificação
-        if (unverified.includes("email_address")) {
-          try {
-            await signUp.prepareEmailAddressVerification({ strategy: "email_code" });
-          } catch {}
-          setPendingVerification(true);
-          setResendCooldown(30);
-        } else if (missing.length > 0) {
-          setErrorMsg(`Campos obrigatórios faltando: ${missing.join(", ")}. Verifique as configurações do Clerk.`);
-        } else {
-          // unverifiedFields não tem email — tenta completar direto
-          try {
-            const completed = await (signUp as any).update({});
-            if (completed?.status === "complete" || signUp.status === "complete") {
-              await setActive({ session: completed?.createdSessionId ?? signUp.createdSessionId });
-              onClose();
-              router.push("/dashboard");
-            }
-          } catch {
-            setErrorMsg("Erro ao finalizar cadastro. Tente novamente.");
-          }
-        }
+      if (signUp.status === "complete") {
+        const { error: finErr } = await signUp.finalize();
+        if (finErr) { setErrorMsg(friendlyError(finErr, "Erro ao concluir cadastro.")); return; }
+        onClose();
+        window.location.href = "/dashboard";
+        return;
       }
+
+      if (signUp.unverifiedFields?.includes("email_address")) {
+        const { error: sendErr } = await signUp.verifications.sendEmailCode();
+        if (sendErr) { setErrorMsg(friendlyError(sendErr, "Erro ao enviar o código.")); return; }
+        setVerificationType("signup");
+        setPendingVerification(true);
+        setResendCooldown(30);
+        return;
+      }
+
+      const missing = signUp.missingFields || [];
+      setErrorMsg(missing.length > 0
+        ? `Campos obrigatórios faltando: ${missing.join(", ")}.`
+        : `Não foi possível concluir o cadastro (status: ${signUp.status}).`);
     } catch (err: any) {
       console.error("Erro no Clerk Sign Up:", err);
-      const errorMessage = err.errors?.[0]?.longMessage || err.errors?.[0]?.message || err.message || "Erro de conexão com o servidor de autenticação.";
-      setErrorMsg(errorMessage);
+      setErrorMsg(friendlyError(err, "Erro de conexão com o servidor de autenticação."));
     } finally {
       setIsLoading(false);
     }
@@ -186,45 +205,25 @@ export function LoginModal({ isOpen, onClose, initialView = "login" }: LoginModa
     setErrorMsg("");
 
     try {
-      let result;
-      const errors = [];
-      
-      try { 
-         result = await (signUp as any).attemptEmailAddressVerification({ code }); 
-      } catch(e: any) { errors.push("1.attemptEmail: " + (e.message || "error")); }
-      
-      if (!result) {
-         try { 
-            result = await (signUp as any).attemptVerification({ strategy: "email_code", code }); 
-         } catch(e: any) { errors.push("2.attemptVerif: " + (e.message || "error")); }
+      const { error } = await signUp.verifications.verifyEmailCode({ code });
+      if (error) {
+        setErrorMsg(friendlyError(error, "Código inválido."));
+        return;
       }
-      
-      if (!result && signUp.verifications) {
-         try { 
-            result = await (signUp.verifications as any).verifyEmailCode({ code }); 
-         } catch(e: any) { errors.push("3.verifyEmail: " + (e.message || "error")); }
-      }
-      
-      if (!result) {
-         throw new Error("Falhas no Clerk: " + errors.join(" | "));
-      }
-      
-      if (result && result.status === "complete") {
+      if (signUp.status === "complete") {
+        const { error: finErr } = await signUp.finalize();
+        if (finErr) { setErrorMsg(friendlyError(finErr, "Erro ao concluir cadastro.")); return; }
         onClose();
-        window.location.reload();
-      } else if (signUp.status === "complete") {
-        onClose();
-        window.location.reload();
-      } else if (result && result.status === "missing_requirements") {
-        setErrorMsg(`Quase lá! Faltam os campos obrigatórios no painel do Clerk: ${result.missingFields?.join(", ") || "desconhecidos"}`);
-      } else if (signUp.status === "missing_requirements") {
-        setErrorMsg(`Quase lá! Faltam os campos obrigatórios no painel do Clerk: ${signUp.missingFields?.join(", ") || "desconhecidos"}`);
-      } else {
-        setErrorMsg(`Status inesperado: ${result?.status || signUp.status}`);
+        window.location.href = "/dashboard";
+        return;
       }
+      const missing = signUp.missingFields || [];
+      setErrorMsg(missing.length > 0
+        ? `Quase lá! Faltam campos obrigatórios: ${missing.join(", ")}`
+        : `Status inesperado: ${signUp.status}`);
     } catch (err: any) {
       console.error("Erro no Clerk Verify:", err);
-      setErrorMsg(err.errors?.[0]?.longMessage || err.errors?.[0]?.message || err.message || "Erro ao verificar código.");
+      setErrorMsg(friendlyError(err, "Erro ao verificar código."));
     } finally {
       setIsLoading(false);
     }
@@ -237,48 +236,24 @@ export function LoginModal({ isOpen, onClose, initialView = "login" }: LoginModa
     setErrorMsg("");
 
     try {
-      let result;
-      const s = signIn as any;
-      const errors = [];
-
-      try {
-        if (typeof s.attemptFirstFactor === "function") {
-          result = await s.attemptFirstFactor({ strategy: "email_code", code });
-        } else if (typeof s.attemptSecondFactor === "function") {
-          result = await s.attemptSecondFactor({ strategy: "email_code", code });
-        } else if (typeof s.attemptVerification === "function") {
-          result = await s.attemptVerification({ strategy: "email_code", code });
-        } else if (s.emailCode && typeof s.emailCode.attempt === "function") {
-          result = await s.emailCode.attempt({ code });
-        } else if (s.emailCode && typeof s.emailCode.verify === "function") {
-          result = await s.emailCode.verify({ code });
-        } else if (s.emailCode && typeof s.emailCode.verifyCode === "function") {
-          result = await s.emailCode.verifyCode({ code });
-        } else if (s.verifications && typeof s.verifications.verifyEmailCode === "function") {
-          result = await s.verifications.verifyEmailCode({ code });
-        } else {
-          throw new Error(`Método não encontrado. Chaves do signIn: ${Object.keys(s).join(", ")}. Chaves do emailCode: ${s.emailCode ? Object.keys(s.emailCode).join(", ") : "N/A"}`);
-        }
-      } catch (err: any) {
-        throw err; // throw to be caught by the outer catch
+      const { error } = await signIn.mfa.verifyEmailCode({ code });
+      if (error) {
+        setErrorMsg(friendlyError(error, "Código inválido."));
+        return;
       }
-
-      const status = result?.status || signIn.status;
-      if (status === "complete") {
-        onClose();
-        window.location.reload();
+      if (signIn.status === "complete") {
+        await finishSignIn();
       } else {
-        setErrorMsg(`Status inesperado: ${status}`);
+        setErrorMsg(`Status inesperado: ${signIn.status}`);
       }
     } catch (err: any) {
       console.error("Erro no Clerk Verify SignIn:", err);
-      setErrorMsg(err.errors?.[0]?.longMessage || err.errors?.[0]?.message || err.message || "Código inválido.");
+      setErrorMsg(friendlyError(err, "Código inválido."));
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Login usando Email e Senha
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -286,40 +261,90 @@ export function LoginModal({ isOpen, onClose, initialView = "login" }: LoginModa
       setErrorMsg("Por favor, digite seu e-mail e senha.");
       return;
     }
-
     if (!signIn) {
       setErrorMsg("Conectando ao servidor... aguarde um segundo.");
       return;
     }
-    
+
     setIsLoading(true);
     setErrorMsg("");
+    setInfoMsg("");
 
     try {
-      const result = await signIn.create({ identifier: email, password } as any);
-
-      if (result.status === "complete") {
-        await setActive({ session: result.createdSessionId });
-        onClose(); window.location.reload(); return;
+      const { error } = await signIn.password({ identifier: email.trim(), password });
+      if (error) {
+        if (clerkCode(error) === "session_exists") {
+          onClose();
+          window.location.reload();
+          return;
+        }
+        setErrorMsg(friendlyError(error, "Erro ao fazer login. Tente novamente."));
+        return;
       }
 
-      if (result.status === "needs_second_factor") {
-        const r = result as any;
-        await r.prepareSecondFactor?.({ strategy: "email_code" });
-        setVerificationType("signin"); setPendingVerification(true); setResendCooldown(30); return;
+      if (signIn.status === "complete") {
+        await finishSignIn();
+        return;
       }
-
-      setErrorMsg("Email ou senha incorretos.");
+      if (signIn.status === "needs_second_factor" || signIn.status === "needs_client_trust") {
+        await startSignInEmailCode();
+        return;
+      }
+      setErrorMsg(`Não foi possível entrar (status: ${signIn.status}).`);
     } catch (err: any) {
       console.error("Erro no Clerk Sign In:", err);
-      const msg = err.errors?.[0]?.longMessage || err.errors?.[0]?.message || err.message || "";
-      if (msg.toLowerCase().includes("password") || msg.toLowerCase().includes("incorrect") || msg.toLowerCase().includes("invalid")) {
-        setErrorMsg("Email ou senha incorretos.");
-      } else if (msg.toLowerCase().includes("not found") || msg.toLowerCase().includes("identifier")) {
-        setErrorMsg("Email não encontrado. Verifique o endereço digitado.");
-      } else {
-        setErrorMsg(msg || "Erro ao fazer login. Tente novamente.");
+      setErrorMsg(friendlyError(err, "Erro ao fazer login. Tente novamente."));
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleForgotSendCode = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email) { setErrorMsg("Digite seu e-mail."); return; }
+    if (!signIn) { setErrorMsg("Conectando ao servidor... aguarde um segundo e tente novamente."); return; }
+    setIsLoading(true); setErrorMsg(""); setInfoMsg("");
+    try {
+      const { error: createErr } = await signIn.create({ identifier: email.trim() });
+      if (createErr) { setErrorMsg(friendlyError(createErr, "Erro ao solicitar reset. Verifique o e-mail digitado.")); return; }
+      const { error } = await signIn.resetPasswordEmailCode.sendCode();
+      if (error) { setErrorMsg(friendlyError(error, "Erro ao enviar o código.")); return; }
+      setCode("");
+      setPassword("");
+      setPendingVerification(true);
+      setResendCooldown(30);
+      setInfoMsg("Enviamos um código para o seu e-mail (confira o spam).");
+    } catch (err: any) {
+      setErrorMsg(friendlyError(err, "Erro ao solicitar reset. Verifique o e-mail digitado."));
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleForgotReset = async () => {
+    if (!code || !password) { setErrorMsg("Preencha o código e a nova senha."); return; }
+    if (password.length < 8) { setErrorMsg("A senha deve ter pelo menos 8 caracteres."); return; }
+    setIsLoading(true); setErrorMsg(""); setInfoMsg("");
+    try {
+      // If a previous attempt already verified the code but the password was
+      // rejected, skip straight to submitting the new password.
+      if (signIn.status !== "needs_new_password") {
+        const { error } = await signIn.resetPasswordEmailCode.verifyCode({ code });
+        if (error) { setErrorMsg(friendlyError(error, "Código inválido ou expirado.")); return; }
       }
+      const { error } = await signIn.resetPasswordEmailCode.submitPassword({ password });
+      if (error) { setErrorMsg(friendlyError(error, "Não foi possível salvar a nova senha.")); return; }
+
+      if (signIn.status === "complete") {
+        await finishSignIn();
+      } else if (signIn.status === "needs_second_factor" || signIn.status === "needs_client_trust") {
+        setView("login");
+        await startSignInEmailCode();
+      } else {
+        setErrorMsg(`Status inesperado: ${signIn.status}`);
+      }
+    } catch (err: any) {
+      setErrorMsg(friendlyError(err, "Código inválido ou erro ao redefinir."));
     } finally {
       setIsLoading(false);
     }
@@ -373,6 +398,12 @@ export function LoginModal({ isOpen, onClose, initialView = "login" }: LoginModa
                 </div>
               )}
 
+              {infoMsg && view === "forgot" && (
+                <div className="bg-green-500/10 border border-green-500/30 text-green-400 p-3 rounded-lg text-sm mb-4 relative z-10 text-center">
+                  {infoMsg}
+                </div>
+              )}
+
               {/* TELA DE VERIFICACAO DE CODIGO (SIGN IN / SIGN UP) */}
               {pendingVerification && view !== "forgot" ? (
                 <form onSubmit={verificationType === "signup" ? handleVerifySignUp : handleVerifySignIn} className="space-y-4 relative z-10">
@@ -419,24 +450,7 @@ export function LoginModal({ isOpen, onClose, initialView = "login" }: LoginModa
 
               ) : view === "forgot" ? (
                 /* TELA DE ESQUECI A SENHA */
-                <form className="space-y-4 relative z-10" onSubmit={async (e) => {
-                  e.preventDefault();
-                  if (!email) { setErrorMsg("Digite seu e-mail."); return; }
-                  if (!signIn) { setErrorMsg("Conectando ao servidor... aguarde um segundo e tente novamente."); return; }
-                  setIsLoading(true); setErrorMsg("");
-                  try {
-                    const result = await signIn.create({
-                      strategy: "reset_password_email_code",
-                      identifier: email,
-                    });
-                    if (!result) throw new Error("Sem resposta do servidor de autenticação.");
-                    setPendingVerification(true);
-                  } catch (err: any) {
-                    setErrorMsg(err.errors?.[0]?.longMessage || err.errors?.[0]?.message || err.message || "Erro ao solicitar reset. Verifique o e-mail digitado.");
-                  } finally {
-                    setIsLoading(false);
-                  }
-                }}>
+                <form className="space-y-4 relative z-10" onSubmit={handleForgotSendCode}>
                   {!pendingVerification ? (
                     <>
                       <p className="text-sm text-center text-muted-foreground mb-4">Enviaremos um codigo para o seu e-mail para redefinir a senha.</p>
@@ -480,38 +494,7 @@ export function LoginModal({ isOpen, onClose, initialView = "login" }: LoginModa
                       </div>
                       <Button 
                         type="button" 
-                        onClick={async () => {
-                          if (!code || !password) { setErrorMsg("Preencha o código e a nova senha."); return; }
-                          if (password.length < 8) { setErrorMsg("A senha deve ter pelo menos 8 caracteres."); return; }
-                          setIsLoading(true); setErrorMsg("");
-                          try {
-                            const result = await signIn?.attemptFirstFactor({
-                              strategy: "reset_password_email_code",
-                              code,
-                              password,
-                            });
-                            if (result?.status === "complete") {
-                              await setActive({ session: result.createdSessionId });
-                              onClose();
-                              window.location.reload();
-                            } else if (result?.status === "needs_second_factor") {
-                              setErrorMsg("Verificação em dois fatores necessária. Entre em contato com o suporte.");
-                            } else {
-                              setErrorMsg(`Erro inesperado. Status: ${result?.status || "desconhecido"}`);
-                            }
-                          } catch (err: any) {
-                            const msg = err.errors?.[0]?.longMessage || err.errors?.[0]?.message || err.message || "";
-                            if (msg.toLowerCase().includes("incorrect") || msg.toLowerCase().includes("invalid") || msg.toLowerCase().includes("expired")) {
-                              setErrorMsg("Código incorreto ou expirado. Solicite um novo código.");
-                            } else if (msg.toLowerCase().includes("password")) {
-                              setErrorMsg("Senha inválida: " + msg);
-                            } else {
-                              setErrorMsg(msg || "Código inválido ou erro ao redefinir.");
-                            }
-                          } finally {
-                            setIsLoading(false);
-                          }
-                        }}
+                        onClick={handleForgotReset}
                         disabled={isLoading} 
                         className="w-full group h-12 uppercase font-bold tracking-widest text-[11px] rounded-xl mt-2 neon-glow metallic-gradient text-black hover:opacity-90 border-0"
                       >
