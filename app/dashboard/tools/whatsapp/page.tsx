@@ -143,7 +143,7 @@ export default function AssistantPage() {
 
   const fetchSettings = async () => {
     if (!user) return;
-    const res = await fetch("/api/ai-settings");
+    const res = await fetch("/api/ai-settings", { cache: "no-store" });
     const data = res.ok ? await res.json() : null;
 
     if (data) {

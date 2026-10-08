@@ -5,6 +5,21 @@ import { supabaseAdmin } from '@/lib/supabase-admin';
 const BUCKET = 'assets';
 const ALLOWED_EXT = ['jpg', 'jpeg', 'png', 'webp', 'gif', 'heic', 'heif'];
 
+async function signedUpload(path: string) {
+  let result = await supabaseAdmin.storage.from(BUCKET).createSignedUploadUrl(path);
+  // The bucket was never created in this Supabase project; create it once.
+  if (result.error && /does not exist|not found/i.test(result.error.message)) {
+    const { error: createError } = await supabaseAdmin.storage.createBucket(BUCKET, { public: true });
+    if (createError && !/already exists/i.test(createError.message)) {
+      console.error('[upload-url] createBucket error:', createError);
+      return result;
+    }
+    console.log('[upload-url] created bucket', BUCKET);
+    result = await supabaseAdmin.storage.from(BUCKET).createSignedUploadUrl(path);
+  }
+  return result;
+}
+
 // Issues signed upload URLs so the browser can put reference images straight
 // into Storage without needing an anon-key storage policy.
 export async function POST(req: Request) {
@@ -23,7 +38,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: `Formato não suportado: .${ext}` }, { status: 400 });
     }
     const path = `style-references/${userId}-${crypto.randomUUID()}.${ext}`;
-    const { data, error } = await supabaseAdmin.storage.from(BUCKET).createSignedUploadUrl(path);
+    const { data, error } = await signedUpload(path);
     if (error || !data) {
       console.error('[upload-url] createSignedUploadUrl error:', error);
       return NextResponse.json({ error: error?.message || 'Falha ao preparar upload.' }, { status: 500 });

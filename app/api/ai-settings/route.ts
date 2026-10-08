@@ -46,6 +46,9 @@ export async function GET() {
     console.error('[ai-settings] GET error:', error);
     return NextResponse.json({ error: 'Erro ao buscar configurações' }, { status: 500 });
   }
+  console.log('[ai-settings] GET', userId, data
+    ? `studio="${data.studio_name}" styles=${!!data.styles} address=${!!data.address} imgs=${(data.style_image_url || '').split(',').filter(Boolean).length}`
+    : 'NO ROW');
 
   return NextResponse.json(data);
 }
@@ -69,6 +72,9 @@ export async function POST(req: Request) {
     console.error('[ai-settings] find error:', findError);
     return NextResponse.json({ error: findError.message }, { status: 500 });
   }
+
+  console.log('[ai-settings] POST', userId, existing && existing.length > 0 ? 'update' : 'insert',
+    Object.keys(fields).join(','), `studio="${fields.studio_name ?? '(unchanged)'}"`);
 
   const { error } = existing && existing.length > 0
     ? await supabaseAdmin.from('ai_settings').update({ ...fields, updated_at }).eq('clerk_user_id', userId)
