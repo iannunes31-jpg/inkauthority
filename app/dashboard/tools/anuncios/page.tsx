@@ -8,6 +8,7 @@ import {
   Music2,
   BarChart2,
   PenLine,
+  Sparkles,
   ArrowRight,
 } from "lucide-react";
 import Link from "next/link";
@@ -79,6 +80,17 @@ const agents = [
       "Gera legendas, roteiros de reels, hashtags e calendário editorial para crescer no Instagram e TikTok.",
     tags: ["Captions", "Reels", "Calendário"],
   },
+  {
+    href: "/dashboard/tools/anuncios/criativo",
+    icon: <Sparkles className="w-6 h-6" />,
+    color: "text-rose-400",
+    bg: "bg-rose-500/15",
+    border: "hover:border-rose-400/50",
+    label: "Criador de Criativos",
+    description:
+      "Envie uma foto, descreva o que quer e receba uma arte pronta para postar nas redes ou usar em anúncios.",
+    tags: ["Feed", "Stories", "Anúncios"],
+  },
 ];
 
 export default function AnunciosPage() {
@@ -93,9 +105,9 @@ export default function AnunciosPage() {
           Central de Anúncios
         </h1>
         <p className="text-muted-foreground max-w-xl">
-          Seis agentes de IA especializados para te ajudar a criar campanhas, entender seu
-          público, analisar resultados e gerar conteúdo — tudo voltado para o mercado de
-          tatuagem.
+          Sete agentes de IA especializados para te ajudar a criar campanhas, entender seu
+          público, analisar resultados, gerar conteúdo e criar artes prontas para divulgar
+          — tudo voltado para o mercado de tatuagem.
         </p>
       </div>
 

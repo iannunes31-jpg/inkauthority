@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "motion/react";
-import { Settings, Users, Calendar, Ruler, Scissors, Megaphone, Search, Instagram, BarChart2, PenLine, Music2, Palette } from "lucide-react";
+import { Settings, Users, Calendar, Ruler, Scissors, Megaphone, Search, Instagram, BarChart2, PenLine, Music2, Palette, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 
@@ -301,7 +301,7 @@ export default function ToolsPage() {
               <span className="text-[9px] font-bold tracking-widest uppercase bg-purple-500/20 text-purple-400 px-2 py-0.5 rounded-full border border-purple-400/20">Novo</span>
             </div>
             <p className="text-sm text-muted-foreground mb-5 font-light">
-              6 agentes de IA para criar campanhas, analisar público, gerar conteúdo e otimizar resultados no Google, Meta e TikTok.
+              7 agentes de IA para criar campanhas, analisar público, gerar conteúdo e otimizar resultados no Google, Meta e TikTok.
             </p>
 
             <div className="grid grid-cols-3 gap-2 mb-6">
@@ -312,6 +312,7 @@ export default function ToolsPage() {
                 { icon: <Music2 className="w-3.5 h-3.5" />, label: "TikTok Ads", color: "text-cyan-400 bg-cyan-500/15" },
                 { icon: <BarChart2 className="w-3.5 h-3.5" />, label: "Análise", color: "text-green-400 bg-green-500/15" },
                 { icon: <PenLine className="w-3.5 h-3.5" />, label: "Conteúdo", color: "text-amber-400 bg-amber-500/15" },
+                { icon: <Sparkles className="w-3.5 h-3.5" />, label: "Criativos", color: "text-rose-400 bg-rose-500/15" },
               ].map((item) => (
                 <div key={item.label} className={`flex items-center gap-2 text-[11px] font-semibold rounded-xl px-3 py-2 ${item.color.split(" ")[1]}`}>
                   <span className={item.color.split(" ")[0]}>{item.icon}</span>

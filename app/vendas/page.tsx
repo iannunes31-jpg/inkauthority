@@ -60,7 +60,7 @@ const T: Record<string, Record<string, string>> = {
     tutor_title: "Tutor IA Especialista",
     tutor_desc: "Seu mentor particular disponível 24h. Tire dúvidas técnicas, receba sugestões de agulhas, pigmentos e planejamento de sessão em tempo real.",
     ads_title: "Central de Anúncios",
-    ads_desc: "6 agentes de IA especializados em marketing para tatuadores. Google Ads, Meta Ads, TikTok, análise de campanhas e criação de conteúdo.",
+    ads_desc: "7 agentes de IA especializados em marketing para tatuadores. Google Ads, Meta Ads, TikTok, análise de campanhas e criação de conteúdo.",
     stencil_title: "Gerador de Decalque com IA",
     stencil_desc: "Transforme fotos ou desenhos em traçados profissionais prontos para imprimir. Powered by Gemini 2.5 Flash.",
     split_title: "Dividir Folhas para Impressão",
@@ -69,7 +69,7 @@ const T: Record<string, Record<string, string>> = {
     wa_desc: "IA que atende seus clientes no WhatsApp automaticamente. Orçamentos, agendamentos e triagem 24h por dia.",
     wa_price: "R$ 357/mês",
     agents_tag: "Central de Anúncios",
-    agents_title: "6 Agentes de Marketing com IA",
+    agents_title: "7 Agentes de Marketing com IA",
     agents_sub: "Especialistas em atrair clientes para o seu estúdio nas principais plataformas digitais.",
     pricing_tag: "Planos",
     pricing_title: "Escolha seu nível",
@@ -134,7 +134,7 @@ const T: Record<string, Record<string, string>> = {
     tutor_title: "Specialist AI Tutor",
     tutor_desc: "Your private mentor available 24/7. Get technical answers, needle and pigment suggestions, and session planning in real time.",
     ads_title: "Ads Center",
-    ads_desc: "6 AI agents specialized in marketing for tattoo artists. Google Ads, Meta Ads, TikTok, campaign analysis, and content creation.",
+    ads_desc: "7 AI agents specialized in marketing for tattoo artists. Google Ads, Meta Ads, TikTok, campaign analysis, and content creation.",
     stencil_title: "AI Stencil Generator",
     stencil_desc: "Turn photos or drawings into professional print-ready outlines. Powered by Gemini 2.5 Flash.",
     split_title: "Split Sheets for Printing",
@@ -208,7 +208,7 @@ const T: Record<string, Record<string, string>> = {
     tutor_title: "Tutor IA Especialista",
     tutor_desc: "Tu mentor particular disponible 24h. Resuelve dudas técnicas, recibe sugerencias de agujas, pigmentos y planificación de sesión.",
     ads_title: "Central de Anuncios",
-    ads_desc: "6 agentes de IA especializados en marketing para tatuadores. Google Ads, Meta Ads, TikTok, análisis de campañas y creación de contenido.",
+    ads_desc: "7 agentes de IA especializados en marketing para tatuadores. Google Ads, Meta Ads, TikTok, análisis de campañas y creación de contenido.",
     stencil_title: "Generador de Calcomanías con IA",
     stencil_desc: "Convierte fotos o dibujos en trazados profesionales listos para imprimir. Impulsado por Gemini 2.5 Flash.",
     split_title: "Dividir Hojas para Impresión",
@@ -217,7 +217,7 @@ const T: Record<string, Record<string, string>> = {
     wa_desc: "IA que atiende a tus clientes en WhatsApp automáticamente. Presupuestos, citas y filtrado 24/7.",
     wa_price: "R$ 357/mes",
     agents_tag: "Central de Anuncios",
-    agents_title: "6 Agentes de Marketing con IA",
+    agents_title: "7 Agentes de Marketing con IA",
     agents_sub: "Especialistas en atraer clientes a tu estudio en las principales plataformas digitales.",
     pricing_tag: "Planes",
     pricing_title: "Elige tu nivel",
@@ -357,7 +357,7 @@ export default function VendasPage() {
   };
 
   const FAQS = [
-    { q: "O que está incluído no plano Premium?", a: "Tutor IA Especialista, Central de Anúncios com 6 agentes, Gerador de Decalque com IA (Gemini 2.5) e Dividir Folhas — tudo por R$ 97/mês. Cancele quando quiser." },
+    { q: "O que está incluído no plano Premium?", a: "Tutor IA Especialista, Central de Anúncios com 7 agentes, Gerador de Decalque com IA (Gemini 2.5) e Dividir Folhas — tudo por R$ 97/mês. Cancele quando quiser." },
     { q: "Qual a diferença entre o Workshop e o Premium?", a: "O Workshop de Marketing & Posicionamento tem acesso vitalício (R$ 997) e foca em estratégia e vendas. O Premium (R$ 97/mês) dá acesso às ferramentas de IA para o dia a dia. Recomendamos os dois juntos." },
     { q: "As ferramentas funcionam para qualquer estilo de tatuagem?", a: "Sim! Todos os agentes e o tutor são treinados para atender tatuadores de todos os estilos — realismo, blackwork, old school, aquarela, geométrico, etc." },
     { q: "Posso cancelar o Premium quando quiser?", a: "Sim. O plano Premium é uma assinatura mensal sem fidelidade. Cancele a qualquer momento diretamente na plataforma." },
@@ -507,7 +507,7 @@ export default function VendasPage() {
               {[
                 { icon: <BookOpen className="w-4 h-4" />, text: "Workshop de Marketing & Posicionamento" },
                 { icon: <Bot className="w-4 h-4" />, text: "Tutor IA disponível 24h" },
-                { icon: <Megaphone className="w-4 h-4" />, text: "6 Agentes de Anúncios com IA" },
+                { icon: <Megaphone className="w-4 h-4" />, text: "7 Agentes de Anúncios com IA" },
                 { icon: <Contrast className="w-4 h-4" />, text: "Gerador de Decalque com Gemini 2.5" },
                 { icon: <MessageCircle className="w-4 h-4" />, text: "Assistente WhatsApp Automático" },
               ].map((item) => (
@@ -792,7 +792,7 @@ export default function VendasPage() {
                   <span className="text-muted-foreground text-sm">{t("pricing_mo")}</span>
                 </div>
                 <div className="space-y-2.5 mb-8 flex-1">
-                  {["Tutor IA Especialista", "Central de Anúncios (6 agentes)", "Gerador de Decalque IA", "Dividir Folhas para Impressão", "Suporte Prioritário", "Acesso a Novidades em 1°"].map((f) => (
+                  {["Tutor IA Especialista", "Central de Anúncios (7 agentes)", "Gerador de Decalque IA", "Dividir Folhas para Impressão", "Suporte Prioritário", "Acesso a Novidades em 1°"].map((f) => (
                     <div key={f} className="flex items-center gap-2 text-sm">
                       <CheckCircle className="w-3.5 h-3.5 text-primary shrink-0" /> {f}
                     </div>

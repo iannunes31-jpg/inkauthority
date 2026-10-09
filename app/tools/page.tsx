@@ -101,7 +101,7 @@ export default function ToolsPage() {
             </div>
             <h3 className="text-2xl font-black mb-2">Central de Anúncios</h3>
             <p className="text-muted-foreground text-sm mb-5 leading-relaxed">
-              6 agentes de IA especializados em marketing para tatuadores. Crie campanhas no Google, Meta e TikTok, analise seus resultados e gere conteúdo — tudo em um só lugar.
+              7 agentes de IA especializados em marketing para tatuadores. Crie campanhas no Google, Meta e TikTok, analise seus resultados e gere conteúdo — tudo em um só lugar.
             </p>
             <div className="grid grid-cols-2 gap-2 mb-8">
               {[
@@ -246,7 +246,7 @@ export default function ToolsPage() {
           <Lock className="w-10 h-10 text-primary mx-auto mb-5" />
           <h2 className="text-3xl font-black uppercase tracking-tighter mb-4">Acesse Tudo com o Premium</h2>
           <p className="text-muted-foreground mb-8">
-            Tutor IA + Central de Anúncios completa (6 agentes de marketing) por R$ 97/mês. Cancele quando quiser.
+            Tutor IA + Central de Anúncios completa (7 agentes de marketing) por R$ 97/mês. Cancele quando quiser.
           </p>
           <div className="flex flex-wrap gap-3 justify-center mb-8">
             {["Tutor IA 24h", "Google Ads", "Meta Ads", "TikTok Ads", "Análise de Campanha", "Conteúdo IA"].map((f) => (
