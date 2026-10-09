@@ -224,7 +224,7 @@ Esta e a estrategia de conversao que voce DEVE seguir rigidamente:
 
     if (base64Media) {
       if (hasImage) {
-        currentUserParts.push({ type: 'image', image: base64Media });
+        currentUserParts.push({ type: 'file', data: base64Media, mediaType: mimeType || 'image/jpeg' });
       } 
     }
     if (currentUserParts.length > 0) {
