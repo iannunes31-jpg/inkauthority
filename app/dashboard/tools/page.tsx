@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "motion/react";
-import { Settings, Users, Calendar, Ruler, Scissors, Megaphone, Search, Instagram, BarChart2, PenLine, Music2 } from "lucide-react";
+import { Settings, Users, Calendar, Ruler, Scissors, Megaphone, Search, Instagram, BarChart2, PenLine, Music2, Palette } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 
@@ -244,62 +244,41 @@ export default function ToolsPage() {
           </div>
         </motion.div>
 
-        {/* ── Gerador de Decalque ── */}
+        {/* ── Especialistas Artísticos ── */}
         <motion.div
           whileHover={{ y: -5 }}
-          className="glass p-6 rounded-2xl border border-[#4F8EF7]/30 transition-all flex flex-col h-full relative overflow-hidden"
-          style={{ boxShadow: "0 0 0 1px rgba(79,142,247,0.15), 0 0 24px 4px rgba(79,142,247,0.12)" }}
+          className="glass p-6 rounded-2xl border border-[#4F8EF7]/30 transition-all flex flex-col h-full md:col-span-2 relative overflow-hidden"
+          style={{ boxShadow: "0 0 0 1px rgba(79,142,247,0.15), 0 0 32px 6px rgba(79,142,247,0.10), 0 0 32px 6px rgba(139,92,246,0.08)" }}
         >
-          <div className="absolute inset-x-0 top-0 h-32 pointer-events-none">
-            <DecalqueIllustration />
+          <div className="absolute inset-x-0 top-0 h-28 pointer-events-none flex justify-center opacity-90">
+            <div className="w-1/2 max-w-[260px]"><DecalqueIllustration /></div>
+            <div className="w-1/2 max-w-[260px]"><DividirIllustration /></div>
           </div>
-          <div className="relative z-10 mt-28">
-            <h2 className="text-xl font-bold mb-3">Gerador de Decalque</h2>
-            <p className="text-sm text-muted-foreground mb-6 font-light">
-              Transforme uma foto ou desenho em um traçado limpo, pronto para imprimir no papel de decalque.
-            </p>
-            <div className="mt-auto space-y-3">
-              <div className="flex items-center gap-2 text-xs font-semibold text-white/70">
-                <Scissors className="w-4 h-4 text-[#4F8EF7]" /> Detecção de Contorno
-              </div>
-              <div className="flex items-center gap-2 text-xs font-semibold text-white/70">
-                <svg className="w-4 h-4 text-[#4F8EF7]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><circle cx="12" cy="12" r="4" /><path strokeLinecap="round" d="M12 2v2M12 20v2M2 12h2M20 12h2" /></svg>
-                Geração com IA Gemini
-              </div>
-              <Link href="/dashboard/tools/decalque" className="mt-4 block w-full">
-                <Button className="w-full font-bold uppercase tracking-widest text-[10px] bg-[#4F8EF7] text-black hover:bg-[#4F8EF7]/90">
-                  Acessar Ferramenta
-                </Button>
-              </Link>
+          <div className="relative z-10 mt-24">
+            <div className="flex items-center gap-2 mb-2">
+              <Palette className="w-5 h-5 text-[#4F8EF7]" />
+              <h2 className="text-xl font-bold">Especialistas Artísticos</h2>
             </div>
-          </div>
-        </motion.div>
-
-        {/* ── Dividir Folhas ── */}
-        <motion.div
-          whileHover={{ y: -5 }}
-          className="glass p-6 rounded-2xl border border-[#8B5CF6]/30 transition-all flex flex-col h-full relative overflow-hidden"
-          style={{ boxShadow: "0 0 0 1px rgba(139,92,246,0.15), 0 0 24px 4px rgba(139,92,246,0.12)" }}
-        >
-          <div className="absolute inset-x-0 top-0 h-32 pointer-events-none">
-            <DividirIllustration />
-          </div>
-          <div className="relative z-10 mt-28">
-            <h2 className="text-xl font-bold mb-3">Dividir Folhas para Impressão</h2>
-            <p className="text-sm text-muted-foreground mb-6 font-light">
-              Divida um projeto grande em folhas A4 para imprimir e montar peça por peça, sem perder a escala.
+            <p className="text-sm text-muted-foreground mb-5 font-light">
+              Ferramentas para preparar a arte: gere o decalque pronto para o papel térmico e divida projetos grandes em folhas A4 sem perder a escala.
             </p>
-            <div className="mt-auto space-y-3">
-              <div className="flex items-center gap-2 text-xs font-semibold text-white/70">
-                <Ruler className="w-4 h-4 text-[#8B5CF6]" /> Escala Personalizada
-              </div>
-              <div className="flex items-center gap-2 text-xs font-semibold text-white/70">
-                <svg className="w-4 h-4 text-[#8B5CF6]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" /><rect x="3" y="14" width="7" height="7" rx="1" /><rect x="14" y="14" width="7" height="7" rx="1" /></svg>
-                Guias de Montagem
-              </div>
-              <Link href="/dashboard/tools/dividir-folhas" className="mt-4 block w-full">
-                <Button className="w-full font-bold uppercase tracking-widest text-[10px] bg-[#8B5CF6] text-white hover:bg-[#8B5CF6]/90">
-                  Acessar Ferramenta
+
+            <div className="grid grid-cols-2 gap-2 mb-6">
+              {[
+                { icon: <Scissors className="w-3.5 h-3.5" />, label: "Gerador de Decalque", color: "text-[#4F8EF7] bg-[#4F8EF7]/15" },
+                { icon: <Ruler className="w-3.5 h-3.5" />, label: "Dividir Folhas", color: "text-[#8B5CF6] bg-[#8B5CF6]/15" },
+              ].map((item) => (
+                <div key={item.label} className={`flex items-center gap-2 text-[11px] font-semibold rounded-xl px-3 py-2 ${item.color.split(" ")[1]}`}>
+                  <span className={item.color.split(" ")[0]}>{item.icon}</span>
+                  <span className="text-foreground/70">{item.label}</span>
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-auto">
+              <Link href="/dashboard/tools/artisticos" className="block w-full">
+                <Button className="w-full bg-gradient-to-r from-[#4F8EF7] to-[#8B5CF6] hover:opacity-90 text-white font-bold uppercase tracking-widest text-[10px] h-11">
+                  Acessar Especialistas Artísticos
                 </Button>
               </Link>
             </div>

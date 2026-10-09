@@ -20,6 +20,12 @@ const nextConfig: NextConfig = {
     ],
   },
   transpilePackages: ['motion'],
+  async redirects() {
+    return [
+      { source: '/dashboard/tools/decalque', destination: '/dashboard/tools/artisticos/decalque', permanent: true },
+      { source: '/dashboard/tools/dividir-folhas', destination: '/dashboard/tools/artisticos/dividir-folhas', permanent: true },
+    ];
+  },
   webpack: (config, {dev}) => {
     // HMR is disabled in AI Studio via DISABLE_HMR env var.
     // Do not modifyâfile watching is disabled to prevent flickering during agent edits.

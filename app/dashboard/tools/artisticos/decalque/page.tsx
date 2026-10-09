@@ -296,7 +296,7 @@ export default function DecalquePage() {
     <div className="max-w-5xl mx-auto p-6">
       {/* Header */}
       <div className="flex items-center gap-4 mb-8">
-        <Link href="/dashboard/tools" className="p-2 rounded-xl hover:bg-white/5 transition-colors">
+        <Link href="/dashboard/tools/artisticos" className="p-2 rounded-xl hover:bg-white/5 transition-colors">
           <ArrowLeft className="w-5 h-5 text-muted-foreground" />
         </Link>
         <div className="w-10 h-10 rounded-xl bg-primary/20 flex items-center justify-center">

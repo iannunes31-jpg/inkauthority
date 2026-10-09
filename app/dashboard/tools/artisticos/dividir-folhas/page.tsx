@@ -197,8 +197,8 @@ export default function DividirFolhasPage() {
   return (
     <div className="max-w-5xl mx-auto pb-20 p-6 lg:p-10">
       <div className="print:hidden">
-        <Link href="/dashboard/tools" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-white mb-6 transition-colors">
-          <ArrowLeft className="w-4 h-4" /> Voltar para Ferramentas
+        <Link href="/dashboard/tools/artisticos" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-white mb-6 transition-colors">
+          <ArrowLeft className="w-4 h-4" /> Voltar para Especialistas Artísticos
         </Link>
 
         <div className="mb-8">

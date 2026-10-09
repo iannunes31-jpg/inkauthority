@@ -199,7 +199,7 @@ export default function ToolsPage() {
               <div className="mb-4 text-center">
                 <span className="text-2xl font-black text-primary">Gratuito</span>
               </div>
-              <Button onClick={() => isSignedIn ? window.location.href = "/dashboard/tools/decalque" : setIsLoginOpen(true)}
+              <Button onClick={() => isSignedIn ? window.location.href = "/dashboard/tools/artisticos/decalque" : setIsLoginOpen(true)}
                 className="w-full metallic-gradient text-black font-bold h-12 rounded-xl hover:scale-[1.02] transition-transform text-[11px] tracking-widest uppercase">
                 Acessar Ferramenta <ArrowRight className="w-4 h-4 ml-2" />
               </Button>
@@ -231,7 +231,7 @@ export default function ToolsPage() {
               <div className="mb-4 text-center">
                 <span className="text-2xl font-black text-primary">Gratuito</span>
               </div>
-              <Button onClick={() => isSignedIn ? window.location.href = "/dashboard/tools/dividir-folhas" : setIsLoginOpen(true)}
+              <Button onClick={() => isSignedIn ? window.location.href = "/dashboard/tools/artisticos/dividir-folhas" : setIsLoginOpen(true)}
                 className="w-full metallic-gradient text-black font-bold h-12 rounded-xl hover:scale-[1.02] transition-transform text-[11px] tracking-widest uppercase">
                 Acessar Ferramenta <ArrowRight className="w-4 h-4 ml-2" />
               </Button>
