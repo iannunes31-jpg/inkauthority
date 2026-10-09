@@ -22,10 +22,10 @@ export const COMBO_FULL_PRICE = COMBO_ITEMS.reduce((sum, id) => sum + PLANS[id].
 export const COMBO_SAVINGS = COMBO_FULL_PRICE - PLANS.combo_ia.price;
 
 // "subscription" is the combo; "tools" is the old R$97 plan, kept so existing
-// subscribers don't lose Dante.
+// subscribers don't lose Dante or the artistic tools they already had.
 export const ACCESS_TYPES: Record<"dante" | "artisticos" | "ads", string[]> = {
   dante: ["subscription", "tools", "dante"],
-  artisticos: ["subscription", "artisticos"],
+  artisticos: ["subscription", "tools", "artisticos"],
   ads: ["subscription", "ads"],
 };
 
