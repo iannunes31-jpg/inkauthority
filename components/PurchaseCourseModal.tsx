@@ -157,7 +157,7 @@ export function PurchaseCourseModal({
                   <div className="flex items-baseline gap-2">
                     <span className="text-2xl font-black text-foreground">R$ 759,00</span>
                   </div>
-                  <p className="text-xs text-primary mt-1">Ou 12x de R$ 99,70 no cartão</p>
+                  <p className="text-xs text-primary mt-1">Ou 12x de R$ 63,25 no cartão</p>
                 </div>
               </div>
 

@@ -577,7 +577,7 @@ export default function VendasPage() {
                   <Award className="w-10 h-10 text-primary mb-4" />
                   <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-2">{t("course_price_label")}</p>
                   <p className="text-5xl font-black mb-2">{t("course_price")}</p>
-                  <p className="text-muted-foreground text-sm mb-6">ou 12x de R$ 99,70</p>
+                  <p className="text-muted-foreground text-sm mb-6">ou 12x de R$ 63,25</p>
                   <Button onClick={() => handleCTA("marketing_posicionamento", "/dashboard")}
                     className="w-full metallic-gradient text-black font-bold h-13 rounded-2xl text-[11px] tracking-widest uppercase hover:scale-[1.02] transition-transform">
                     {t("course_cta")} <ArrowRight className="w-4 h-4 ml-2" />

@@ -103,7 +103,7 @@ export default function CoursesPage() {
                   <span className="text-3xl font-black text-foreground">R$ 759,00</span>
                   <span className="text-sm text-muted-foreground line-through">R$ 1.500,00</span>
                 </div>
-                <p className="text-xs text-primary mt-1">Ou 12x de R$ 99,70</p>
+                <p className="text-xs text-primary mt-1">Ou 12x de R$ 63,25</p>
               </div>
 
               <Button 
