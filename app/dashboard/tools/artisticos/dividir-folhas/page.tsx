@@ -6,6 +6,7 @@ import jsPDF from "jspdf";
 import { ArrowLeft, Upload, Printer, Grid3x3, Download, FileDown, ImagePlus, SlidersHorizontal, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { PlanAccessGate } from "@/components/PlanAccessGate";
 
 // Splits one image across multiple A4 sheets so a large tattoo project can
 // be printed piece by piece and taped together -- no AI involved, just
@@ -40,7 +41,7 @@ function computeWidthForPages(aspect: number, stepW: number, stepH: number, over
   return Math.floor(widthCm);
 }
 
-export default function DividirFolhasPage() {
+function DividirFolhasPage() {
   const [step, setStep] = useState<Step>("enviar");
   const [imageEl, setImageEl] = useState<HTMLImageElement | null>(null);
   const [fileName, setFileName] = useState("");
@@ -396,5 +397,13 @@ export default function DividirFolhasPage() {
         }
       `}</style>
     </div>
+  );
+}
+
+export default function DividirFolhasPageGated() {
+  return (
+    <PlanAccessGate plan="artisticos_premium" description="Divida projetos grandes em folhas A4 sem perder a escala e gere decalques prontos para o papel térmico.">
+      <DividirFolhasPage />
+    </PlanAccessGate>
   );
 }

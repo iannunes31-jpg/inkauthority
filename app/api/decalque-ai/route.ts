@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
+import { userHasAccess, planRequired } from "@/lib/access-server";
 import { GoogleAuth } from "google-auth-library";
 
 const STYLE_PROMPTS: Record<string, string> = {
@@ -28,6 +29,7 @@ const STYLE_PROMPTS: Record<string, string> = {
 export async function POST(req: NextRequest) {
   const { userId } = await auth();
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!(await userHasAccess(userId, "artisticos"))) return planRequired();
 
   if (!process.env.GOOGLE_VERTEX_CREDENTIALS) {
     return NextResponse.json(

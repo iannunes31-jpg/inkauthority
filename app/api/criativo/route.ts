@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
+import { userHasAccess, planRequired } from "@/lib/access-server";
 import { GoogleAuth } from "google-auth-library";
 
 export const maxDuration = 60;
@@ -31,6 +32,7 @@ function buildPrompt(request: string, formatLabel: string, hasPhoto: boolean) {
 export async function POST(req: NextRequest) {
   const { userId } = await auth();
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!(await userHasAccess(userId, "ads"))) return planRequired();
 
   if (!process.env.GOOGLE_VERTEX_CREDENTIALS) {
     return NextResponse.json({ error: "Credenciais do Vertex AI não configuradas." }, { status: 500 });

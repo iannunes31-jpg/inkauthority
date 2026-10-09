@@ -45,7 +45,7 @@ const T: Record<string, Record<string, string>> = {
     course_desc: "Aprenda os segredos exatos para se posicionar como autoridade no mercado, atrair clientes que pagam bem e transformar sua arte num negócio lucrativo.",
     course_includes: "O que está incluído",
     course_price_label: "Acesso Vitalício",
-    course_price: "R$ 997",
+    course_price: "R$ 759",
     course_cta: "Garantir Vaga no Workshop",
     course_f1: "Posicionamento e autoridade de marca",
     course_f2: "Estruturação das redes sociais",
@@ -54,7 +54,7 @@ const T: Record<string, Record<string, string>> = {
     course_f5: "Tráfego pago do zero ao avançado",
     course_f6: "Comunidade exclusiva de tatuadores",
     course_f7: "Análise de perfil gratuita (primeiros 20)",
-    premium_tag: "Especialistas IA · R$ 97/mês",
+    premium_tag: "Combo IA · R$ 347/mês",
     premium_title: "Inteligência Artificial para o seu Estúdio",
     premium_sub: "7 ferramentas em um só plano. Cancele quando quiser.",
     tutor_title: "Tutor IA Especialista",
@@ -67,7 +67,7 @@ const T: Record<string, Record<string, string>> = {
     split_desc: "Divida projetos grandes em folhas A4 para imprimir e montar — até 10 folhas, escala personalizada.",
     wa_title: "Assistente WhatsApp",
     wa_desc: "IA que atende seus clientes no WhatsApp automaticamente. Orçamentos, agendamentos e triagem 24h por dia.",
-    wa_price: "R$ 357/mês",
+    wa_price: "R$ 259/mês",
     agents_tag: "Central de Anúncios",
     agents_title: "7 Agentes de Marketing com IA",
     agents_sub: "Especialistas em atrair clientes para o seu estúdio nas principais plataformas digitais.",
@@ -75,14 +75,14 @@ const T: Record<string, Record<string, string>> = {
     pricing_title: "Escolha seu nível",
     pricing_free: "Gratuito",
     pricing_free_desc: "Para começar",
-    pricing_prem: "Premium",
+    pricing_prem: "Combo IA",
     pricing_prem_desc: "Para crescer rápido",
-    pricing_course: "Workshop + Premium",
+    pricing_course: "Workshop + Combo IA",
     pricing_course_desc: "Pacote completo",
     pricing_mo: "/mês",
     pricing_life: "vitalício",
     pricing_cta_free: "Criar Conta Grátis",
-    pricing_cta_prem: "Assinar Premium",
+    pricing_cta_prem: "Assinar Combo",
     pricing_cta_pack: "Garantir Pacote Completo",
     faq_tag: "Dúvidas Frequentes",
     faq_title: "Respostas rápidas",
@@ -119,7 +119,7 @@ const T: Record<string, Record<string, string>> = {
     course_desc: "Learn the exact secrets to position yourself as a market authority, attract clients who pay well, and turn your art into a profitable business.",
     course_includes: "What's included",
     course_price_label: "Lifetime Access",
-    course_price: "R$ 997",
+    course_price: "R$ 759",
     course_cta: "Secure My Spot",
     course_f1: "Brand positioning and authority",
     course_f2: "Social media structuring",
@@ -128,7 +128,7 @@ const T: Record<string, Record<string, string>> = {
     course_f5: "Paid traffic from zero to advanced",
     course_f6: "Exclusive tattoo artist community",
     course_f7: "Free profile analysis (first 20)",
-    premium_tag: "AI Specialists · R$ 97/mo",
+    premium_tag: "AI Combo · R$ 347/mo",
     premium_title: "Artificial Intelligence for Your Studio",
     premium_sub: "7 tools in one plan. Cancel anytime.",
     tutor_title: "Specialist AI Tutor",
@@ -149,14 +149,14 @@ const T: Record<string, Record<string, string>> = {
     pricing_title: "Choose your level",
     pricing_free: "Free",
     pricing_free_desc: "To get started",
-    pricing_prem: "Premium",
+    pricing_prem: "Combo IA",
     pricing_prem_desc: "To grow fast",
-    pricing_course: "Course + Premium",
+    pricing_course: "Course + AI Combo",
     pricing_course_desc: "Complete package",
     pricing_mo: "/mo",
     pricing_life: "lifetime",
     pricing_cta_free: "Create Free Account",
-    pricing_cta_prem: "Subscribe Premium",
+    pricing_cta_prem: "Subscribe to Combo",
     pricing_cta_pack: "Get Complete Package",
     faq_tag: "FAQ",
     faq_title: "Quick answers",
@@ -193,7 +193,7 @@ const T: Record<string, Record<string, string>> = {
     course_desc: "Aprende los secretos exactos para posicionarte como autoridad, atraer clientes que pagan bien y convertir tu arte en un negocio rentable.",
     course_includes: "Qué incluye",
     course_price_label: "Acceso de por vida",
-    course_price: "R$ 997",
+    course_price: "R$ 759",
     course_cta: "Asegurar mi Cupo",
     course_f1: "Posicionamiento y autoridad de marca",
     course_f2: "Estructuración de redes sociales",
@@ -202,7 +202,7 @@ const T: Record<string, Record<string, string>> = {
     course_f5: "Tráfico pago del cero al avanzado",
     course_f6: "Comunidad exclusiva de tatuadores",
     course_f7: "Análisis de perfil gratis (primeros 20)",
-    premium_tag: "Especialistas IA · R$ 97/mes",
+    premium_tag: "Combo IA · R$ 347/mes",
     premium_title: "Inteligencia Artificial para tu Estudio",
     premium_sub: "7 herramientas en un plan. Cancela cuando quieras.",
     tutor_title: "Tutor IA Especialista",
@@ -223,14 +223,14 @@ const T: Record<string, Record<string, string>> = {
     pricing_title: "Elige tu nivel",
     pricing_free: "Gratuito",
     pricing_free_desc: "Para comenzar",
-    pricing_prem: "Premium",
+    pricing_prem: "Combo IA",
     pricing_prem_desc: "Para crecer rápido",
-    pricing_course: "Workshop + Premium",
+    pricing_course: "Workshop + Combo IA",
     pricing_course_desc: "Paquete completo",
     pricing_mo: "/mes",
     pricing_life: "de por vida",
     pricing_cta_free: "Crear Cuenta Gratis",
-    pricing_cta_prem: "Suscribirse Premium",
+    pricing_cta_prem: "Suscribirse al Combo",
     pricing_cta_pack: "Obtener Paquete Completo",
     faq_tag: "Preguntas Frecuentes",
     faq_title: "Respuestas rápidas",
@@ -357,10 +357,10 @@ export default function VendasPage() {
   };
 
   const FAQS = [
-    { q: "O que está incluído no plano Premium?", a: "Tutor IA Especialista, Central de Anúncios com 7 agentes, Gerador de Decalque com IA (Gemini 2.5) e Dividir Folhas — tudo por R$ 97/mês. Cancele quando quiser." },
-    { q: "Qual a diferença entre o Workshop e o Premium?", a: "O Workshop de Marketing & Posicionamento tem acesso vitalício (R$ 997) e foca em estratégia e vendas. O Premium (R$ 97/mês) dá acesso às ferramentas de IA para o dia a dia. Recomendamos os dois juntos." },
+    { q: "O que está incluído no Combo IA?", a: "Dante (assistente de WhatsApp, R$ 259/mês), Especialistas Artísticos (Decalque e Dividir Folhas, R$ 99/mês) e Especialistas em Anúncios (7 agentes, R$ 129/mês). Separados custam R$ 487/mês; no combo, R$ 347/mês. O Tutor IA é grátis. Cancele quando quiser." },
+    { q: "Qual a diferença entre o Workshop e o Premium?", a: "O Workshop de Marketing & Posicionamento tem acesso vitalício (R$ 759, pagamento único) e foca em estratégia e vendas. O Combo IA (R$ 347/mês) dá acesso às ferramentas de IA para o dia a dia. Recomendamos os dois juntos." },
     { q: "As ferramentas funcionam para qualquer estilo de tatuagem?", a: "Sim! Todos os agentes e o tutor são treinados para atender tatuadores de todos os estilos — realismo, blackwork, old school, aquarela, geométrico, etc." },
-    { q: "Posso cancelar o Premium quando quiser?", a: "Sim. O plano Premium é uma assinatura mensal sem fidelidade. Cancele a qualquer momento diretamente na plataforma." },
+    { q: "Posso cancelar a assinatura quando quiser?", a: "Sim. Todas as assinaturas são mensais e sem fidelidade. Cancele a qualquer momento diretamente na plataforma." },
     { q: "O Gerador de Decalque substitui o papel de decalque?", a: "Não — ele gera o traçado/arte que você vai imprimir no papel de decalque. A IA extrai os contornos da imagem com precisão profissional, pronto para você imprimir e transferir para a pele." },
     { q: "O Assistente WhatsApp funciona com meu número atual?", a: "Sim. O assistente se conecta ao seu número do WhatsApp Business e passa a atender os clientes automaticamente. A configuração é simples e guiada." },
   ];
@@ -713,7 +713,7 @@ export default function VendasPage() {
                 <div className="text-center">
                   <span className="text-3xl font-black">{t("wa_price")}</span>
                 </div>
-                <Button onClick={() => handleCTA("whatsapp_premium")}
+                <Button onClick={() => handleCTA("dante_whatsapp")}
                   className="bg-[#25D366] text-black hover:bg-[#25D366]/90 font-bold px-8 h-12 rounded-2xl text-[11px] tracking-widest uppercase whitespace-nowrap">
                   Assinar Assistente <ArrowRight className="w-4 h-4 ml-2" />
                 </Button>
@@ -766,7 +766,7 @@ export default function VendasPage() {
                   <span className="text-4xl font-black">R$ 0</span>
                 </div>
                 <div className="space-y-2.5 mb-8 flex-1">
-                  {["Tutor IA Especialista", "Gerador de Decalque", "Dividir Folhas para Impressão", "Acesso à Comunidade"].map((f) => (
+                  {["Tutor IA Especialista", "Acesso à Comunidade"].map((f) => (
                     <div key={f} className="flex items-center gap-2 text-sm text-foreground/70">
                       <CheckCircle className="w-3.5 h-3.5 text-primary/60 shrink-0" /> {f}
                     </div>
@@ -788,17 +788,18 @@ export default function VendasPage() {
                 <p className="text-xs font-bold uppercase tracking-widest text-primary mb-1">{t("pricing_prem")}</p>
                 <p className="text-sm text-muted-foreground mb-6">{t("pricing_prem_desc")}</p>
                 <div className="mb-6">
-                  <span className="text-4xl font-black">R$ 97</span>
+                  <span className="text-sm text-muted-foreground line-through mr-2">R$ 487</span>
+                  <span className="text-4xl font-black">R$ 347</span>
                   <span className="text-muted-foreground text-sm">{t("pricing_mo")}</span>
                 </div>
                 <div className="space-y-2.5 mb-8 flex-1">
-                  {["Tutor IA Especialista", "Central de Anúncios (7 agentes)", "Gerador de Decalque IA", "Dividir Folhas para Impressão", "Suporte Prioritário", "Acesso a Novidades em 1°"].map((f) => (
+                  {["Dante · Assistente de WhatsApp", "Especialistas Artísticos (Decalque + Dividir Folhas)", "Especialistas em Anúncios (7 agentes)", "Tutor IA Especialista (grátis)", "Suporte Prioritário", "Acesso a Novidades em 1°"].map((f) => (
                     <div key={f} className="flex items-center gap-2 text-sm">
                       <CheckCircle className="w-3.5 h-3.5 text-primary shrink-0" /> {f}
                     </div>
                   ))}
                 </div>
-                <Button onClick={() => handleCTA("tools_premium")}
+                <Button onClick={() => handleCTA("combo_ia")}
                   className="w-full metallic-gradient text-black font-bold h-12 rounded-xl text-[10px] tracking-widest uppercase hover:scale-[1.02] transition-transform">
                   {t("pricing_cta_prem")} <ArrowRight className="w-4 h-4 ml-1" />
                 </Button>
@@ -811,12 +812,12 @@ export default function VendasPage() {
                 <p className="text-xs font-bold uppercase tracking-widest text-purple-400 mb-1">{t("pricing_course")}</p>
                 <p className="text-sm text-muted-foreground mb-6">{t("pricing_course_desc")}</p>
                 <div className="mb-2">
-                  <span className="text-4xl font-black">R$ 997</span>
+                  <span className="text-4xl font-black">R$ 759</span>
                   <span className="text-xs text-muted-foreground ml-1">{t("pricing_life")}</span>
                 </div>
-                <p className="text-xs text-muted-foreground mb-6">+ R$ 97/mês Premium</p>
+                <p className="text-xs text-muted-foreground mb-6">+ R$ 347/mês Combo IA (opcional)</p>
                 <div className="space-y-2.5 mb-8 flex-1">
-                  {["Tudo do plano Premium", "Workshop Marketing & Posicionamento", "Acesso Vitalício ao Workshop", "Comunidade Exclusiva", "🎁 Análise de Perfil Gratuita"].map((f) => (
+                  {["Workshop Marketing & Posicionamento", "Acesso Vitalício ao Workshop", "Comunidade Exclusiva", "🎁 Análise de Perfil Gratuita"].map((f) => (
                     <div key={f} className="flex items-center gap-2 text-sm">
                       <CheckCircle className="w-3.5 h-3.5 text-purple-400 shrink-0" /> {f}
                     </div>

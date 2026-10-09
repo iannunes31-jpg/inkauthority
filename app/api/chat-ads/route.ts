@@ -7,6 +7,7 @@
 import { createVertex } from '@ai-sdk/google-vertex';
 import { streamText } from 'ai';
 import { auth } from '@clerk/nextjs/server';
+import { userHasAccess, planRequired } from "@/lib/access-server";
 
 export const maxDuration = 30;
 
@@ -129,6 +130,7 @@ export async function POST(req: Request) {
         headers: { 'Content-Type': 'application/json' },
       });
     }
+    if (!(await userHasAccess(userId, "ads"))) return planRequired();
 
     const body = await req.json();
     const messages = body.messages ?? [];

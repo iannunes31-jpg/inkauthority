@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
+import { userHasAccess, planRequired } from "@/lib/access-server";
 import { registerWebhook } from '@/lib/evolution-webhook';
 
 const evolutionUrl = process.env.EVOLUTION_API_URL || 'https://evolution-api-production-fbfd.up.railway.app';
@@ -13,6 +14,7 @@ export async function POST(req: Request) {
     // 1:1 to the caller's own id, so derive it from the session instead.
     const { userId } = await auth();
     if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!(await userHasAccess(userId, "dante"))) return planRequired();
 
     const { action } = await req.json();
     const instanceName = userId;

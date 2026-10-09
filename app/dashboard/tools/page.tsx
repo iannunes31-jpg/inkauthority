@@ -4,6 +4,93 @@ import { motion } from "motion/react";
 import { Settings, Users, Calendar, Ruler, Scissors, Megaphone, Search, Instagram, BarChart2, PenLine, Music2, Palette, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
+import { useEffect, useState } from "react";
+import { useUser } from "@clerk/nextjs";
+import { Check, Crown } from "lucide-react";
+import { PLANS, COMBO_ITEMS, COMBO_FULL_PRICE, COMBO_SAVINGS, formatBRL } from "@/lib/pricing";
+import { fetchAccess } from "@/lib/access";
+import { startCheckout } from "@/components/PlanAccessGate";
+
+function PriceTag({ price }: { price?: number }) {
+  return (
+    <span className="ml-auto shrink-0 text-xs font-bold bg-white/5 border border-white/10 rounded-full px-3 py-1">
+      {price == null ? (
+        <span className="text-green-400">Grátis</span>
+      ) : (
+        <>
+          <span className="text-white">{formatBRL(price)}</span>
+          <span className="text-white/50 font-medium">/mês</span>
+        </>
+      )}
+    </span>
+  );
+}
+
+function ComboCard() {
+  const { user } = useUser();
+  const [hasCombo, setHasCombo] = useState(false);
+
+  useEffect(() => {
+    if (!user?.id) return;
+    fetchAccess(user.id)
+      .then((a) => setHasCombo(a.purchases.some((p) => p.product_type === "subscription")))
+      .catch(() => {});
+  }, [user?.id]);
+
+  return (
+    <div
+      className="glass p-6 rounded-2xl border border-[#D4AF37]/40 md:col-span-2 relative overflow-hidden"
+      style={{ boxShadow: "0 0 0 1px rgba(212,175,55,0.2), 0 0 32px 6px rgba(212,175,55,0.12)" }}
+    >
+      <div className="flex items-center gap-2 mb-1">
+        <Crown className="w-5 h-5 text-[#D4AF37]" />
+        <h2 className="text-xl font-bold">Combo IA Completo</h2>
+        <span className="text-[9px] font-bold tracking-widest uppercase bg-[#D4AF37]/20 text-[#D4AF37] px-2 py-0.5 rounded-full border border-[#D4AF37]/30">
+          Economize {formatBRL(COMBO_SAVINGS)}/mês
+        </span>
+      </div>
+      <p className="text-sm text-muted-foreground mb-5 font-light">
+        Todas as ferramentas pagas em uma única assinatura mensal. O Tutor IA continua grátis.
+      </p>
+
+      <div className="grid md:grid-cols-2 gap-6 items-end">
+        <ul className="space-y-2">
+          {COMBO_ITEMS.map((id) => (
+            <li key={id} className="flex items-center gap-2 text-sm">
+              <Check className="w-4 h-4 text-[#D4AF37] shrink-0" />
+              <span className="text-white/80">{PLANS[id].name}</span>
+              <span className="ml-auto text-white/50 line-through">{formatBRL(PLANS[id].price)}/mês</span>
+            </li>
+          ))}
+          <li className="flex items-center gap-2 text-sm pt-2 border-t border-white/10">
+            <span className="text-white/60">Assinando separado</span>
+            <span className="ml-auto text-white/50 line-through">{formatBRL(COMBO_FULL_PRICE)}/mês</span>
+          </li>
+        </ul>
+
+        <div className="text-center md:text-right">
+          <p className="text-xs text-white/50 mb-1">No combo, tudo por</p>
+          <p className="mb-4">
+            <span className="text-4xl font-black text-white">{formatBRL(PLANS.combo_ia.price)}</span>
+            <span className="text-white/60">/mês</span>
+          </p>
+          {hasCombo ? (
+            <div className="w-full h-11 rounded-md bg-green-500/15 text-green-400 font-bold text-xs uppercase tracking-widest flex items-center justify-center">
+              Combo ativo
+            </div>
+          ) : (
+            <Button
+              onClick={() => startCheckout("combo_ia")}
+              className="w-full metallic-gradient text-black font-bold uppercase tracking-widest text-[10px] h-11"
+            >
+              Assinar Combo por {formatBRL(PLANS.combo_ia.price)}/mês
+            </Button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 // ─── SVG Illustrations ───────────────────────────────────────────────────────
 
@@ -180,6 +267,8 @@ export default function ToolsPage() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
+        <ComboCard />
+
         {/* ── Tutor IA ── */}
         <motion.div
           whileHover={{ y: -5 }}
@@ -190,7 +279,10 @@ export default function ToolsPage() {
             <TutorIllustration />
           </div>
           <div className="relative z-10 mt-28">
-            <h2 className="text-xl font-bold mb-3">Tutor IA Especialista</h2>
+            <div className="flex items-center gap-2 mb-3">
+              <h2 className="text-xl font-bold">Tutor IA Especialista</h2>
+              <PriceTag />
+            </div>
             <p className="text-sm text-muted-foreground mb-6 font-light">
               Seu mentor particular 24 horas por dia. Nossa IA sugere agulhas, pigmentos e ajuda no planejamento cirúrgico.
             </p>
@@ -224,6 +316,7 @@ export default function ToolsPage() {
             <div className="flex items-center gap-2 mb-3">
               <h2 className="text-xl font-bold">Dante</h2>
               <span className="text-[9px] font-bold tracking-widest uppercase bg-[#25D366]/20 text-[#25D366] px-2 py-0.5 rounded-full border border-[#25D366]/30">WhatsApp IA</span>
+              <PriceTag price={PLANS.dante_whatsapp.price} />
             </div>
             <p className="text-sm text-muted-foreground mb-6 font-light">
               Automatize seus orçamentos. A IA conversa com os clientes no WhatsApp, entende a ideia da tattoo e cadastra o cliente direto na sua agenda.
@@ -258,6 +351,7 @@ export default function ToolsPage() {
             <div className="flex items-center gap-2 mb-2">
               <Palette className="w-5 h-5 text-[#4F8EF7]" />
               <h2 className="text-xl font-bold">Especialistas Artísticos</h2>
+              <PriceTag price={PLANS.artisticos_premium.price} />
             </div>
             <p className="text-sm text-muted-foreground mb-5 font-light">
               Ferramentas para preparar a arte: gere o decalque pronto para o papel térmico e divida projetos grandes em folhas A4 sem perder a escala.
@@ -299,6 +393,7 @@ export default function ToolsPage() {
               <Megaphone className="w-5 h-5 text-purple-400" />
               <h2 className="text-xl font-bold">Central de Anúncios</h2>
               <span className="text-[9px] font-bold tracking-widest uppercase bg-purple-500/20 text-purple-400 px-2 py-0.5 rounded-full border border-purple-400/20">Novo</span>
+              <PriceTag price={PLANS.anuncios_premium.price} />
             </div>
             <p className="text-sm text-muted-foreground mb-5 font-light">
               7 agentes de IA para criar campanhas, analisar público, gerar conteúdo e otimizar resultados no Google, Meta e TikTok.

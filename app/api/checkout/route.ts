@@ -66,6 +66,7 @@ export async function POST(req: NextRequest) {
     let productName: string;
     let price: number;
     let isSubscription: boolean;
+    let resolvedType: string;
 
     if (productType === 'course') {
       const { data: course, error } = await supabase
@@ -81,6 +82,7 @@ export async function POST(req: NextRequest) {
       productName = course.title;
       price = DEFAULT_COURSE_PRICE; // TODO: read from courses.price once that column exists
       isSubscription = false;
+      resolvedType = 'course';
     } else {
       const product = PRODUCT_CATALOG[productId];
       if (!product) {
@@ -89,6 +91,7 @@ export async function POST(req: NextRequest) {
       productName = product.name;
       price = product.price;
       isSubscription = product.isSubscription;
+      resolvedType = product.type;
     }
 
     const session = await createCheckoutSession(
@@ -102,7 +105,7 @@ export async function POST(req: NextRequest) {
                 name: productName,
                 metadata: {
                   productId: String(productId),
-                  productType: String(productType || 'general'),
+                  productType: resolvedType,
                 }
               },
               unit_amount: Math.round(price * 100),
@@ -114,7 +117,7 @@ export async function POST(req: NextRequest) {
         metadata: {
           userId,
           productId: String(productId),
-          productType: String(productType || 'general'),
+          productType: resolvedType,
         },
         // PIX requires an expiration window; 3600s (1h) is the minimum Stripe accepts.
         ...(!isSubscription ? {

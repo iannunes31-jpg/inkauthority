@@ -6,12 +6,11 @@ import { CopilotInbox } from "@/components/CopilotInbox";
 import { Button } from "@/components/ui/button";
 import { useUser } from "@clerk/nextjs";
 import { supabase } from "@/lib/supabase";
-import { fetchAccess, hasProductType } from "@/lib/access";
+import { PlanAccessGate } from "@/components/PlanAccessGate";
 import { motion, AnimatePresence } from "motion/react";
 import { cn } from "@/lib/utils";
-import { isAdminUser } from "@/lib/admin";
 
-export default function AssistantPage() {
+function AssistantPage() {
   const { user } = useUser();
   const [activeTab, setActiveTab] = useState<"settings" | "crm" | "agenda" | "copilot">("settings");
   const [isSaving, setIsSaving] = useState(false);
@@ -21,9 +20,7 @@ export default function AssistantPage() {
     try { return localStorage.getItem("wpp-status") || "Carregando..."; } catch { return "Carregando..."; }
   });
   const [isGeneratingQr, setIsGeneratingQr] = useState(false);
-  const [hasAccess, setHasAccess] = useState<boolean | null>(null);
 
-  const isAdmin = isAdminUser(user?.primaryEmailAddress?.emailAddress, user?.publicMetadata);
 
   const [formData, setFormData] = useState({
     studio_name: "",
@@ -47,24 +44,10 @@ export default function AssistantPage() {
 
   useEffect(() => {
     if (user?.id) {
-      checkAccess();
       fetchSettings();
       checkConnectionStatus(user.id);
     }
   }, [user?.id]);
-
-  const checkAccess = async () => {
-    if (isAdmin) {
-      setHasAccess(true);
-      return;
-    }
-    try {
-      const access = await fetchAccess(user!.id);
-      setHasAccess(hasProductType(access, ["subscription", "tools"]));
-    } catch (err) {
-      setHasAccess(false);
-    }
-  };
 
   const checkConnectionStatus = async (uid?: string) => {
     const id = uid || user?.id;
@@ -277,55 +260,8 @@ export default function AssistantPage() {
     }
   };
 
-  const handleCheckout = async () => {
-    try {
-      const response = await fetch('/api/checkout', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          productName: 'Especialistas IA Premium', 
-          price: 97.00, 
-          productId: 'tools_premium',
-          productType: 'tools',
-          isSubscription: true, 
-          returnUrl: '/dashboard/tools/whatsapp' 
-        }),
-      });
-      const data = await response.json();
-      if (data.url) {
-        window.location.href = data.url;
-      }
-    } catch (err) {
-      console.error(err);
-      alert('Erro ao carregar checkout.');
-    }
-  };
-
-  if (hasAccess === null) {
-    return (
-      <div className="flex h-screen items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
-      </div>
-    );
-  }
-
   return (
     <div className="max-w-6xl mx-auto pb-20 p-6 lg:p-10 relative">
-      {!hasAccess && (
-        <div className="absolute inset-0 z-50 flex items-center justify-center p-6 backdrop-blur-md bg-black/60 rounded-3xl">
-          <div className="glass p-8 max-w-lg text-center rounded-3xl border border-white/10 shadow-2xl">
-            <Lock className="w-16 h-16 text-primary mx-auto mb-6" />
-            <h2 className="text-3xl font-black uppercase tracking-tighter mb-4 text-white">Acesso Restrito</h2>
-            <p className="text-muted-foreground mb-8">
-              Para desbloquear a IA que agenda tatuagens automaticamente e fecha orçamentos enquanto você trabalha, faça o upgrade para o Premium.
-            </p>
-            <Button onClick={handleCheckout} className="w-full bg-primary hover:bg-primary/90 text-black font-bold h-12 text-lg">
-              Desbloquear Especialistas IA (R$ 97/mês)
-            </Button>
-          </div>
-        </div>
-      )}
-
       <div className="mb-8 flex items-center gap-4">
         <div className="w-16 h-16 rounded-2xl bg-primary/20 flex items-center justify-center">
           <Bot className="w-8 h-8 text-primary" />
@@ -822,5 +758,13 @@ export default function AssistantPage() {
         )}
       </AnimatePresence>
     </div>
+  );
+}
+
+export default function AssistantPageGated() {
+  return (
+    <PlanAccessGate plan="dante_whatsapp" description="A IA que atende seus clientes no WhatsApp 24h, entende a ideia da tattoo, passa orçamento e agenda direto na sua agenda.">
+      <AssistantPage />
+    </PlanAccessGate>
   );
 }

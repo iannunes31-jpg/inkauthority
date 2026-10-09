@@ -1,39 +1,29 @@
+import { PLANS } from "@/lib/pricing";
+
 /**
- * Server-side product catalog for Stripe checkout.
- *
- * IMPORTANT: /api/checkout must NEVER trust a price sent by the client.
- * Before this file existed, the checkout route built the Stripe session
- * using whatever `price` the browser sent in the POST body — anyone could
- * open devtools, edit the request, and buy anything for R$0,01. Every price
- * charged to a customer must resolve from here (or, for course purchases,
- * from the `courses` row in Supabase), never from the request body.
+ * Server-side product catalog for checkout. /api/checkout must NEVER trust a
+ * price or product type sent by the client: both resolve from here (or, for
+ * course purchases, from the `courses` row in Supabase).
  */
 export type CatalogProduct = {
   name: string;
   price: number; // BRL
   isSubscription: boolean;
+  type: string; // stored as user_purchases.product_type; decides what is unlocked
 };
 
 export const PRODUCT_CATALOG: Record<string, CatalogProduct> = {
-  tools_premium: {
-    name: "Especialistas IA Premium",
-    price: 97.0,
-    isSubscription: true,
-  },
-  anuncios_premium: {
-    name: "Central de Anúncios IA",
-    price: 97.0, // TODO: definir preço real
-    isSubscription: true,
-  },
+  ...Object.fromEntries(
+    Object.values(PLANS).map((p) => [p.id, { name: p.name, price: p.price, isSubscription: true, type: p.accessType }])
+  ),
   marketing_posicionamento: {
     name: "Curso Marketing & Posicionamento",
-    price: 997,
+    price: 759,
     isSubscription: false,
+    type: "catalog",
   },
 };
 
 // Fallback price for course purchases (productType 'course') until the
-// `courses` table has a real `price` column. Keeps today's de-facto
-// behavior (every course was already effectively R$97 via a client-side
-// fallback) but resolved server-side instead of trusted from the client.
+// `courses` table has a real `price` column.
 export const DEFAULT_COURSE_PRICE = 97.0;

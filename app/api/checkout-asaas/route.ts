@@ -81,6 +81,7 @@ export async function POST(req: NextRequest) {
     let productName: string;
     let price: number;
     let isSubscription: boolean;
+    let resolvedType: string;
 
     if (productType === 'course') {
       const { data: course, error } = await supabase
@@ -96,6 +97,7 @@ export async function POST(req: NextRequest) {
       productName = course.title;
       price = DEFAULT_COURSE_PRICE;
       isSubscription = false;
+      resolvedType = 'course';
     } else {
       const product = PRODUCT_CATALOG[productId];
       if (!product) {
@@ -104,6 +106,7 @@ export async function POST(req: NextRequest) {
       productName = product.name;
       price = product.price;
       isSubscription = product.isSubscription;
+      resolvedType = product.type;
     }
 
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
@@ -128,7 +131,7 @@ export async function POST(req: NextRequest) {
         nextDueDate: new Date(Date.now() + 86400000).toISOString().split('T')[0], // tomorrow
         cycle: 'MONTHLY',
         description: productName,
-        externalReference: JSON.stringify({ userId, productId, productType: productType || 'general' }),
+        externalReference: JSON.stringify({ userId, productId, productType: resolvedType }),
       });
 
       // For subscriptions Asaas doesn't return a direct checkout URL, so we
@@ -152,7 +155,7 @@ export async function POST(req: NextRequest) {
         chargeType: 'DETACHED',
         maxInstallmentCount: billingType === 'CREDIT_CARD' || billingType === 'UNDEFINED' ? 12 : 1,
         notificationEnabled: true,
-        externalReference: JSON.stringify({ userId, productId, productType: productType || 'general' }),
+        externalReference: JSON.stringify({ userId, productId, productType: resolvedType }),
         successUrl,
       });
 

@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { PlanAccessGate } from "@/components/PlanAccessGate";
 
 type Step = "enviar" | "ajustar" | "resultado";
 type Style = "linhas" | "sombras" | "fino";
@@ -18,7 +19,7 @@ const STYLES: { id: Style; label: string; description: string }[] = [
   { id: "fino", label: "Fine Line", description: "Linhas ultra-finas para tatuagens delicadas e micro-realism" },
 ];
 
-export default function DecalquePage() {
+function DecalquePage() {
   const [step, setStep] = useState<Step>("enviar");
   const [imageEl, setImageEl] = useState<HTMLImageElement | null>(null);
   const [imageBase64, setImageBase64] = useState<string>("");
@@ -497,5 +498,13 @@ export default function DecalquePage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function DecalquePageGated() {
+  return (
+    <PlanAccessGate plan="artisticos_premium" description="Transforme fotos e desenhos em decalques prontos para o papel térmico e divida projetos grandes em folhas A4.">
+      <DecalquePage />
+    </PlanAccessGate>
   );
 }
