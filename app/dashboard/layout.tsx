@@ -7,7 +7,7 @@ import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { BookOpen, Compass, Trophy, Download, History, Settings, User, Users, Bot, Radio, ArrowRight } from "lucide-react";
 import { useAuth, UserButton } from "@clerk/nextjs";
-import { supabase } from "@/lib/supabase";
+import { fetchAccess } from "@/lib/access";
 
 import { AITutorWidget } from "@/components/AITutorWidget";
 import { PurchaseCourseModal } from "@/components/PurchaseCourseModal";
@@ -31,14 +31,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     if (!userId) return;
     (async () => {
       try {
-        const { data } = await supabase
-          .from('user_purchases')
-          .select('id')
-          .eq('user_id', userId)
-          .eq('product_id', FLAGSHIP_PRODUCT_ID)
-          .maybeSingle();
-
-        const purchased = !!data;
+        const access = await fetchAccess(userId);
+        const purchased = access.purchases.some((p) => p.product_id === FLAGSHIP_PRODUCT_ID);
         setHasPurchased(purchased);
 
         // Only auto-open (and only consume the once-per-session flag) when

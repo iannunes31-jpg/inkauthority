@@ -6,6 +6,7 @@ import { CopilotInbox } from "@/components/CopilotInbox";
 import { Button } from "@/components/ui/button";
 import { useUser } from "@clerk/nextjs";
 import { supabase } from "@/lib/supabase";
+import { fetchAccess, hasProductType } from "@/lib/access";
 import { motion, AnimatePresence } from "motion/react";
 import { cn } from "@/lib/utils";
 import { isAdminUser } from "@/lib/admin";
@@ -58,17 +59,8 @@ export default function AssistantPage() {
       return;
     }
     try {
-      const { data, error } = await supabase
-        .from('user_purchases')
-        .select('*')
-        .eq('user_id', user!.id)
-        .in('product_type', ['subscription', 'tools']);
-      
-      if (data && data.length > 0) {
-        setHasAccess(true);
-      } else {
-        setHasAccess(false);
-      }
+      const access = await fetchAccess(user!.id);
+      setHasAccess(hasProductType(access, ["subscription", "tools"]));
     } catch (err) {
       setHasAccess(false);
     }

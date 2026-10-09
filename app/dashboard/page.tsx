@@ -6,6 +6,7 @@ import { PlayCircle, BookOpen, Compass, ChevronRight, Radio, Users, Bot, Downloa
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/lib/supabase";
+import { fetchAccess } from "@/lib/access";
 import { useUser, useAuth } from "@clerk/nextjs";
 import { isAdminUser } from "@/lib/admin";
 
@@ -74,13 +75,10 @@ export default function Dashboard() {
           .order('created_at', { ascending: false });
         coursesData = data || [];
       } else {
-        const { data: purchases, error: purchasesErr } = await supabase
-          .from('user_purchases')
-          .select('product_id')
-          .eq('user_id', userId)
-          .eq('product_type', 'course');
+        const access = await fetchAccess(userId!).catch(() => null);
+        const purchases = (access?.purchases ?? []).filter(p => p.product_type === 'course');
 
-        if (!purchasesErr && purchases && purchases.length > 0) {
+        if (purchases.length > 0) {
           const courseIds = purchases.map(p => p.product_id);
           const { data } = await supabase
             .from('courses')

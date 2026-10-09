@@ -7,7 +7,7 @@ import { useEffect, useRef, useState, useMemo } from "react";
 import { ChatMarkdown } from "@/components/ChatMarkdown";
 import { Button } from "@/components/ui/button";
 import { useUser } from "@clerk/nextjs";
-import { supabase } from "@/lib/supabase";
+import { fetchAccess, hasProductType } from "@/lib/access";
 import { isAdminUser } from "@/lib/admin";
 
 export default function AssistantPage() {
@@ -55,12 +55,8 @@ export default function AssistantPage() {
   const checkAccess = async () => {
     if (isAdmin) { setHasAccess(true); return; }
     try {
-      const { data } = await supabase
-        .from("user_purchases")
-        .select("*")
-        .eq("user_id", user!.id)
-        .in("product_type", ["subscription", "tools"]);
-      setHasAccess(data && data.length > 0);
+      const access = await fetchAccess(user!.id);
+      setHasAccess(hasProductType(access, ["subscription", "tools"]));
     } catch {
       setHasAccess(false);
     }

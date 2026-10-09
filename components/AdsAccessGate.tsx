@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useUser } from "@clerk/nextjs";
-import { supabase } from "@/lib/supabase";
+import { fetchAccess, hasProductType } from "@/lib/access";
 import { isAdminUser } from "@/lib/admin";
 import { Lock, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -16,12 +16,9 @@ export function AdsAccessGate({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!user?.id) return;
     if (isAdmin) { setHasAccess(true); return; }
-    supabase
-      .from("user_purchases")
-      .select("id")
-      .eq("user_id", user.id)
-      .in("product_type", ["subscription", "ads"])
-      .then(({ data }) => setHasAccess(!!data && data.length > 0));
+    fetchAccess(user.id)
+      .then((access) => setHasAccess(hasProductType(access, ["subscription", "ads"])))
+      .catch(() => setHasAccess(false));
   }, [user?.id]);
 
   const handleCheckout = async () => {

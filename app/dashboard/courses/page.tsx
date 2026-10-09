@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { PlayCircle, Clock, Award, Layers, Lock, ShoppingCart } from "lucide-react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
+import { fetchAccess } from "@/lib/access";
 import { useUser, useAuth } from "@clerk/nextjs";
 import { isAdminUser } from "@/lib/admin";
 
@@ -48,15 +49,10 @@ export default function MyCoursesPage() {
       });
 
       // 2. Fetch user purchases
-      const { data: purchasesData, error: purchasesError } = await supabase
-        .from('user_purchases')
-        .select('product_id')
-        .eq('user_id', userId)
-        .eq('product_type', 'course');
-
-      if (purchasesError) throw purchasesError;
-
-      const purchasedIds = purchasesData.map(p => p.product_id);
+      const access = await fetchAccess(userId!);
+      const purchasedIds = access.purchases
+        .filter(p => p.product_type === 'course')
+        .map(p => p.product_id);
       
       setCourses(enriched);
       setPurchasedCourseIds(purchasedIds);
