@@ -62,3 +62,7 @@ ALTER TABLE public.ai_settings
 -- Dante: ficha do tatuador (nome, cidade, idiomas, experiência, especialidades, posicionamento...).
 ALTER TABLE public.ai_settings
   ADD COLUMN IF NOT EXISTS artist_info jsonb NOT NULL DEFAULT '{}'::jsonb;
+
+-- Só o servidor pode registrar uso de cupom (por padrão o Postgres deixa qualquer um executar funções).
+REVOKE EXECUTE ON FUNCTION public.redeem_coupon(uuid, text, text) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.redeem_coupon(uuid, text, text) TO service_role;
