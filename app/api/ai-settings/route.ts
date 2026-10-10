@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
+import { BODY_PART_LABELS, CURRENCIES } from '@/lib/body-parts';
 
 /**
  * Reads/writes the signed-in artist's own ai_settings row. The row is always
@@ -10,7 +11,10 @@ import { supabaseAdmin } from '@/lib/supabase-admin';
 const TEXT_FIELDS = [
   'studio_name', 'styles', 'style_image_url', 'address', 'instagram_url',
   'google_review_url', 'payment_methods', 'bot_personality', 'bot_mode',
+  'artist_profile', 'artist_examples',
 ] as const;
+// Columns added by supabase-coupons-sales-assistant.sql; saving retries without them if missing.
+const NEW_COLUMNS = ['currency', 'body_prices', 'artist_profile', 'artist_examples'];
 const NUMERIC_FIELDS = [
   'base_price', 'hourly_rate', 'price_session', 'price_arm', 'price_leg', 'price_front', 'price_back',
 ] as const;
@@ -27,6 +31,20 @@ function sanitize(body: any) {
     }
   }
   if ('is_active' in body) out.is_active = !!body.is_active;
+  if ('currency' in body) {
+    out.currency = CURRENCIES.some((c) => c.code === body.currency) ? body.currency : 'BRL';
+  }
+  if ('body_prices' in body && body.body_prices && typeof body.body_prices === 'object') {
+    const prices: Record<string, number> = {};
+    for (const [k, v] of Object.entries(body.body_prices)) {
+      const n = v === '' || v == null ? NaN : Number(v);
+      if (k in BODY_PART_LABELS && Number.isFinite(n) && n > 0) prices[k] = n;
+    }
+    out.body_prices = prices;
+  }
+  for (const k of ['artist_profile', 'artist_examples']) {
+    if (typeof out[k] === 'string') out[k] = out[k].slice(0, 6000);
+  }
   return out;
 }
 
@@ -76,14 +94,23 @@ export async function POST(req: Request) {
   console.log('[ai-settings] POST', userId, existing && existing.length > 0 ? 'update' : 'insert',
     Object.keys(fields).join(','), `studio="${fields.studio_name ?? '(unchanged)'}"`);
 
-  const { error } = existing && existing.length > 0
-    ? await supabaseAdmin.from('ai_settings').update({ ...fields, updated_at }).eq('clerk_user_id', userId)
-    : await supabaseAdmin.from('ai_settings').insert({ studio_name: '', ...fields, clerk_user_id: userId, updated_at });
+  const write = (f: Record<string, any>) =>
+    existing && existing.length > 0
+      ? supabaseAdmin.from('ai_settings').update({ ...f, updated_at }).eq('clerk_user_id', userId)
+      : supabaseAdmin.from('ai_settings').insert({ studio_name: '', ...f, clerk_user_id: userId, updated_at });
+
+  let { error } = await write(fields);
+  let warning: string | undefined;
+  if (error && (error.code === 'PGRST204' || /column/i.test(error.message)) && NEW_COLUMNS.some((c) => c in fields)) {
+    const legacy = Object.fromEntries(Object.entries(fields).filter(([k]) => !NEW_COLUMNS.includes(k)));
+    ({ error } = await write(legacy));
+    warning = 'Moeda, preços por parte do corpo e personalização ainda não foram salvos: falta rodar o SQL novo no Supabase.';
+  }
 
   if (error) {
     console.error('[ai-settings] save error:', JSON.stringify(error));
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  return NextResponse.json({ success: true });
+  return NextResponse.json({ success: true, ...(warning ? { warning } : {}) });
 }

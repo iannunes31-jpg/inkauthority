@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { useUser } from "@clerk/nextjs";
 import { supabase } from "@/lib/supabase";
 import { PlanAccessGate } from "@/components/PlanAccessGate";
+import { BODY_PART_GROUPS, CURRENCIES, formatMoney } from "@/lib/body-parts";
 import { motion, AnimatePresence } from "motion/react";
 import { cn } from "@/lib/utils";
 
@@ -40,6 +41,10 @@ function AssistantPage() {
     price_leg: "",
     price_front: "",
     price_back: "",
+    currency: "BRL",
+    body_prices: {} as Record<string, string>,
+    artist_profile: "",
+    artist_examples: "",
   });
 
   useEffect(() => {
@@ -140,6 +145,15 @@ function AssistantPage() {
         price_leg: data.price_leg || "",
         price_front: data.price_front || "",
         price_back: data.price_back || "",
+        currency: data.currency || "BRL",
+        body_prices: (() => {
+          const out: Record<string, string> = {};
+          for (const [col, key] of Object.entries(LEGACY_FECHAMENTOS)) if (data[col]) out[key] = String(data[col]);
+          for (const [k, v] of Object.entries(data.body_prices || {})) out[k] = String(v);
+          return out;
+        })(),
+        artist_profile: data.artist_profile || "",
+        artist_examples: data.artist_examples || "",
       });
     }
   };
@@ -233,10 +247,10 @@ function AssistantPage() {
       base_price: Number(formData.base_price) || 0,
       hourly_rate: Number(formData.hourly_rate) || 0,
       price_session: Number(formData.price_session) || null,
-      price_arm: Number(formData.price_arm) || null,
-      price_leg: Number(formData.price_leg) || null,
-      price_front: Number(formData.price_front) || null,
-      price_back: Number(formData.price_back) || null,
+      price_arm: Number(formData.body_prices.braco_fechado) || null,
+      price_leg: Number(formData.body_prices.perna_fechada) || null,
+      price_front: Number(formData.body_prices.frente_completa) || null,
+      price_back: Number(formData.body_prices.costas_completas) || null,
     };
 
     try {
@@ -251,7 +265,7 @@ function AssistantPage() {
         console.error("Erro ao salvar configurações", result);
         alert(`⚠️ Erro ao salvar!\n\n${result.error || "Erro desconhecido"}`);
       } else {
-        alert("Configurações do Assistente salvas com sucesso!");
+        alert(result.warning ? `Salvo, mas atenção:\n\n${result.warning}` : "Configurações do Assistente salvas com sucesso!");
       }
     } catch (error: any) {
       alert(`Erro: ${error.message}`);
@@ -555,82 +569,70 @@ function AssistantPage() {
                 </h2>
                 
                 <div className="space-y-4">
-                  <div className="grid grid-cols-3 gap-4">
-                    <div>
-                      <label className="text-xs font-semibold text-white/70 uppercase tracking-widest mb-1 block">Valor Mínimo (R$)</label>
-                      <input
-                        type="number"
-                        value={formData.base_price}
-                        onChange={(e) => setFormData({...formData, base_price: e.target.value})}
-                        className="w-full bg-black/50 border border-white/10 rounded-lg py-2 px-3 text-sm focus:border-primary focus:outline-none transition-colors"
-                        placeholder="Ex: 250"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-xs font-semibold text-white/70 uppercase tracking-widest mb-1 block">Valor Hora (R$)</label>
-                      <input
-                        type="number"
-                        value={formData.hourly_rate}
-                        onChange={(e) => setFormData({...formData, hourly_rate: e.target.value})}
-                        className="w-full bg-black/50 border border-white/10 rounded-lg py-2 px-3 text-sm focus:border-primary focus:outline-none transition-colors"
-                        placeholder="Ex: 400"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-xs font-semibold text-white/70 uppercase tracking-widest mb-1 block">Valor por Sessão (R$)</label>
-                      <input
-                        type="number"
-                        value={formData.price_session}
-                        onChange={(e) => setFormData({...formData, price_session: e.target.value})}
-                        className="w-full bg-black/50 border border-white/10 rounded-lg py-2 px-3 text-sm focus:border-primary focus:outline-none transition-colors"
-                        placeholder="Ex: 800"
-                      />
-                    </div>
+                  <div>
+                    <label className="text-xs font-semibold text-white/70 uppercase tracking-widest mb-1 block">Moeda</label>
+                    <select
+                      value={formData.currency}
+                      onChange={(e) => setFormData({ ...formData, currency: e.target.value })}
+                      className="w-full bg-black/50 border border-white/10 rounded-lg py-2 px-3 text-sm focus:border-primary focus:outline-none transition-colors"
+                    >
+                      {CURRENCIES.map((c) => <option key={c.code} value={c.code}>{c.label}</option>)}
+                    </select>
+                    <p className="text-[11px] text-white/40 mt-1">O Dante passa todos os valores nessa moeda.</p>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    {([
+                      ["base_price", "Valor mínimo", "250"],
+                      ["hourly_rate", "Valor por hora", "400"],
+                      ["price_session", "Valor por sessão", "800"],
+                    ] as const).map(([field, label, ex]) => (
+                      <div key={field}>
+                        <label className="text-xs font-semibold text-white/70 uppercase tracking-widest mb-1 block">{label}</label>
+                        <input
+                          type="number"
+                          min="0"
+                          value={formData[field]}
+                          onChange={(e) => setFormData({ ...formData, [field]: e.target.value })}
+                          className="w-full bg-black/50 border border-white/10 rounded-lg py-2 px-3 text-sm focus:border-primary focus:outline-none transition-colors"
+                          placeholder={`Ex: ${ex}`}
+                        />
+                      </div>
+                    ))}
                   </div>
 
                   <div className="pt-2 border-t border-white/5">
-                    <label className="text-xs font-semibold text-white/70 uppercase tracking-widest mb-3 block">Preços Fechados (Fechamentos)</label>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="text-[10px] text-white/50 block mb-1">Braço Completo (R$)</label>
-                        <input 
-                          type="number" 
-                          value={formData.price_arm}
-                          onChange={(e) => setFormData({...formData, price_arm: e.target.value})}
-                          className="w-full bg-black/50 border border-white/10 rounded-lg py-2 px-3 text-sm focus:border-primary focus:outline-none transition-colors"
-                          placeholder="Ex: 4000"
-                        />
-                      </div>
-                      <div>
-                        <label className="text-[10px] text-white/50 block mb-1">Perna Completa (R$)</label>
-                        <input 
-                          type="number" 
-                          value={formData.price_leg}
-                          onChange={(e) => setFormData({...formData, price_leg: e.target.value})}
-                          className="w-full bg-black/50 border border-white/10 rounded-lg py-2 px-3 text-sm focus:border-primary focus:outline-none transition-colors"
-                          placeholder="Ex: 5000"
-                        />
-                      </div>
-                      <div>
-                        <label className="text-[10px] text-white/50 block mb-1">Frente (Peito/Barriga) (R$)</label>
-                        <input 
-                          type="number" 
-                          value={formData.price_front}
-                          onChange={(e) => setFormData({...formData, price_front: e.target.value})}
-                          className="w-full bg-black/50 border border-white/10 rounded-lg py-2 px-3 text-sm focus:border-primary focus:outline-none transition-colors"
-                          placeholder="Ex: 6000"
-                        />
-                      </div>
-                      <div>
-                        <label className="text-[10px] text-white/50 block mb-1">Costas Completas (R$)</label>
-                        <input 
-                          type="number" 
-                          value={formData.price_back}
-                          onChange={(e) => setFormData({...formData, price_back: e.target.value})}
-                          className="w-full bg-black/50 border border-white/10 rounded-lg py-2 px-3 text-sm focus:border-primary focus:outline-none transition-colors"
-                          placeholder="Ex: 7000"
-                        />
-                      </div>
+                    <label className="text-xs font-semibold text-white/70 uppercase tracking-widest mb-1 block">Valor por parte do corpo</label>
+                    <p className="text-[11px] text-white/40 mb-3">
+                      Valor "a partir de" em cada região. Deixe em branco o que você não quer informar. O Dante só passa valores no fim da negociação.
+                    </p>
+                    <div className="space-y-2">
+                      {BODY_PART_GROUPS.map((g) => {
+                        const filled = g.parts.filter((p) => formData.body_prices[p.key]).length;
+                        return (
+                          <details key={g.group} className="rounded-xl border border-white/10 bg-white/5 group">
+                            <summary className="cursor-pointer select-none px-4 py-2.5 text-sm font-semibold flex items-center justify-between">
+                              {g.group}
+                              <span className="text-[11px] font-normal text-white/50">{filled}/{g.parts.length} preenchidos</span>
+                            </summary>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 px-4 pb-4 pt-1">
+                              {g.parts.map((p) => (
+                                <div key={p.key}>
+                                  <label className="text-[11px] text-white/60 block mb-1">{p.label}</label>
+                                  <input
+                                    type="number"
+                                    min="0"
+                                    value={formData.body_prices[p.key] ?? ""}
+                                    onChange={(e) => setFormData({ ...formData, body_prices: { ...formData.body_prices, [p.key]: e.target.value } })}
+                                    className="w-full bg-black/50 border border-white/10 rounded-lg py-2 px-3 text-sm focus:border-primary focus:outline-none transition-colors"
+                                    placeholder={formatMoney(0, formData.currency).replace(/[\d.,\s]+$/, "").trim() || formData.currency}
+                                  />
+                                </div>
+                              ))}
+                            </div>
+                          </details>
+                        );
+                      })}
                     </div>
                   </div>
                   <div>
@@ -649,6 +651,39 @@ function AssistantPage() {
 
             {/* Coluna Direita */}
             <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="space-y-6">
+              <div className="glass p-6 rounded-2xl border border-primary/20">
+                <h2 className="text-lg font-bold mb-1 flex items-center gap-2">
+                  <Bot className="w-4 h-4 text-primary" /> Personalize sua IA
+                </h2>
+                <p className="text-xs text-muted-foreground mb-4">
+                  Quanto mais você contar, mais o Dante fala como você.
+                </p>
+                <div className="space-y-4">
+                  <div>
+                    <label className="text-xs font-semibold text-white/70 uppercase tracking-widest mb-1 block">Sobre você e seu jeito de atender</label>
+                    <textarea
+                      value={formData.artist_profile}
+                      onChange={(e) => setFormData({ ...formData, artist_profile: e.target.value })}
+                      maxLength={6000}
+                      rows={7}
+                      className="w-full bg-black/50 border border-white/10 rounded-lg py-2 px-3 text-sm focus:border-primary focus:outline-none transition-colors resize-y"
+                      placeholder={"Ex:\n- Meu nome é Ana, tatuo há 8 anos, especialista em fineline e floral.\n- Falo de forma leve, uso emojis com moderação e chamo o cliente pelo nome.\n- Não faço cover-up nem tatuo menores de 18.\n- Sinal de 30% para reservar; remarcação com 48h de antecedência.\n- Sempre explico os cuidados pós-tattoo."}
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-semibold text-white/70 uppercase tracking-widest mb-1 block">Exemplos de mensagens suas</label>
+                    <textarea
+                      value={formData.artist_examples}
+                      onChange={(e) => setFormData({ ...formData, artist_examples: e.target.value })}
+                      maxLength={6000}
+                      rows={5}
+                      className="w-full bg-black/50 border border-white/10 rounded-lg py-2 px-3 text-sm focus:border-primary focus:outline-none transition-colors resize-y"
+                      placeholder={"Cole aqui 3 a 5 respostas que você já mandou para clientes. A IA imita o tom, sem copiar."}
+                    />
+                  </div>
+                </div>
+              </div>
+
               <div className="glass p-6 rounded-2xl border border-white/5">
                 <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
                   <MapPin className="w-4 h-4 text-primary" /> Localização & Links
@@ -760,6 +795,8 @@ function AssistantPage() {
     </div>
   );
 }
+
+const LEGACY_FECHAMENTOS = { price_arm: "braco_fechado", price_leg: "perna_fechada", price_front: "frente_completa", price_back: "costas_completas" } as const;
 
 export default function AssistantPageGated() {
   return (

@@ -47,3 +47,10 @@ CREATE TABLE IF NOT EXISTS public.platform_settings (
 ALTER TABLE public.coupons ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.coupon_redemptions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.platform_settings ENABLE ROW LEVEL SECURITY;
+
+-- Dante: moeda, preço por parte do corpo e personalização do tatuador.
+ALTER TABLE public.ai_settings
+  ADD COLUMN IF NOT EXISTS currency text NOT NULL DEFAULT 'BRL',
+  ADD COLUMN IF NOT EXISTS body_prices jsonb NOT NULL DEFAULT '{}'::jsonb,
+  ADD COLUMN IF NOT EXISTS artist_profile text,
+  ADD COLUMN IF NOT EXISTS artist_examples text;

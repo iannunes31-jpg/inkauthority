@@ -3,6 +3,7 @@ import { createVertex } from '@ai-sdk/google-vertex';
 import { generateText } from 'ai';
 import { supabaseAdmin as supabase } from '@/lib/supabase-admin';
 import { SALES_INSTANCE, getSalesSettings, buildSalesPrompt } from '@/lib/sales-assistant';
+import { BODY_PART_LABELS, formatMoney } from '@/lib/body-parts';
 
 // Ink Authority's own sales WhatsApp: answers tattoo artists asking about the platform.
 async function handleSalesMessage(opts: {
@@ -228,15 +229,41 @@ export async function POST(req: Request) {
       : [];
 
     // 5. Build the massive High-Ticket Prompt with the new Rules
+    const currency = settings.currency || 'BRL';
+    const money = (v: unknown) => (Number(v) > 0 ? formatMoney(Number(v), currency) : 'N/A');
+    // Older "fechamento" columns still count until the artist fills the new per-region table.
+    const legacyBodyPrices: Record<string, unknown> = {
+      braco_fechado: settings.price_arm,
+      perna_fechada: settings.price_leg,
+      frente_completa: settings.price_front,
+      costas_completas: settings.price_back,
+    };
+    const bodyPrices = { ...legacyBodyPrices, ...(settings.body_prices || {}) };
+    const bodyPriceLines = Object.entries(bodyPrices)
+      .filter(([, v]) => Number(v) > 0)
+      .map(([k, v]) => `- ${BODY_PART_LABELS[k] ?? k}: a partir de ${money(v)}`)
+      .join('\n');
+    const artistSection = [
+      settings.artist_profile ? `### QUEM E O TATUADOR (fale como ele, como se fosse a equipe dele)
+${settings.artist_profile}` : '',
+      settings.artist_examples ? `### EXEMPLOS DE COMO O TATUADOR ESCREVE (imite o tom, o vocabulario, os emojis e o tamanho das mensagens; nao copie literalmente)
+${settings.artist_examples}` : '',
+    ].filter(Boolean).join('\n\n');
+
     const systemPrompt = `Voce e Dante, o assistente virtual do estudio de tatuagem "${settings.studio_name}".
 Seu tom de voz e: "${settings.bot_personality}".
 Estilos de Tatuagem que voce faz: ${settings.styles}
 ### TABELA DE PRECOS (USO INTERNO — so pode ser revelada na etapa 3, depois da negociacao completa)
-Valor Base Minimo: ${settings.base_price ? `R$ ${settings.base_price}` : 'N/A'}
-Valor por Hora: ${settings.hourly_rate ? `R$ ${settings.hourly_rate}` : 'N/A'}
-Valor por Sessao: ${settings.price_session ? `R$ ${settings.price_session}` : 'N/A'}
+Moeda do estudio: ${currency}. Todo valor deve ser informado nessa moeda, no formato mostrado abaixo.
+Valor Base Minimo: ${money(settings.base_price)}
+Valor por Hora: ${money(settings.hourly_rate)}
+Valor por Sessao: ${money(settings.price_session)}
+Valores por regiao do corpo:
+${bodyPriceLines || '- N/A'}
 Metodos de Pagamento: ${settings.payment_methods}
-Endereco do Estudio: ${settings.address}
+${artistSection ? `
+${artistSection}
+` : ''}Endereco do Estudio: ${settings.address}
 
 ### IDIOMA E INTERNACIONALIZACAO
 - Identifique o idioma da mensagem do usuario e responda EXATAMENTE no mesmo idioma.
@@ -259,7 +286,7 @@ Esta e a estrategia de conversao que voce DEVE seguir rigidamente:
 - NUNCA fale valores, precos, estimativas, faixas de preco, "a partir de" ou valor por hora/sessao ANTES da negociacao estar completa. Isso vale MESMO QUE O CLIENTE PECA O PRECO logo no inicio ou insista.
 - A negociacao so esta completa quando o historico da conversa ja tiver TODOS estes itens: (a) a ideia da tatuagem, (b) o local do corpo, (c) o tamanho aproximado, (d) o estilo, (e) a foto da regiao, se voce pediu, e (f) voce ja explicou como funciona a criacao do projeto (etapa 2).
 - Se o cliente pedir o preco antes disso: diga com naturalidade que o valor depende dos detalhes do projeto e que, para passar o valor exato e justo, voce so precisa de mais algumas informacoes. Em seguida faca a PROXIMA pergunta que falta. Nao cite nenhum numero.
-- Quando a negociacao estiver completa: SE OS VALORES DA TABELA estiverem como "N/A" ou zerados, NAO passe valor nenhum — diga que o artista fara o orcamento exato apos avaliar o projeto. Se houver valor configurado, use-o como base, apresentando o valor cheio e o parcelado primeiro.
+- Quando a negociacao estiver completa: SE OS VALORES DA TABELA estiverem como "N/A" ou zerados, NAO passe valor nenhum — diga que o artista fara o orcamento exato apos avaliar o projeto. Se houver valor configurado, use como base o valor da regiao do corpo correspondente (ou o valor base minimo, se a regiao nao estiver na tabela), apresentando o valor cheio e o parcelado primeiro.
 
 4. **Conversao & Agendamento (O SINAL):**
 - Quando o cliente decidir agendar, voce DEVE pedir as seguintes informacoes para prosseguir com o agendamento:
