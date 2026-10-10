@@ -46,6 +46,8 @@ const T: Record<string, Record<string, string>> = {
     course_includes: "O que está incluído",
     course_price_label: "Acesso Vitalício",
     course_price: "R$ 759",
+    course_installment: "12x de R$ 63,25",
+    course_cash: "ou R$ 759,00 à vista",
     course_cta: "Garantir Vaga no Workshop",
     course_f1: "Posicionamento e autoridade de marca",
     course_f2: "Estruturação das redes sociais",
@@ -120,6 +122,8 @@ const T: Record<string, Record<string, string>> = {
     course_includes: "What's included",
     course_price_label: "Lifetime Access",
     course_price: "R$ 759",
+    course_installment: "12x of R$ 63.25",
+    course_cash: "or R$ 759.00 upfront",
     course_cta: "Secure My Spot",
     course_f1: "Brand positioning and authority",
     course_f2: "Social media structuring",
@@ -194,6 +198,8 @@ const T: Record<string, Record<string, string>> = {
     course_includes: "Qué incluye",
     course_price_label: "Acceso de por vida",
     course_price: "R$ 759",
+    course_installment: "12x de R$ 63,25",
+    course_cash: "o R$ 759,00 al contado",
     course_cta: "Asegurar mi Cupo",
     course_f1: "Posicionamiento y autoridad de marca",
     course_f2: "Estructuración de redes sociales",
@@ -576,8 +582,8 @@ export default function VendasPage() {
                 <div className="glass rounded-3xl border border-white/10 p-8 flex flex-col items-center justify-center text-center flex-1">
                   <Award className="w-10 h-10 text-primary mb-4" />
                   <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-2">{t("course_price_label")}</p>
-                  <p className="text-5xl font-black mb-2">{t("course_price")}</p>
-                  <p className="text-muted-foreground text-sm mb-6">ou 12x de R$ 63,25</p>
+                  <p className="text-5xl font-black mb-2">{t("course_installment")}</p>
+                  <p className="text-muted-foreground text-sm mb-6">{t("course_cash")}</p>
                   <Button onClick={() => handleCTA("marketing_posicionamento", "/dashboard")}
                     className="w-full metallic-gradient text-black font-bold h-13 rounded-2xl text-[11px] tracking-widest uppercase hover:scale-[1.02] transition-transform">
                     {t("course_cta")} <ArrowRight className="w-4 h-4 ml-2" />
@@ -811,10 +817,10 @@ export default function VendasPage() {
               <div className="glass rounded-3xl border border-purple-400/30 p-7 flex flex-col h-full bg-purple-500/5">
                 <p className="text-xs font-bold uppercase tracking-widest text-purple-400 mb-1">{t("pricing_course")}</p>
                 <p className="text-sm text-muted-foreground mb-6">{t("pricing_course_desc")}</p>
-                <div className="mb-2">
-                  <span className="text-4xl font-black">R$ 759</span>
-                  <span className="text-xs text-muted-foreground ml-1">{t("pricing_life")}</span>
+                <div className="mb-1">
+                  <span className="text-4xl font-black">{t("course_installment")}</span>
                 </div>
+                <p className="text-xs text-muted-foreground mb-2">{t("course_cash")} · {t("pricing_life")}</p>
                 <p className="text-xs text-muted-foreground mb-6">+ R$ 347/mês Combo IA (opcional)</p>
                 <div className="space-y-2.5 mb-8 flex-1">
                   {["Workshop Marketing & Posicionamento", "Acesso Vitalício ao Workshop", "Comunidade Exclusiva", "🎁 Análise de Perfil Gratuita"].map((f) => (

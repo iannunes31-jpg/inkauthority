@@ -155,9 +155,9 @@ export function PurchaseCourseModal({
                     Investimento
                   </p>
                   <div className="flex items-baseline gap-2">
-                    <span className="text-2xl font-black text-foreground">R$ 759,00</span>
+                    <span className="text-2xl font-black text-foreground">12x de R$ 63,25</span>
                   </div>
-                  <p className="text-xs text-primary mt-1">Ou 12x de R$ 63,25 no cartão</p>
+                  <p className="text-xs text-muted-foreground mt-1">ou R$ 759,00 à vista</p>
                 </div>
               </div>
 

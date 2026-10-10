@@ -99,11 +99,11 @@ export default function CoursesPage() {
               
               <div>
                 <p className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground mb-1">Investimento</p>
-                <div className="flex items-baseline gap-2">
-                  <span className="text-3xl font-black text-foreground">R$ 759,00</span>
+                <div className="flex items-baseline gap-2 flex-wrap">
+                  <span className="text-3xl font-black text-foreground">12x de R$ 63,25</span>
                   <span className="text-sm text-muted-foreground line-through">R$ 1.500,00</span>
                 </div>
-                <p className="text-xs text-primary mt-1">Ou 12x de R$ 63,25</p>
+                <p className="text-xs text-muted-foreground mt-1">ou R$ 759,00 à vista</p>
               </div>
 
               <Button 

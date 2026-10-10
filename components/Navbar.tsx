@@ -196,7 +196,7 @@ export function Navbar() {
   return (
     <>
       <LoginModal isOpen={isLoginOpen} onClose={() => setIsLoginOpen(false)} initialView={authView} />
-      <nav className={`fixed top-0 w-full z-50 glass border-b border-border/20 bg-background/80 backdrop-blur-md transition-colors h-[72px] ${pathname === "/" ? "force-dark" : ""}`}>
+      <nav className="fixed top-0 w-full z-50 glass border-b border-border/20 bg-background/80 backdrop-blur-md transition-colors h-[72px]">
         <div className="max-w-7xl mx-auto px-6 h-full flex items-center justify-between">
           <Link href="/" className="flex items-center gap-3" style={{ textDecoration: 'none' }}>
             <svg viewBox="0 0 24 24" fill="currentColor" className="text-foreground" style={{ width: 28, height: 28 }}>
@@ -321,6 +321,18 @@ export function Navbar() {
 
               <div className="h-4 w-px bg-white/10 mx-1" />
 
+              {!isLoggedIn && (
+                <button
+                  onClick={toggleTheme}
+                  className="p-2 text-muted-foreground hover:text-foreground transition-colors"
+                  title="Alternar Modo Claro/Escuro"
+                  aria-label="Alternar modo claro/escuro"
+                >
+                  {theme === "dark"
+                    ? <Sun className="w-4 h-4 text-yellow-400" />
+                    : <Moon className="w-4 h-4 text-blue-400" />}
+                </button>
+              )}
               {!isLoggedIn && (
                 <div className="flex items-center gap-3">
                   <button 
