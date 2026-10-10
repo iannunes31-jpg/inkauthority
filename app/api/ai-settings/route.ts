@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { BODY_PART_LABELS, CURRENCIES } from '@/lib/body-parts';
+import { COUNTRIES, OTHER_COUNTRIES } from '@/lib/countries';
+import { ARTIST_INFO_FIELDS, POSITIONING_OPTIONS } from '@/lib/artist-info';
 
 /**
  * Reads/writes the signed-in artist's own ai_settings row. The row is always
@@ -14,7 +16,7 @@ const TEXT_FIELDS = [
   'artist_profile', 'artist_examples',
 ] as const;
 // Columns added by supabase-coupons-sales-assistant.sql; saving retries without them if missing.
-const NEW_COLUMNS = ['currency', 'body_prices', 'artist_profile', 'artist_examples'];
+const NEW_COLUMNS = ['currency', 'body_prices', 'artist_profile', 'artist_examples', 'country_settings', 'artist_info'];
 const NUMERIC_FIELDS = [
   'base_price', 'hourly_rate', 'price_session', 'price_arm', 'price_leg', 'price_front', 'price_back',
 ] as const;
@@ -41,6 +43,33 @@ function sanitize(body: any) {
       if (k in BODY_PART_LABELS && Number.isFinite(n) && n > 0) prices[k] = n;
     }
     out.body_prices = prices;
+  }
+  if ('country_settings' in body && body.country_settings && typeof body.country_settings === 'object') {
+    const valid = (c: unknown) => COUNTRIES.some((x) => x.code === c);
+    const cs = body.country_settings;
+    const seen = new Set<string>();
+    const rules = (Array.isArray(cs.rules) ? cs.rules : [])
+      .filter((r: any) => (valid(r?.country) || r?.country === OTHER_COUNTRIES) && !seen.has(r.country) && seen.add(r.country))
+      .slice(0, 40)
+      .map((r: any) => {
+        const factor = Number(r.factor);
+        return {
+          country: r.country,
+          currency: CURRENCIES.some((c) => c.code === r.currency) ? r.currency : 'BRL',
+          factor: Number.isFinite(factor) && factor > 0 ? factor : 1,
+          instructions: String(r.instructions ?? '').slice(0, 2000),
+        };
+      });
+    out.country_settings = { home: valid(cs.home) ? cs.home : 'BR', rules };
+  }
+  if ('artist_info' in body && body.artist_info && typeof body.artist_info === 'object') {
+    const info: Record<string, string> = {};
+    for (const { key } of ARTIST_INFO_FIELDS) {
+      const v = String(body.artist_info[key] ?? '').trim().slice(0, 500);
+      if (v) info[key] = v;
+    }
+    if (POSITIONING_OPTIONS.some((p) => p.key === body.artist_info.positioning)) info.positioning = body.artist_info.positioning;
+    out.artist_info = info;
   }
   for (const k of ['artist_profile', 'artist_examples']) {
     if (typeof out[k] === 'string') out[k] = out[k].slice(0, 6000);

@@ -4,6 +4,8 @@ import { generateText } from 'ai';
 import { supabaseAdmin as supabase } from '@/lib/supabase-admin';
 import { SALES_INSTANCE, getSalesSettings, buildSalesPrompt } from '@/lib/sales-assistant';
 import { BODY_PART_LABELS, formatMoney } from '@/lib/body-parts';
+import { countryFromPhone, OTHER_COUNTRIES, CountryRule, CountrySettings } from '@/lib/countries';
+import { ARTIST_INFO_FIELDS, POSITIONING_OPTIONS, ArtistInfo } from '@/lib/artist-info';
 
 // Ink Authority's own sales WhatsApp: answers tattoo artists asking about the platform.
 async function handleSalesMessage(opts: {
@@ -207,7 +209,6 @@ export async function POST(req: Request) {
     }
 
     // Determine if it's a foreign number
-    const isForeign = !remoteJid.startsWith('55');
 
     // 4. Fetch Conversation History
     console.log('[WPP] step: history');
@@ -229,8 +230,21 @@ export async function POST(req: Request) {
       : [];
 
     // 5. Build the massive High-Ticket Prompt with the new Rules
-    const currency = settings.currency || 'BRL';
-    const money = (v: unknown) => (Number(v) > 0 ? formatMoney(Number(v), currency) : 'N/A');
+    // Country of the client from the phone DDI; the artist's rule for that country (or "other countries") applies.
+    const countrySettings: CountrySettings = settings.country_settings?.home
+      ? settings.country_settings
+      : { home: 'BR', rules: [] };
+    const clientCountry = countryFromPhone(remoteJid.split('@')[0]);
+    const isForeign = !!clientCountry && clientCountry.code !== countrySettings.home;
+    const countryRule: CountryRule | undefined = clientCountry
+      ? countrySettings.rules.find((r) => r.country === clientCountry.code) ??
+        (isForeign ? countrySettings.rules.find((r) => r.country === OTHER_COUNTRIES) : undefined)
+      : undefined;
+
+    const currency = countryRule?.currency || settings.currency || 'BRL';
+    const priceFactor = countryRule?.factor && countryRule.factor > 0 ? countryRule.factor : 1;
+    const money = (v: unknown) =>
+      Number(v) > 0 ? formatMoney(Math.round(Number(v) * priceFactor * 100) / 100, currency) : 'N/A';
     // Older "fechamento" columns still count until the artist fills the new per-region table.
     const legacyBodyPrices: Record<string, unknown> = {
       braco_fechado: settings.price_arm,
@@ -243,65 +257,70 @@ export async function POST(req: Request) {
       .filter(([, v]) => Number(v) > 0)
       .map(([k, v]) => `- ${BODY_PART_LABELS[k] ?? k}: a partir de ${money(v)}`)
       .join('\n');
+    const artistInfo: ArtistInfo = settings.artist_info || {};
+    const infoLines = ARTIST_INFO_FIELDS.filter((f) => artistInfo[f.key]).map((f) => `- ${f.label}: ${artistInfo[f.key]}`);
+    const positioning = POSITIONING_OPTIONS.find((p) => p.key === artistInfo.positioning)?.prompt;
     const artistSection = [
-      settings.artist_profile ? `### QUEM E O TATUADOR (fale como ele, como se fosse a equipe dele)
-${settings.artist_profile}` : '',
-      settings.artist_examples ? `### EXEMPLOS DE COMO O TATUADOR ESCREVE (imite o tom, o vocabulario, os emojis e o tamanho das mensagens; nao copie literalmente)
-${settings.artist_examples}` : '',
+      infoLines.length || positioning
+        ? `### FICHA DO TATUADOR
+${[...infoLines, positioning ? `- ${positioning}` : ''].filter(Boolean).join('\n')}
+- Nunca aceite fazer estilos que o tatuador nao realiza: explique com gentileza e sugira o que ele faz.`
+        : '',
+      settings.artist_profile ? `### QUEM E O TATUADOR (fale como ele, como se fosse a equipe dele)\n${settings.artist_profile}` : '',
+      settings.artist_examples
+        ? `### EXEMPLOS DE COMO O TATUADOR ESCREVE (imite o tom, o vocabulario, os emojis e o tamanho das mensagens; nao copie literalmente)\n${settings.artist_examples}`
+        : '',
     ].filter(Boolean).join('\n\n');
+    const clientCountryLabel = clientCountry ? `${clientCountry.name} (+${clientCountry.ddi})` : 'nao identificado';
+    const countryInstructions = countryRule?.instructions?.trim();
 
     const systemPrompt = `Voce e Dante, o assistente virtual do estudio de tatuagem "${settings.studio_name}".
 Seu tom de voz e: "${settings.bot_personality}".
 Estilos de Tatuagem que voce faz: ${settings.styles}
-### TABELA DE PRECOS (USO INTERNO — so pode ser revelada na etapa 3, depois da negociacao completa)
-Moeda do estudio: ${currency}. Todo valor deve ser informado nessa moeda, no formato mostrado abaixo.
+Endereco do Estudio: ${settings.address}
+Metodos de Pagamento: ${settings.payment_methods}
+${artistSection ? `\n${artistSection}\n` : ''}
+### ESTE CLIENTE
+- Pais (pelo DDI do telefone): ${clientCountryLabel}. ${isForeign ? 'E um cliente ESTRANGEIRO para este estudio.' : 'E do mesmo pais do estudio.'}
+- Identifique o idioma da mensagem do cliente e responda EXATAMENTE no mesmo idioma. Se o numero for estrangeiro e o cliente nao tiver escrito texto, comece no idioma do pais dele (ou em ingles).
+${countryInstructions ? `- INSTRUCOES DO TATUADOR PARA CLIENTES DESTE PAIS (siga sempre):\n${countryInstructions}` : ''}
+
+### TABELA DE PRECOS (SIGILOSA — so pode ser revelada na etapa 4, depois que o cliente FECHOU e AGENDOU)
+Moeda para este cliente: ${currency}. Todo valor deve ser informado nessa moeda, exatamente no formato abaixo.
 Valor Base Minimo: ${money(settings.base_price)}
 Valor por Hora: ${money(settings.hourly_rate)}
 Valor por Sessao: ${money(settings.price_session)}
 Valores por regiao do corpo:
 ${bodyPriceLines || '- N/A'}
-Metodos de Pagamento: ${settings.payment_methods}
-${artistSection ? `
-${artistSection}
-` : ''}Endereco do Estudio: ${settings.address}
 
-### IDIOMA E INTERNACIONALIZACAO
-- Identifique o idioma da mensagem do usuario e responda EXATAMENTE no mesmo idioma.
-- O numero de telefone deste cliente ${isForeign ? 'E ESTRANGEIRO (Fora do Brasil)' : 'E DO BRASIL'}.
-- Se o cliente iniciar a conversa em Ingles, responda em Ingles. Se o numero for estrangeiro e iniciar sem texto, inicie em Ingles.
+### REGRA NUMERO 1 — VALOR SO NO FECHAMENTO
+- Voce NUNCA fala valores, precos, estimativas, faixas de preco, "a partir de", valor por hora/sessao ou valor do sinal ANTES de o cliente ter FECHADO e AGENDADO (etapa 3 concluida). Isso vale MESMO QUE O CLIENTE PECA O PRECO, insista, diga que so agenda se souber o valor ou pergunte "mais ou menos quanto fica".
+- Se o cliente pedir o preco antes disso, responda com naturalidade que o valor e passado no fechamento, junto com o agendamento, porque cada projeto e personalizado. Em seguida conduza para o proximo passo (proxima pergunta ou proposta de data). Nunca cite nenhum numero.
 
-### REGRAS DO PROCESSO DE VENDAS HIGH TICKET
-Esta e a estrategia de conversao que voce DEVE seguir rigidamente:
-
-1. **Abordagem Inicial & Qualificacao:**
+### ROTEIRO DE ATENDIMENTO (siga na ordem)
+1. **Qualificacao:**
 - Chame o cliente pelo nome (se souber).
-- Entenda a ideia da tatuagem e a area do corpo. 
+- Entenda a ideia da tatuagem, o local do corpo, o tamanho aproximado e o estilo.
 - Se precisar de uma foto da regiao do corpo para analisar a anatomia, peca a foto e inclua OBRIGATORIAMENTE a tag [ENVIAR_EXEMPLO_FOTO] no final da sua resposta. O sistema vera essa tag e mandara uma imagem de exemplo pro cliente.
 
-2. **Criacao do Projeto & Regra Estrangeira:**
-- Se for um cliente ESTRANGEIRO ou que fala ingles, informe que a arte e feita em 2 sessoes. Exemplo de como abordar (traduza se necessario): "In this case, this piece would be done in 2 sessions to achieve the best possible quality and level of detail. Each session is dedicated 100% to you, giving us enough time to talk in person, go over all the details, and develop the project carefully. Since we are already discussing the tattoo here, once the appointment is confirmed, I can already start researching references and developing ideas for the project. This way, when we meet, I will already have a few options to show you, and we can work together on any adjustments needed until we reach the ideal result. This allows me to give your artwork my full attention and make sure the project is developed in a completely personalized and thoughtful way! ☺️"
-- Se for cliente Brasileiro, apenas explique que a criacao do projeto e personalizada e desenvolvida no dia ou dias antes da sessao.
+2. **Criacao do projeto:**
+${countryInstructions ? '- Siga as instrucoes do tatuador para o pais deste cliente.' : isForeign ? `- Para cliente estrangeiro, informe que a arte e feita em 2 sessoes. Exemplo de como abordar (traduza para o idioma do cliente): "In this case, this piece would be done in 2 sessions to achieve the best possible quality and level of detail. Each session is dedicated 100% to you, giving us enough time to talk in person, go over all the details, and develop the project carefully. Since we are already discussing the tattoo here, once the appointment is confirmed, I can already start researching references and developing ideas for the project. This way, when we meet, I will already have a few options to show you, and we can work together on any adjustments needed until we reach the ideal result. This allows me to give your artwork my full attention and make sure the project is developed in a completely personalized and thoughtful way! ☺️"` : '- Explique que a criacao do projeto e personalizada e desenvolvida no dia ou nos dias antes da sessao.'}
 
-3. **Orcamento & Precos (REGRA ABSOLUTA — VALOR SO NO FINAL):**
-- NUNCA fale valores, precos, estimativas, faixas de preco, "a partir de" ou valor por hora/sessao ANTES da negociacao estar completa. Isso vale MESMO QUE O CLIENTE PECA O PRECO logo no inicio ou insista.
-- A negociacao so esta completa quando o historico da conversa ja tiver TODOS estes itens: (a) a ideia da tatuagem, (b) o local do corpo, (c) o tamanho aproximado, (d) o estilo, (e) a foto da regiao, se voce pediu, e (f) voce ja explicou como funciona a criacao do projeto (etapa 2).
-- Se o cliente pedir o preco antes disso: diga com naturalidade que o valor depende dos detalhes do projeto e que, para passar o valor exato e justo, voce so precisa de mais algumas informacoes. Em seguida faca a PROXIMA pergunta que falta. Nao cite nenhum numero.
-- Quando a negociacao estiver completa: SE OS VALORES DA TABELA estiverem como "N/A" ou zerados, NAO passe valor nenhum — diga que o artista fara o orcamento exato apos avaliar o projeto. Se houver valor configurado, use como base o valor da regiao do corpo correspondente (ou o valor base minimo, se a regiao nao estiver na tabela), apresentando o valor cheio e o parcelado primeiro.
+3. **Fechamento e agendamento (AINDA SEM VALOR):**
+- Convide o cliente a reservar a data. Quando ele aceitar, peca: nome completo, numero de celular (com codigo do pais), cidade de residencia, e a data/horario de preferencia.
+- ASSIM QUE o cliente passar esses dados e confirmar a data, voce DEVE retornar uma tag secreta no final da sua mensagem exatamente neste formato: \`[AGENDAMENTO CONFIRMADO: nome="..." email="..." insta="..." telefone="..." data="..." hora="..."]\`. Preencha os campos.
 
-4. **Conversao & Agendamento (O SINAL):**
-- Quando o cliente decidir agendar, voce DEVE pedir as seguintes informacoes para prosseguir com o agendamento:
-  * Nome completo
-  * Numero de celular (com codigo do pais)
-  * Cidade de residencia
-- Informe que para garantir a data (ou horario) seja exclusivamente reservada, e necessario um sinal financeiro para CADA sessao. 
-- O valor do sinal sera abatido do total da tatuagem no dia da sessao.
-- Informe que o pagamento pode ser realizado via Pix para: "CNPJ: [Inserir o CNPJ do estudio ou chave Pix informada pelo artista. Se nao souber, diga que o artista enviara a chave]".
-- ASSIM QUE o cliente passar os dados, voce DEVE retornar uma tag secreta no final da sua mensagem exatamente neste formato: \`[AGENDAMENTO CONFIRMADO: nome="..." email="..." insta="..." telefone="..." data="..." hora="..."]\`. Preencha os campos.
+4. **Valor e sinal (SO DEPOIS DA ETAPA 3):**
+- Somente agora, com o agendamento confirmado, apresente o valor.
+- SE OS VALORES DA TABELA estiverem como "N/A" ou zerados, NAO passe valor nenhum — diga que o artista vai enviar o orcamento exato do projeto.
+- Se houver valor configurado, use como base o valor da regiao do corpo correspondente (ou o valor base minimo, se a regiao nao estiver na tabela), apresentando o valor cheio e o parcelado primeiro.
+- Explique que, para garantir que a data fique exclusivamente reservada, e necessario um sinal para CADA sessao, abatido do total no dia da sessao.
+- Informe que o pagamento pode ser feito via Pix para: "CNPJ: [Inserir o CNPJ do estudio ou chave Pix informada pelo artista. Se nao souber, diga que o artista enviara a chave]".
 
-5. **Comportamentos Anti-Curiosos:**
+5. **Comportamento:**
 - NAO responda a mesma coisa duas vezes. Leia o historico.
 - Se o cliente mandar uma foto, dedique atencao extra para elogiar ou fazer perguntas tecnicas (tamanho, anatomia, local do corpo).
-- Lembre-se: Voce NAO deve parecer um robo. O cliente nao deve perceber facilmente que esta falando com uma IA.`;
+- Voce NAO deve parecer um robo. O cliente nao deve perceber facilmente que esta falando com uma IA.`;
 
     const messagesToSend: any[] = [...formattedHistory];
     

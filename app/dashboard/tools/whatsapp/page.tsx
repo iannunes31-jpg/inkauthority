@@ -8,6 +8,8 @@ import { useUser } from "@clerk/nextjs";
 import { supabase } from "@/lib/supabase";
 import { PlanAccessGate } from "@/components/PlanAccessGate";
 import { BODY_PART_GROUPS, CURRENCIES, formatMoney } from "@/lib/body-parts";
+import { COUNTRIES, OTHER_COUNTRIES, countryName, type CountryRule } from "@/lib/countries";
+import { ARTIST_INFO_FIELDS, POSITIONING_OPTIONS } from "@/lib/artist-info";
 import { motion, AnimatePresence } from "motion/react";
 import { cn } from "@/lib/utils";
 
@@ -45,6 +47,8 @@ function AssistantPage() {
     body_prices: {} as Record<string, string>,
     artist_profile: "",
     artist_examples: "",
+    artist_info: {} as Record<string, string>,
+    country_settings: { home: "BR", rules: [] as CountryRule[] },
   });
 
   useEffect(() => {
@@ -154,6 +158,8 @@ function AssistantPage() {
         })(),
         artist_profile: data.artist_profile || "",
         artist_examples: data.artist_examples || "",
+        artist_info: data.artist_info || {},
+        country_settings: data.country_settings?.home ? data.country_settings : { home: "BR", rules: [] },
       });
     }
   };
@@ -236,6 +242,20 @@ function AssistantPage() {
     const newImageUrl = currentUrls.join(",");
     setFormData(prev => ({ ...prev, style_image_url: newImageUrl }));
     await saveImageUrl(newImageUrl);
+  };
+
+  const setInfo = (key: string, value: string) =>
+    setFormData((f) => ({ ...f, artist_info: { ...f.artist_info, [key]: value } }));
+  const setCountry = (patch: Partial<typeof formData.country_settings>) =>
+    setFormData((f) => ({ ...f, country_settings: { ...f.country_settings, ...patch } }));
+  const updateRule = (i: number, patch: Partial<CountryRule>) =>
+    setCountry({ rules: formData.country_settings.rules.map((r, idx) => (idx === i ? { ...r, ...patch } : r)) });
+  const addRule = () => {
+    const used = new Set([formData.country_settings.home, ...formData.country_settings.rules.map((r) => r.country)]);
+    const next = COUNTRIES.find((c) => !used.has(c.code));
+    const country = next?.code ?? OTHER_COUNTRIES;
+    if (used.has(country)) return;
+    setCountry({ rules: [...formData.country_settings.rules, { country, currency: next?.currency ?? "USD", factor: 1, instructions: "" }] });
   };
 
   const handleSave = async () => {
@@ -659,8 +679,41 @@ function AssistantPage() {
                   Quanto mais você contar, mais o Dante fala como você.
                 </p>
                 <div className="space-y-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {ARTIST_INFO_FIELDS.map((fld) => (
+                      <div key={fld.key}>
+                        <label className="text-xs font-semibold text-white/70 uppercase tracking-widest mb-1 block">{fld.label}</label>
+                        <input
+                          value={formData.artist_info[fld.key] ?? ""}
+                          onChange={(e) => setInfo(fld.key, e.target.value)}
+                          maxLength={500}
+                          className="w-full bg-black/50 border border-white/10 rounded-lg py-2 px-3 text-sm focus:border-primary focus:outline-none transition-colors"
+                          placeholder={fld.placeholder}
+                        />
+                      </div>
+                    ))}
+                  </div>
                   <div>
-                    <label className="text-xs font-semibold text-white/70 uppercase tracking-widest mb-1 block">Sobre você e seu jeito de atender</label>
+                    <label className="text-xs font-semibold text-white/70 uppercase tracking-widest mb-1 block">Posicionamento</label>
+                    <div className="space-y-2">
+                      {POSITIONING_OPTIONS.map((p) => (
+                        <label
+                          key={p.key}
+                          className={`flex items-center gap-3 rounded-xl border px-3 py-2.5 text-sm cursor-pointer transition-colors ${formData.artist_info.positioning === p.key ? "border-primary bg-primary/10" : "border-white/10 hover:bg-white/5"}`}
+                        >
+                          <input
+                            type="radio"
+                            name="positioning"
+                            checked={formData.artist_info.positioning === p.key}
+                            onChange={() => setInfo("positioning", p.key)}
+                          />
+                          {p.label}
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-xs font-semibold text-white/70 uppercase tracking-widest mb-1 block">Mais sobre você e seu jeito de atender</label>
                     <textarea
                       value={formData.artist_profile}
                       onChange={(e) => setFormData({ ...formData, artist_profile: e.target.value })}
@@ -681,6 +734,96 @@ function AssistantPage() {
                       placeholder={"Cole aqui 3 a 5 respostas que você já mandou para clientes. A IA imita o tom, sem copiar."}
                     />
                   </div>
+                </div>
+              </div>
+
+              <div className="glass p-6 rounded-2xl border border-white/5">
+                <h2 className="text-lg font-bold mb-1 flex items-center gap-2">
+                  <MapPin className="w-4 h-4 text-primary" /> Atendimento por país
+                </h2>
+                <p className="text-xs text-muted-foreground mb-4">
+                  O Dante identifica o país do cliente pelo DDI do WhatsApp e aplica a regra que você definir aqui.
+                </p>
+                <div className="space-y-4">
+                  <div>
+                    <label className="text-xs font-semibold text-white/70 uppercase tracking-widest mb-1 block">Seu país</label>
+                    <select
+                      value={formData.country_settings.home}
+                      onChange={(e) => setCountry({ home: e.target.value, rules: formData.country_settings.rules.filter((r) => r.country !== e.target.value) })}
+                      className="w-full bg-black/50 border border-white/10 rounded-lg py-2 px-3 text-sm focus:border-primary focus:outline-none transition-colors"
+                    >
+                      {COUNTRIES.map((c) => <option key={c.code} value={c.code}>{c.name} (+{c.ddi})</option>)}
+                    </select>
+                    <p className="text-[11px] text-white/40 mt-1">Clientes do seu país usam a moeda e os valores principais.</p>
+                  </div>
+
+                  {formData.country_settings.rules.map((rule, i) => {
+                    const taken = new Set([formData.country_settings.home, ...formData.country_settings.rules.filter((_, idx) => idx !== i).map((r) => r.country)]);
+                    return (
+                      <div key={i} className="rounded-xl border border-white/10 p-4 space-y-3">
+                        <div className="flex items-center justify-between gap-2">
+                          <select
+                            value={rule.country}
+                            onChange={(e) => {
+                              const c = COUNTRIES.find((x) => x.code === e.target.value);
+                              updateRule(i, { country: e.target.value, ...(c ? { currency: c.currency } : {}) });
+                            }}
+                            className="w-full bg-black/50 border border-white/10 rounded-lg py-2 px-3 text-sm focus:border-primary focus:outline-none transition-colors"
+                          >
+                            {!taken.has(OTHER_COUNTRIES) && <option value={OTHER_COUNTRIES}>Outros países (qualquer estrangeiro sem regra)</option>}
+                            {rule.country === OTHER_COUNTRIES && taken.has(OTHER_COUNTRIES) && <option value={OTHER_COUNTRIES}>Outros países</option>}
+                            {COUNTRIES.filter((c) => c.code === rule.country || !taken.has(c.code)).map((c) => (
+                              <option key={c.code} value={c.code}>{c.name} (+{c.ddi})</option>
+                            ))}
+                          </select>
+                          <button
+                            type="button"
+                            onClick={() => setCountry({ rules: formData.country_settings.rules.filter((_, idx) => idx !== i) })}
+                            className="text-xs text-red-400 hover:text-red-500 shrink-0"
+                          >
+                            Remover
+                          </button>
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <label className="text-[11px] text-white/60 block mb-1">Moeda</label>
+                            <select value={rule.currency} onChange={(e) => updateRule(i, { currency: e.target.value })} className="w-full bg-black/50 border border-white/10 rounded-lg py-2 px-3 text-sm focus:border-primary focus:outline-none transition-colors">
+                              {CURRENCIES.map((c) => <option key={c.code} value={c.code}>{c.code}</option>)}
+                            </select>
+                          </div>
+                          <div>
+                            <label className="text-[11px] text-white/60 block mb-1">Fator sobre a tabela</label>
+                            <input
+                              type="number"
+                              step="0.01"
+                              min="0.01"
+                              value={rule.factor}
+                              onChange={(e) => updateRule(i, { factor: Number(e.target.value) })}
+                              className="w-full bg-black/50 border border-white/10 rounded-lg py-2 px-3 text-sm focus:border-primary focus:outline-none transition-colors"
+                            />
+                          </div>
+                        </div>
+                        <p className="text-[11px] text-white/40">
+                          Os valores da sua tabela são multiplicados por esse fator. Ex: 0,20 converte R$ em US$ (R$ 1.000 → US$ 200); 1,30 cobra 30% a mais.
+                        </p>
+                        <div>
+                          <label className="text-[11px] text-white/60 block mb-1">Como atender clientes de {countryName(rule.country)}</label>
+                          <textarea
+                            value={rule.instructions}
+                            onChange={(e) => updateRule(i, { instructions: e.target.value })}
+                            maxLength={2000}
+                            rows={3}
+                            className="w-full bg-black/50 border border-white/10 rounded-lg py-2 px-3 text-sm focus:border-primary focus:outline-none transition-colors resize-y"
+                            placeholder="Ex: Atender em inglês, explicar que o projeto é feito em 2 sessões e perguntar quantos dias a pessoa fica na cidade."
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
+
+                  <Button type="button" onClick={addRule} variant="outline" className="w-full border-white/20">
+                    + Adicionar regra de país
+                  </Button>
                 </div>
               </div>
 

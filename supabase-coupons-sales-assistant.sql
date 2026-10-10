@@ -54,3 +54,11 @@ ALTER TABLE public.ai_settings
   ADD COLUMN IF NOT EXISTS body_prices jsonb NOT NULL DEFAULT '{}'::jsonb,
   ADD COLUMN IF NOT EXISTS artist_profile text,
   ADD COLUMN IF NOT EXISTS artist_examples text;
+
+-- Dante: atendimento por país (país do tatuador + regras por DDI do cliente).
+ALTER TABLE public.ai_settings
+  ADD COLUMN IF NOT EXISTS country_settings jsonb NOT NULL DEFAULT '{"home":"BR","rules":[]}'::jsonb;
+
+-- Dante: ficha do tatuador (nome, cidade, idiomas, experiência, especialidades, posicionamento...).
+ALTER TABLE public.ai_settings
+  ADD COLUMN IF NOT EXISTS artist_info jsonb NOT NULL DEFAULT '{}'::jsonb;
