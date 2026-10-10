@@ -5,7 +5,7 @@ import { supabaseAdmin as supabase } from '@/lib/supabase-admin';
 import { SALES_INSTANCE, getSalesSettings, buildSalesPrompt } from '@/lib/sales-assistant';
 import { BODY_PART_LABELS, formatMoney } from '@/lib/body-parts';
 import { countryFromPhone, OTHER_COUNTRIES, CountryRule, CountrySettings } from '@/lib/countries';
-import { ARTIST_INFO_FIELDS, POSITIONING_OPTIONS, ArtistInfo } from '@/lib/artist-info';
+import { ARTIST_INFO_FIELDS, POSITIONING_OPTIONS, ArtistInfo, traitPrompts } from '@/lib/artist-info';
 
 // Ink Authority's own sales WhatsApp: answers tattoo artists asking about the platform.
 async function handleSalesMessage(opts: {
@@ -32,8 +32,9 @@ async function handleSalesMessage(opts: {
 
   const userParts: any[] = [];
   if (messageText) userParts.push({ type: 'text', text: messageText });
-  else if (hasAudio) userParts.push({ type: 'text', text: '[O cliente mandou um áudio que você não consegue ouvir. Peça com gentileza para escrever.]' });
-  if (base64Media) userParts.push({ type: 'file', data: base64Media, mediaType: mimeType || 'image/jpeg' });
+  else if (hasAudio && !base64Media) userParts.push({ type: 'text', text: '[O cliente mandou um áudio que não foi possível ouvir. Peça com gentileza para escrever.]' });
+  else if (hasAudio) userParts.push({ type: 'text', text: '[Mensagem de áudio do cliente: ouça e responda ao que ele disse.]' });
+  if (base64Media) userParts.push({ type: 'file', data: base64Media, mediaType: (mimeType || 'image/jpeg').split(';')[0] });
   if (userParts.length === 0) return NextResponse.json({ status: 'no_content' });
 
   const credentials = JSON.parse(process.env.GOOGLE_VERTEX_CREDENTIALS || '{}');
@@ -140,7 +141,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Server misconfigured' }, { status: 500 });
     }
 
-    if (hasImage) {
+    if (hasImage || hasAudio) {
       try {
         const mediaRes = await fetch(`${evolutionUrl}/chat/getBase64FromMediaMessage/${instanceName}`, {
           method: 'POST',
@@ -260,7 +261,10 @@ export async function POST(req: Request) {
     const artistInfo: ArtistInfo = settings.artist_info || {};
     const infoLines = ARTIST_INFO_FIELDS.filter((f) => artistInfo[f.key]).map((f) => `- ${f.label}: ${artistInfo[f.key]}`);
     const positioning = POSITIONING_OPTIONS.find((p) => p.key === artistInfo.positioning)?.prompt;
+    const traits = traitPrompts(artistInfo);
+    const transcribeAudio = artistInfo.audio !== 'pedir_texto';
     const artistSection = [
+      traits.length ? `### ESTILO DE COMUNICACAO (siga sempre)\n${traits.map((t) => `- ${t}`).join('\n')}` : '',
       infoLines.length || positioning
         ? `### FICHA DO TATUADOR
 ${[...infoLines, positioning ? `- ${positioning}` : ''].filter(Boolean).join('\n')}
@@ -336,10 +340,18 @@ ${countryInstructions ? '- Siga as instrucoes do tatuador para o pais deste clie
     if (messageText) {
       currentUserParts.push({ type: 'text', text: messageText });
     } else if (hasAudio) {
-      currentUserParts.push({ type: 'text', text: '[AUDIO RECEBIDO DO CLIENTE]' });
+      currentUserParts.push({
+        type: 'text',
+        text: transcribeAudio && base64Media
+          ? '[Mensagem de audio do cliente: ouca, entenda o que ele disse e responda normalmente.]'
+          : '[O cliente mandou um audio. Peca com gentileza para ele escrever a mensagem.]',
+      });
     }
 
     if (base64Media) {
+      if (hasAudio && transcribeAudio) {
+        currentUserParts.push({ type: 'file', data: base64Media, mediaType: (mimeType || 'audio/ogg').split(';')[0] });
+      }
       if (hasImage) {
         currentUserParts.push({ type: 'file', data: base64Media, mediaType: mimeType || 'image/jpeg' });
       } 
@@ -397,7 +409,7 @@ ${countryInstructions ? '- Siga as instrucoes do tatuador para o pais deste clie
 
     // Save interaction to history
     await supabase.from('chat_history').insert([
-      { clerk_user_id, phone_number: remoteJid, role: 'user', content: messageText || '[Midia enviada]' },
+      { clerk_user_id, phone_number: remoteJid, role: 'user', content: messageText || (hasAudio ? '[Audio do cliente]' : '[Midia enviada]') },
       { clerk_user_id, phone_number: remoteJid, role: 'assistant', content: finalResponse }
     ]);
 

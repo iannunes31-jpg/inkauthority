@@ -9,7 +9,7 @@ import { supabase } from "@/lib/supabase";
 import { PlanAccessGate } from "@/components/PlanAccessGate";
 import { BODY_PART_GROUPS, CURRENCIES, formatMoney } from "@/lib/body-parts";
 import { COUNTRIES, OTHER_COUNTRIES, countryName, type CountryRule } from "@/lib/countries";
-import { ARTIST_INFO_FIELDS, POSITIONING_OPTIONS } from "@/lib/artist-info";
+import { ARTIST_INFO_FIELDS, POSITIONING_OPTIONS, TRAITS } from "@/lib/artist-info";
 import { motion, AnimatePresence } from "motion/react";
 import { cn } from "@/lib/utils";
 
@@ -713,6 +713,22 @@ function AssistantPage() {
                     </div>
                   </div>
                   <div>
+                    <label className="text-xs font-semibold text-white/70 uppercase tracking-widest mb-2 block">Características</label>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+                      {TRAITS.map((t) => (
+                        <div key={t.key}>
+                          <label className="text-[11px] text-white/60 block mb-1">{t.label}</label>
+                          <select
+                            value={formData.artist_info[t.key] ?? (t.key === "audio" ? "transcrever" : "")}
+                            onChange={(e) => setInfo(t.key, e.target.value)}
+                            className="w-full bg-black/50 border border-white/10 rounded-lg py-2 px-3 text-sm focus:border-primary focus:outline-none transition-colors"
+                          >
+                            {t.key !== "audio" && <option value="">Deixar a IA decidir</option>}
+                            {t.options.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                          </select>
+                        </div>
+                      ))}
+                    </div>
                     <label className="text-xs font-semibold text-white/70 uppercase tracking-widest mb-1 block">Mensagem de apresentação</label>
                     <textarea
                       value={formData.artist_info.greeting ?? ""}

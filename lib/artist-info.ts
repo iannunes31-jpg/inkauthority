@@ -31,4 +31,72 @@ export const POSITIONING_OPTIONS = [
   },
 ] as const;
 
-export type ArtistInfo = Partial<Record<(typeof ARTIST_INFO_FIELDS)[number]["key"] | "positioning" | "greeting", string>>;
+export type ArtistInfo = Partial<Record<(typeof ARTIST_INFO_FIELDS)[number]["key"] | "positioning" | "greeting" | (typeof TRAITS)[number]["key"], string>>;
+
+// Communication traits the artist picks; each option becomes a line in Dante's prompt.
+export const TRAITS = [
+  {
+    key: "formality",
+    label: "Formalidade",
+    options: [
+      { value: "informal", label: "Informal", prompt: "Seja informal: linguagem de conversa, proxima, pode usar girias leves." },
+      { value: "equilibrada", label: "Equilibrada", prompt: "Tom equilibrado: cordial e proximo, sem girias e sem formalidade excessiva." },
+      { value: "formal", label: "Formal", prompt: "Seja formal e polido: linguagem cuidada, sem girias." },
+    ],
+  },
+  {
+    key: "length",
+    label: "Extensão das mensagens",
+    options: [
+      { value: "curtas", label: "Curtas", prompt: "Mensagens curtas: 1 a 2 frases, direto ao ponto." },
+      { value: "medias", label: "Médias", prompt: "Mensagens medias: no maximo um paragrafo curto." },
+      { value: "detalhadas", label: "Detalhadas", prompt: "Mensagens detalhadas: explique com mais contexto quando for util, sem enrolar." },
+    ],
+  },
+  {
+    key: "emojis",
+    label: "Uso de emojis",
+    options: [
+      { value: "nunca", label: "Nunca", prompt: "Nunca use emojis." },
+      { value: "moderado", label: "Moderado", prompt: "Use no maximo 1 emoji por mensagem, so quando combinar." },
+      { value: "frequente", label: "Frequente", prompt: "Use emojis com frequencia para deixar a conversa leve." },
+    ],
+  },
+  {
+    key: "approach",
+    label: "Abordagem comercial",
+    options: [
+      { value: "consultiva", label: "Consultiva", prompt: "Abordagem consultiva: faca perguntas, entenda o objetivo do cliente e oriente antes de conduzir ao fechamento." },
+      { value: "objetiva", label: "Objetiva", prompt: "Abordagem objetiva: va direto ao que o cliente precisa e conduza rapido ao proximo passo." },
+    ],
+  },
+  {
+    key: "language_level",
+    label: "Linguagem",
+    options: [
+      { value: "simples", label: "Simples", prompt: "Linguagem simples, sem termos tecnicos." },
+      { value: "tecnica", label: "Técnica", prompt: "Pode usar termos tecnicos de tatuagem (fineline, blackwork, sombreado, agulhas...), explicando quando necessario." },
+    ],
+  },
+  {
+    key: "proactivity",
+    label: "Proatividade",
+    options: [
+      { value: "baixa", label: "Baixa", prompt: "Proatividade baixa: responda o que foi perguntado, sem puxar novos assuntos." },
+      { value: "media", label: "Média", prompt: "Proatividade media: responda e sugira o proximo passo." },
+      { value: "alta", label: "Alta", prompt: "Proatividade alta: antecipe duvidas, sugira ideias e o proximo passo em toda mensagem." },
+    ],
+  },
+  {
+    key: "audio",
+    label: "Uso de áudios",
+    options: [
+      { value: "transcrever", label: "Transcrever e responder", prompt: "Quando o cliente mandar audio, ouca, entenda o que ele disse e responda normalmente." },
+      { value: "pedir_texto", label: "Pedir para escrever", prompt: "Se o cliente mandar audio, peca com gentileza para ele escrever a mensagem." },
+    ],
+  },
+] as const;
+
+export function traitPrompts(info: Record<string, string | undefined>) {
+  return TRAITS.map((t) => t.options.find((o) => o.value === info[t.key])?.prompt).filter(Boolean) as string[];
+}
