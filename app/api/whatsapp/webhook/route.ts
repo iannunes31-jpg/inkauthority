@@ -271,6 +271,12 @@ ${[...infoLines, positioning ? `- ${positioning}` : ''].filter(Boolean).join('\n
         ? `### EXEMPLOS DE COMO O TATUADOR ESCREVE (imite o tom, o vocabulario, os emojis e o tamanho das mensagens; nao copie literalmente)\n${settings.artist_examples}`
         : '',
     ].filter(Boolean).join('\n\n');
+    const isFirstMessage = formattedHistory.length === 0;
+    const greetingRule = artistInfo.greeting
+      ? (isFirstMessage
+          ? `- Esta e a PRIMEIRA mensagem desta conversa: comece se apresentando com esta apresentacao do tatuador (traduza para o idioma do cliente se ele for estrangeiro), e so depois responda o que ele escreveu: "${artistInfo.greeting}"`
+          : '- A apresentacao ja foi feita nesta conversa: nao se apresente de novo.')
+      : '';
     const clientCountryLabel = clientCountry ? `${clientCountry.name} (+${clientCountry.ddi})` : 'nao identificado';
     const countryInstructions = countryRule?.instructions?.trim();
 
@@ -284,6 +290,7 @@ ${artistSection ? `\n${artistSection}\n` : ''}
 - Pais (pelo DDI do telefone): ${clientCountryLabel}. ${isForeign ? 'E um cliente ESTRANGEIRO para este estudio.' : 'E do mesmo pais do estudio.'}
 - Identifique o idioma da mensagem do cliente e responda EXATAMENTE no mesmo idioma. Se o numero for estrangeiro e o cliente nao tiver escrito texto, comece no idioma do pais dele (ou em ingles).
 ${countryInstructions ? `- INSTRUCOES DO TATUADOR PARA CLIENTES DESTE PAIS (siga sempre):\n${countryInstructions}` : ''}
+${greetingRule}
 
 ### TABELA DE PRECOS (SIGILOSA — so pode ser revelada na etapa 4, depois que o cliente FECHOU e AGENDOU)
 Moeda para este cliente: ${currency}. Todo valor deve ser informado nessa moeda, exatamente no formato abaixo.

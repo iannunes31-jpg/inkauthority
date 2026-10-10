@@ -31,4 +31,4 @@ export const POSITIONING_OPTIONS = [
   },
 ] as const;
 
-export type ArtistInfo = Partial<Record<(typeof ARTIST_INFO_FIELDS)[number]["key"] | "positioning", string>>;
+export type ArtistInfo = Partial<Record<(typeof ARTIST_INFO_FIELDS)[number]["key"] | "positioning" | "greeting", string>>;

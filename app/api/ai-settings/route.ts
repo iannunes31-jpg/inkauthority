@@ -69,6 +69,8 @@ function sanitize(body: any) {
       if (v) info[key] = v;
     }
     if (POSITIONING_OPTIONS.some((p) => p.key === body.artist_info.positioning)) info.positioning = body.artist_info.positioning;
+    const greeting = String(body.artist_info.greeting ?? '').trim().slice(0, 600);
+    if (greeting) info.greeting = greeting;
     out.artist_info = info;
   }
   for (const k of ['artist_profile', 'artist_examples']) {

@@ -713,6 +713,16 @@ function AssistantPage() {
                     </div>
                   </div>
                   <div>
+                    <label className="text-xs font-semibold text-white/70 uppercase tracking-widest mb-1 block">Mensagem de apresentação</label>
+                    <textarea
+                      value={formData.artist_info.greeting ?? ""}
+                      onChange={(e) => setInfo("greeting", e.target.value)}
+                      maxLength={600}
+                      rows={2}
+                      className="w-full bg-black/50 border border-white/10 rounded-lg py-2 px-3 text-sm focus:border-primary focus:outline-none transition-colors resize-y"
+                      placeholder={`Olá! Seja bem-vindo ao atendimento ${formData.studio_name ? `do ${formData.studio_name}` : "do artista/estúdio xxx"}. Como podemos ajudar?`}
+                    />
+                    <p className="text-[11px] text-white/40 mt-1 mb-4">O Dante usa esse texto na primeira mensagem de cada conversa nova.</p>
                     <label className="text-xs font-semibold text-white/70 uppercase tracking-widest mb-1 block">Mais sobre você e seu jeito de atender</label>
                     <textarea
                       value={formData.artist_profile}
@@ -720,7 +730,7 @@ function AssistantPage() {
                       maxLength={6000}
                       rows={7}
                       className="w-full bg-black/50 border border-white/10 rounded-lg py-2 px-3 text-sm focus:border-primary focus:outline-none transition-colors resize-y"
-                      placeholder={"Ex:\n- Meu nome é Ana, tatuo há 8 anos, especialista em fineline e floral.\n- Falo de forma leve, uso emojis com moderação e chamo o cliente pelo nome.\n- Não faço cover-up nem tatuo menores de 18.\n- Sinal de 30% para reservar; remarcação com 48h de antecedência.\n- Sempre explico os cuidados pós-tattoo."}
+                      placeholder={"Ex: Sou especialista em realismo preto e cinza. Trabalho principalmente com grandes projetos exclusivos, desenvolvidos individualmente para cada cliente, respeitando a anatomia e buscando resultados duradouros."}
                     />
                   </div>
                   <div>
