@@ -196,7 +196,7 @@ export function Navbar() {
   return (
     <>
       <LoginModal isOpen={isLoginOpen} onClose={() => setIsLoginOpen(false)} initialView={authView} />
-      <nav className="fixed top-0 w-full z-50 glass border-b border-border/20 bg-background/80 backdrop-blur-md transition-colors h-[72px]">
+      <nav className={`fixed top-0 w-full z-50 glass border-b border-border/20 bg-background/80 backdrop-blur-md transition-colors h-[72px] ${pathname === "/" ? "force-dark" : ""}`}>
         <div className="max-w-7xl mx-auto px-6 h-full flex items-center justify-between">
           <Link href="/" className="flex items-center gap-3" style={{ textDecoration: 'none' }}>
             <svg viewBox="0 0 24 24" fill="currentColor" className="text-foreground" style={{ width: 28, height: 28 }}>

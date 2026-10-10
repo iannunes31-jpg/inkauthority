@@ -67,7 +67,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   return (
     <div className="min-h-screen pt-20 flex bg-background">
       {/* Sidebar */}
-      <aside className="w-64 fixed left-0 top-20 bottom-0 bg-black/80 backdrop-blur-xl border-r border-white/5 hidden lg:flex flex-col z-40">
+      <aside className="w-64 fixed left-0 top-20 bottom-0 bg-background/80 backdrop-blur-xl border-r border-border hidden lg:flex flex-col z-40">
         <div className="flex-1 overflow-y-auto py-6 px-4 flex flex-col gap-2">
           <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-4 px-2">Menu</div>
           {menuItems.map((item) => (
