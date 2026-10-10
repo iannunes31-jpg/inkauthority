@@ -13,6 +13,7 @@ import { auth } from '@clerk/nextjs/server';
 import { NextRequest } from 'next/server';
 import { supabase } from '@/lib/supabase';
 import { PRODUCT_CATALOG, DEFAULT_COURSE_PRICE } from '@/lib/products';
+import { resolveCoupon } from '@/lib/coupons';
 
 const ASAAS_API_URL = process.env.ASAAS_API_URL || 'https://www.asaas.com/api/v3';
 const ASAAS_API_KEY = process.env.ASAAS_API_KEY || '';
@@ -71,7 +72,8 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { productId, productType, returnUrl, paymentMethod, customerEmail, customerName } = body;
+    const { productId, productType, returnUrl: rawReturnUrl, paymentMethod, customerEmail, customerName, couponCode } = body;
+    const returnUrl = typeof rawReturnUrl === 'string' && /^\/(?!\/)/.test(rawReturnUrl) ? rawReturnUrl : '/dashboard';
 
     if (!productId) {
       return NextResponse.json({ error: 'Missing productId' }, { status: 400 });
@@ -109,9 +111,24 @@ export async function POST(req: NextRequest) {
       resolvedType = product.type;
     }
 
+    // Coupon code goes in the charge description; the Asaas webhook reads it back to count the use.
+    let couponNote = '';
+    if (couponCode) {
+      const result = await resolveCoupon(couponCode, String(productId), userId, productType);
+      if (!result.ok) return NextResponse.json({ error: result.error }, { status: 400 });
+      if (isSubscription && result.coupon.duration === 'once') {
+        return NextResponse.json({ error: 'Esse cupom vale só na 1ª mensalidade. Use cartão de crédito para aplicá-lo.' }, { status: 400 });
+      }
+      if (result.finalPrice < 5) {
+        return NextResponse.json({ error: 'Com esse desconto o valor fica abaixo do mínimo do Pix/boleto (R$ 5). Use cartão de crédito.' }, { status: 400 });
+      }
+      price = result.finalPrice;
+      couponNote = ` (cupom ${result.coupon.code})`;
+    }
+
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
-    const successUrl = `${baseUrl}${returnUrl || '/dashboard'}?success=true&gateway=asaas`;
-    const cancelUrl  = `${baseUrl}${returnUrl || '/dashboard'}?canceled=true&gateway=asaas`;
+    const successUrl = `${baseUrl}${returnUrl}?success=true&gateway=asaas`;
+    const cancelUrl  = `${baseUrl}${returnUrl}?canceled=true&gateway=asaas`;
 
     // Get or create customer
     const email = customerEmail || `${userId}@noemail.inkauthority.com`;
@@ -130,7 +147,7 @@ export async function POST(req: NextRequest) {
         value: price,
         nextDueDate: new Date(Date.now() + 86400000).toISOString().split('T')[0], // tomorrow
         cycle: 'MONTHLY',
-        description: productName,
+        description: productName + couponNote,
         externalReference: JSON.stringify({ userId, productId, productType: resolvedType }),
       });
 
@@ -148,7 +165,7 @@ export async function POST(req: NextRequest) {
 
       const paymentLink = await asaasRequest('/paymentLinks', 'POST', {
         name: productName,
-        description: `Acesso a: ${productName}`,
+        description: `Acesso a: ${productName}${couponNote}`,
         endDate: new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0], // 7 days
         value: price,
         billingType,

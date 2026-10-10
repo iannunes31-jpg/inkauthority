@@ -4,6 +4,7 @@ import { auth } from '@clerk/nextjs/server';
 import { NextRequest } from 'next/server';
 import { supabase } from '@/lib/supabase';
 import { PRODUCT_CATALOG, DEFAULT_COURSE_PRICE } from '@/lib/products';
+import { resolveCoupon } from '@/lib/coupons';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
   apiVersion: '2024-06-20' as any,
@@ -54,7 +55,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { productId, productType, returnUrl } = await req.json();
+    const { productId, productType, returnUrl: rawReturnUrl, couponCode } = await req.json();
+    // Only same-site paths; "//evil.com" or "@evil.com" would redirect off-site.
+    const returnUrl = typeof rawReturnUrl === 'string' && /^\/(?!\/)/.test(rawReturnUrl) ? rawReturnUrl : '/dashboard';
 
     if (!productId) {
       return NextResponse.json({ error: 'Missing productId' }, { status: 400 });
@@ -94,6 +97,24 @@ export async function POST(req: NextRequest) {
       resolvedType = product.type;
     }
 
+    let couponId: string | undefined;
+    let stripeCouponId: string | undefined;
+    if (couponCode) {
+      const result = await resolveCoupon(couponCode, String(productId), userId, productType);
+      if (!result.ok) return NextResponse.json({ error: result.error }, { status: 400 });
+      const c = result.coupon;
+      const stripeCoupon = await stripe.coupons.create({
+        name: c.code,
+        ...(c.discount_type === 'percent'
+          ? { percent_off: Number(c.discount_value) }
+          : { amount_off: Math.round(Number(c.discount_value) * 100), currency: 'brl' }),
+        duration: isSubscription ? c.duration : 'once',
+        max_redemptions: 1,
+      });
+      couponId = c.id;
+      stripeCouponId = stripeCoupon.id;
+    }
+
     const session = await createCheckoutSession(
       {
         mode: isSubscription ? 'subscription' : 'payment',
@@ -118,15 +139,17 @@ export async function POST(req: NextRequest) {
           userId,
           productId: String(productId),
           productType: resolvedType,
+          ...(couponId ? { couponId } : {}),
         },
+        ...(stripeCouponId ? { discounts: [{ coupon: stripeCouponId }] } : {}),
         // PIX requires an expiration window; 3600s (1h) is the minimum Stripe accepts.
         ...(!isSubscription ? {
           payment_method_options: {
             pix: { expires_after_seconds: 3600 },
           },
         } : {}),
-        success_url: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}${returnUrl || '/dashboard'}?success=true`,
-        cancel_url: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}${returnUrl || '/dashboard'}?canceled=true`,
+        success_url: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}${returnUrl}?success=true`,
+        cancel_url: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}${returnUrl}?canceled=true`,
       },
       // boleto/pix don't support recurring billing -- only offer them for
       // one-time purchases.

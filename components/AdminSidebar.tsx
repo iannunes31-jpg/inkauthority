@@ -11,8 +11,7 @@ import {
   Share2, 
   Settings,
   LogOut,
-  Activity
-} from "lucide-react";
+  Activity, Ticket, MessageCircle } from "lucide-react";
 import { motion } from "motion/react";
 
 export function AdminSidebar() {
@@ -26,6 +25,8 @@ export function AdminSidebar() {
     { name: "Usuários", path: "/admin/users", icon: <Users className="w-4 h-4" /> },
     { name: "Anúncios", path: "/admin/ads", icon: <Megaphone className="w-4 h-4" /> },
     { name: "Afiliados", path: "/admin/affiliates", icon: <Share2 className="w-4 h-4" /> },
+    { name: "Cupons", path: "/admin/cupons", icon: <Ticket className="w-4 h-4" /> },
+    { name: "Assistente de Vendas", path: "/admin/assistente", icon: <MessageCircle className="w-4 h-4" /> },
     { name: "Ajustes", path: "/admin/settings", icon: <Settings className="w-4 h-4" /> },
   ];
 

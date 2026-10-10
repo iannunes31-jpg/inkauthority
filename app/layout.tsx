@@ -1,3 +1,4 @@
+import { CheckoutHost } from "@/components/CheckoutHost";
 import type {Metadata} from 'next';
 import { Inter, Orbitron } from 'next/font/google';
 import ConditionalNav from '@/components/ConditionalNav';
@@ -24,6 +25,7 @@ export default function RootLayout({
         <body className={`${inter.variable} ${orbitron.variable} font-sans antialiased min-h-screen bg-background text-foreground`} suppressHydrationWarning>
           <ConditionalNav />
           {children}
+          <CheckoutHost />
         </body>
       </html>
     </ClerkProvider>

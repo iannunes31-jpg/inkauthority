@@ -1,5 +1,6 @@
 "use client";
 
+import { openCheckout } from "@/components/CheckoutHost";
 import { useRef, useState, useEffect } from "react";
 import { motion, useInView, useScroll, useTransform, AnimatePresence } from "motion/react";
 import {
@@ -334,14 +335,9 @@ export default function VendasPage() {
     { code: "pt", label: "Português" }, { code: "en", label: "English" }, { code: "es", label: "Español" },
   ];
 
-  const handleCTA = async (productId: string, returnUrl = "/dashboard") => {
+  const handleCTA = (productId: string) => {
     if (!isSignedIn) { setIsLoginOpen(true); return; }
-    const res = await fetch("/api/checkout", {
-      method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ productId, returnUrl }),
-    });
-    const d = await res.json();
-    if (d.url) window.location.href = d.url;
+    openCheckout(productId);
   };
 
   const AGENTS = [
@@ -584,7 +580,7 @@ export default function VendasPage() {
                   <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-2">{t("course_price_label")}</p>
                   <p className="text-5xl font-black mb-2">{t("course_installment")}</p>
                   <p className="text-muted-foreground text-sm mb-6">{t("course_cash")}</p>
-                  <Button onClick={() => handleCTA("marketing_posicionamento", "/dashboard")}
+                  <Button onClick={() => handleCTA("marketing_posicionamento")}
                     className="w-full metallic-gradient text-black font-bold h-13 rounded-2xl text-[11px] tracking-widest uppercase hover:scale-[1.02] transition-transform">
                     {t("course_cta")} <ArrowRight className="w-4 h-4 ml-2" />
                   </Button>

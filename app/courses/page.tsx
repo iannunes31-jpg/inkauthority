@@ -1,5 +1,6 @@
 "use client";
 
+import { openCheckout } from "@/components/CheckoutHost";
 import { useState } from "react";
 import { motion } from "motion/react";
 import { ArrowRight, CheckCircle2, Play, Lock } from "lucide-react";
@@ -12,30 +13,12 @@ export default function CoursesPage() {
   const [isLoadingCheckout, setIsLoadingCheckout] = useState(false);
   const { isSignedIn } = useAuth();
 
-  const handleCheckout = async (productId: string) => {
+  const handleCheckout = (productId: string) => {
     if (!isSignedIn) {
       setIsLoginOpen(true);
       return;
     }
-    try {
-      setIsLoadingCheckout(true);
-      const response = await fetch('/api/checkout', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ productId, productType: 'catalog', returnUrl: '/courses' }),
-      });
-      const data = await response.json();
-      if (data.url) {
-        window.location.href = data.url;
-      } else {
-        alert('Erro ao iniciar checkout.');
-        setIsLoadingCheckout(false);
-      }
-    } catch (err) {
-      console.error(err);
-      alert('Erro de conexão ao iniciar checkout.');
-      setIsLoadingCheckout(false);
-    }
+    openCheckout(productId);
   };
 
   const features = [

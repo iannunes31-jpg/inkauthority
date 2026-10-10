@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { supabaseAdmin as supabase } from '@/lib/supabase-admin';
+import { redeemCoupon } from '@/lib/coupons';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
   apiVersion: '2024-06-20' as any,
@@ -44,6 +45,10 @@ export async function POST(req: Request) {
       if (error) {
         console.error('Supabase insert error:', error);
         return NextResponse.json({ error: 'Database error' }, { status: 500 });
+      }
+
+      if (session.metadata?.couponId) {
+        await redeemCoupon(session.metadata.couponId, userId, productId);
       }
     }
   }

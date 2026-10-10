@@ -11,24 +11,16 @@ import { LoginModal } from "@/components/LoginModal";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
+import { openCheckout } from "@/components/CheckoutHost";
 import { motion } from "motion/react";
 
 export default function ToolsPage() {
   const [isLoginOpen, setIsLoginOpen] = useState(false);
   const { isSignedIn } = useAuth();
 
-  const handleCheckout = async (productId: PlanId) => {
+  const handleCheckout = (productId: PlanId) => {
     if (!isSignedIn) { setIsLoginOpen(true); return; }
-    try {
-      const response = await fetch("/api/checkout", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ productId, returnUrl: "/dashboard/tools" }),
-      });
-      const data = await response.json();
-      if (data.url) window.location.href = data.url;
-      else alert("Erro ao iniciar checkout.");
-    } catch { alert("Erro de conexão ao iniciar checkout."); }
+    openCheckout(productId);
   };
 
   return (

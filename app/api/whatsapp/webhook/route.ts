@@ -2,6 +2,63 @@ import { NextResponse } from 'next/server';
 import { createVertex } from '@ai-sdk/google-vertex';
 import { generateText } from 'ai';
 import { supabaseAdmin as supabase } from '@/lib/supabase-admin';
+import { SALES_INSTANCE, getSalesSettings, buildSalesPrompt } from '@/lib/sales-assistant';
+
+// Ink Authority's own sales WhatsApp: answers tattoo artists asking about the platform.
+async function handleSalesMessage(opts: {
+  remoteJid: string;
+  messageText: string;
+  hasAudio: boolean;
+  base64Media: string | null;
+  mimeType: string;
+  evolutionUrl: string;
+  apiKey: string;
+}) {
+  const { remoteJid, messageText, hasAudio, base64Media, mimeType, evolutionUrl, apiKey } = opts;
+  const settings = await getSalesSettings();
+  if (!settings.is_active) return NextResponse.json({ status: 'sales_inactive' });
+
+  const { data: history } = await supabase
+    .from('chat_history')
+    .select('role, content')
+    .eq('clerk_user_id', SALES_INSTANCE)
+    .eq('phone_number', remoteJid)
+    .in('role', ['user', 'assistant'])
+    .order('created_at', { ascending: false })
+    .limit(16);
+
+  const userParts: any[] = [];
+  if (messageText) userParts.push({ type: 'text', text: messageText });
+  else if (hasAudio) userParts.push({ type: 'text', text: '[O cliente mandou um áudio que você não consegue ouvir. Peça com gentileza para escrever.]' });
+  if (base64Media) userParts.push({ type: 'file', data: base64Media, mediaType: mimeType || 'image/jpeg' });
+  if (userParts.length === 0) return NextResponse.json({ status: 'no_content' });
+
+  const credentials = JSON.parse(process.env.GOOGLE_VERTEX_CREDENTIALS || '{}');
+  const vertex = createVertex({ project: credentials.project_id, location: 'global', googleAuthOptions: { credentials } });
+  const { text } = await generateText({
+    model: vertex('gemini-3.1-flash-lite'),
+    system: buildSalesPrompt(settings),
+    messages: [
+      ...(history ?? []).reverse().map((m) => ({ role: m.role as 'user' | 'assistant', content: m.content })),
+      { role: 'user', content: userParts },
+    ],
+  });
+  const reply = text.trim();
+  if (!reply) return NextResponse.json({ status: 'empty_reply' });
+
+  await supabase.from('chat_history').insert([
+    { clerk_user_id: SALES_INSTANCE, phone_number: remoteJid, role: 'user', content: messageText || (hasAudio ? '[Áudio]' : '[Imagem]') },
+    { clerk_user_id: SALES_INSTANCE, phone_number: remoteJid, role: 'assistant', content: reply },
+  ]);
+
+  const sendRes = await fetch(`${evolutionUrl}/message/sendText/${SALES_INSTANCE}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', apikey: apiKey },
+    body: JSON.stringify({ number: remoteJid.split('@')[0], text: reply, delay: 1500 }),
+  });
+  console.log('[WPP sales] replied', remoteJid, sendRes.status);
+  return NextResponse.json({ status: 'sales_replied' });
+}
 
 export async function POST(req: Request) {
   try {
@@ -102,6 +159,10 @@ export async function POST(req: Request) {
       }
     }
 
+    if (instanceName === SALES_INSTANCE) {
+      return handleSalesMessage({ remoteJid, messageText, hasAudio, base64Media, mimeType, evolutionUrl, apiKey });
+    }
+
     // 1. Fetch AI Settings for this artist
     const { data: settings } = await supabase
       .from('ai_settings')
@@ -170,6 +231,7 @@ export async function POST(req: Request) {
     const systemPrompt = `Voce e Dante, o assistente virtual do estudio de tatuagem "${settings.studio_name}".
 Seu tom de voz e: "${settings.bot_personality}".
 Estilos de Tatuagem que voce faz: ${settings.styles}
+### TABELA DE PRECOS (USO INTERNO — so pode ser revelada na etapa 3, depois da negociacao completa)
 Valor Base Minimo: ${settings.base_price ? `R$ ${settings.base_price}` : 'N/A'}
 Valor por Hora: ${settings.hourly_rate ? `R$ ${settings.hourly_rate}` : 'N/A'}
 Valor por Sessao: ${settings.price_session ? `R$ ${settings.price_session}` : 'N/A'}
@@ -193,9 +255,11 @@ Esta e a estrategia de conversao que voce DEVE seguir rigidamente:
 - Se for um cliente ESTRANGEIRO ou que fala ingles, informe que a arte e feita em 2 sessoes. Exemplo de como abordar (traduza se necessario): "In this case, this piece would be done in 2 sessions to achieve the best possible quality and level of detail. Each session is dedicated 100% to you, giving us enough time to talk in person, go over all the details, and develop the project carefully. Since we are already discussing the tattoo here, once the appointment is confirmed, I can already start researching references and developing ideas for the project. This way, when we meet, I will already have a few options to show you, and we can work together on any adjustments needed until we reach the ideal result. This allows me to give your artwork my full attention and make sure the project is developed in a completely personalized and thoughtful way! ☺️"
 - Se for cliente Brasileiro, apenas explique que a criacao do projeto e personalizada e desenvolvida no dia ou dias antes da sessao.
 
-3. **Orcamento & Precos (REGRA ABSOLUTA):**
-- SE OS VALORES ACIMA (Valor Base Minimo ou Valor por Hora) ESTIVEREM COMO "N/A" OU ZERADOS, VOCE ESTA EXPRESSAMENTE PROIBIDO DE PASSAR VALORES, ESTIMATIVAS OU FAIXAS DE PRECO. Diga educadamente que o artista fara o orcamento exato apos avaliar o projeto e a anatomia pessoalmente ou no envio das fotos.
-- Se houver valor configurado, use-o como base. O valor SEMPRE deve ser apresentado cheio e parcelado primeiro.
+3. **Orcamento & Precos (REGRA ABSOLUTA — VALOR SO NO FINAL):**
+- NUNCA fale valores, precos, estimativas, faixas de preco, "a partir de" ou valor por hora/sessao ANTES da negociacao estar completa. Isso vale MESMO QUE O CLIENTE PECA O PRECO logo no inicio ou insista.
+- A negociacao so esta completa quando o historico da conversa ja tiver TODOS estes itens: (a) a ideia da tatuagem, (b) o local do corpo, (c) o tamanho aproximado, (d) o estilo, (e) a foto da regiao, se voce pediu, e (f) voce ja explicou como funciona a criacao do projeto (etapa 2).
+- Se o cliente pedir o preco antes disso: diga com naturalidade que o valor depende dos detalhes do projeto e que, para passar o valor exato e justo, voce so precisa de mais algumas informacoes. Em seguida faca a PROXIMA pergunta que falta. Nao cite nenhum numero.
+- Quando a negociacao estiver completa: SE OS VALORES DA TABELA estiverem como "N/A" ou zerados, NAO passe valor nenhum — diga que o artista fara o orcamento exato apos avaliar o projeto. Se houver valor configurado, use-o como base, apresentando o valor cheio e o parcelado primeiro.
 
 4. **Conversao & Agendamento (O SINAL):**
 - Quando o cliente decidir agendar, voce DEVE pedir as seguintes informacoes para prosseguir com o agendamento:

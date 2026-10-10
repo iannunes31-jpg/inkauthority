@@ -7,20 +7,10 @@ import { fetchAccess, hasProductType } from "@/lib/access";
 import { PLANS, PlanId, ACCESS_TYPES, COMBO_FULL_PRICE, COMBO_SAVINGS, formatBRL } from "@/lib/pricing";
 import { Lock, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { openCheckout } from "@/components/CheckoutHost";
 
-export async function startCheckout(planId: PlanId) {
-  try {
-    const res = await fetch("/api/checkout", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ productId: planId, returnUrl: window.location.pathname }),
-    });
-    const data = await res.json();
-    if (data.url) window.location.href = data.url;
-    else alert(data.error || "Erro ao iniciar o pagamento.");
-  } catch {
-    alert("Erro ao iniciar o pagamento.");
-  }
+export function startCheckout(planId: PlanId) {
+  openCheckout(planId);
 }
 
 type Props = {

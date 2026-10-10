@@ -10,6 +10,7 @@
  *   URL: https://yourdomain.com/api/webhook/asaas
  *   Events: PAYMENT_RECEIVED, PAYMENT_CONFIRMED, SUBSCRIPTION_CREATED
  */
+import { redeemCoupon } from '@/lib/coupons';
 import { NextResponse } from 'next/server';
 import { supabaseAdmin as supabase } from '@/lib/supabase-admin';
 
@@ -76,6 +77,13 @@ export async function POST(req: Request) {
     if (error) {
       console.error('Supabase insert error (Asaas webhook):', error);
       return NextResponse.json({ error: 'Database error' }, { status: 500 });
+    }
+
+    // /api/checkout-asaas writes "(cupom CODE)" into the charge description.
+    const couponCode = String(payment.description || '').match(/\(cupom ([A-Z0-9_-]+)\)/)?.[1];
+    if (couponCode) {
+      const { data: coupon } = await supabase.from('coupons').select('id').eq('code', couponCode).maybeSingle();
+      if (coupon) await redeemCoupon(coupon.id, userId, productId);
     }
 
     return NextResponse.json({ received: true });
