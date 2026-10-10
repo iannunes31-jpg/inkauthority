@@ -4,10 +4,11 @@ import { userHasAccess, planRequired } from "@/lib/access-server";
 import { GoogleAuth } from "google-auth-library";
 import { ART_DIRECTOR_SKILL, CRIATIVO_STYLES, CriativoStyle, imagePrompt } from "@/lib/criativo-skills";
 
-export const maxDuration = 60;
+export const maxDuration = 120;
 
-const IMAGE_MODEL = "gemini-3.1-flash-lite-image";
-const TEXT_MODEL = "gemini-3.1-flash-lite";
+// Tried in order; a model missing from the Vertex project falls through to the next.
+const BRIEF_MODELS = ["gemini-3-pro-preview", "gemini-3.1-flash-lite"];
+const IMAGE_MODELS = ["gemini-3-pro-image-preview", "gemini-3.1-flash-lite-image"];
 
 const FORMATS: Record<string, { aspectRatio: string; label: string }> = {
   feed: { aspectRatio: "4:5", label: "Instagram feed post (portrait 4:5)" },
@@ -42,91 +43,99 @@ export async function POST(req: NextRequest) {
     const accessToken = (await (await googleAuth.getClient()).getAccessToken()).token;
     if (!accessToken) return NextResponse.json({ error: "Falha ao autenticar no Vertex AI." }, { status: 500 });
 
-    const modelUrl = (model: string) =>
-      `https://aiplatform.googleapis.com/v1/projects/${credentials.project_id}/locations/global/publishers/google/models/${model}:generateContent`;
+    const vertex = (model: string, body: unknown) =>
+      fetch(
+        `https://aiplatform.googleapis.com/v1/projects/${credentials.project_id}/locations/global/publishers/google/models/${model}:generateContent`,
+        {
+          method: "POST",
+          headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        }
+      );
     const photoPart = imageBase64 ? [{ inlineData: { mimeType, data: imageBase64 } }] : [];
 
     // Step 1: the art director turns the short request into a full visual brief.
-    let brief = `${styleBrief}
-
-The artist's request (Portuguese): "${request}"`;
-    try {
-      const briefRes = await fetch(modelUrl(TEXT_MODEL), {
-        method: "POST",
-        headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
-        body: JSON.stringify({
+    let brief = `${styleBrief}\n\nThe artist's request (Portuguese): "${request}"`;
+    const briefPrompt = [
+      `Format: ${fmt.label}.`,
+      `Visual style to follow: ${styleBrief}`,
+      `Artist's request (Portuguese): "${request}"`,
+      imageBase64 ? "A reference photo is attached." : "No photo attached.",
+    ].join("\n");
+    for (const model of BRIEF_MODELS) {
+      try {
+        const res = await vertex(model, {
           systemInstruction: { parts: [{ text: ART_DIRECTOR_SKILL }] },
-          contents: [{
-            role: "user",
-            parts: [
-              ...photoPart,
-              { text: `Format: ${fmt.label}.
-Visual style to follow: ${styleBrief}
-Artist's request (Portuguese): "${request}"
-${imageBase64 ? "A reference photo is attached." : "No photo attached."}` },
-            ],
-          }],
-          generationConfig: { temperature: 0.9, maxOutputTokens: 900 },
-        }),
-      });
-      if (briefRes.ok) {
-        const data = await briefRes.json();
-        const text = (data.candidates?.[0]?.content?.parts ?? []).map((p: any) => p.text ?? "").join("").trim();
-        if (text) brief = text;
-      } else {
-        console.warn("[criativo] art director failed", briefRes.status, (await briefRes.text()).slice(0, 300));
+          contents: [{ role: "user", parts: [...photoPart, { text: briefPrompt }] }],
+          // Thinking models spend output tokens on reasoning; leave room for the brief itself.
+          generationConfig: { temperature: 0.9, maxOutputTokens: 8192 },
+        });
+        if (!res.ok) {
+          console.warn(`[criativo] brief model ${model} failed`, res.status, (await res.text()).slice(0, 200));
+          continue;
+        }
+        const data = await res.json();
+        const text = (data.candidates?.[0]?.content?.parts ?? [])
+          .filter((p: any) => !p.thought)
+          .map((p: any) => p.text ?? "")
+          .join("")
+          .trim();
+        if (text) {
+          brief = text;
+          console.log(`[criativo] brief by ${model}: ${text.length} chars`);
+          break;
+        }
+      } catch (err) {
+        console.warn(`[criativo] brief model ${model} error:`, err);
       }
-    } catch (err) {
-      console.warn("[criativo] art director error, using plain prompt:", err);
     }
 
     // Step 2: render the brief.
     const parts: any[] = [...photoPart, { text: imagePrompt(brief, fmt.label, !!imageBase64) }];
-    const endpoint = modelUrl(IMAGE_MODEL);
-    const call = (withAspect: boolean) =>
-      fetch(endpoint, {
-        method: "POST",
-        headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [{ role: "user", parts }],
-          generationConfig: {
-            responseModalities: ["IMAGE", "TEXT"],
-            temperature: 1,
-            ...(withAspect ? { imageConfig: { aspectRatio: fmt.aspectRatio } } : {}),
-          },
-        }),
-      });
-
-    let res = await call(true);
-    if (res.status === 400) {
-      // Some model versions reject imageConfig; the prompt still asks for the format.
-      console.warn("[criativo] aspectRatio rejected, retrying without it:", (await res.text()).slice(0, 300));
-      res = await call(false);
-    }
-    if (!res.ok) {
-      const errText = await res.text();
-      console.error("[criativo] Vertex error", res.status, errText.slice(0, 500));
-      return NextResponse.json({ error: "A IA não conseguiu gerar a arte agora. Tente novamente." }, { status: 502 });
-    }
-
-    const result = await res.json();
-    const outParts: any[] = result.candidates?.[0]?.content?.parts ?? [];
-    const image = outParts.find((p) => p.inlineData?.data);
-    if (!image) {
-      const reason = result.candidates?.[0]?.finishReason;
-      console.warn("[criativo] no image returned, finishReason:", reason);
-      return NextResponse.json(
-        { error: reason === "SAFETY" || reason === "PROHIBITED_CONTENT"
-            ? "A IA recusou esse pedido por política de conteúdo. Ajuste a descrição ou a foto."
-            : "A IA não devolveu uma imagem. Tente reformular o pedido." },
-        { status: 422 }
-      );
-    }
-
-    return NextResponse.json({
-      imageBase64: image.inlineData.data,
-      imageMimeType: image.inlineData.mimeType ?? "image/png",
+    const imageBody = (withAspect: boolean) => ({
+      contents: [{ role: "user", parts }],
+      generationConfig: {
+        responseModalities: ["IMAGE", "TEXT"],
+        temperature: 1,
+        ...(withAspect ? { imageConfig: { aspectRatio: fmt.aspectRatio } } : {}),
+      },
     });
+
+    let blockedReason: string | undefined;
+    for (const model of IMAGE_MODELS) {
+      let res = await vertex(model, imageBody(true));
+      if (res.status === 400) {
+        // Some model versions reject imageConfig; the prompt still asks for the format.
+        console.warn(`[criativo] ${model} rejected aspectRatio:`, (await res.text()).slice(0, 200));
+        res = await vertex(model, imageBody(false));
+      }
+      if (!res.ok) {
+        console.warn(`[criativo] image model ${model} failed`, res.status, (await res.text()).slice(0, 300));
+        continue;
+      }
+      const result = await res.json();
+      const image = (result.candidates?.[0]?.content?.parts ?? []).find((p: any) => p.inlineData?.data);
+      if (image) {
+        console.log(`[criativo] image by ${model}`);
+        return NextResponse.json({
+          imageBase64: image.inlineData.data,
+          imageMimeType: image.inlineData.mimeType ?? "image/png",
+        });
+      }
+      blockedReason = result.candidates?.[0]?.finishReason;
+      console.warn(`[criativo] ${model} returned no image, finishReason:`, blockedReason);
+      if (blockedReason === "SAFETY" || blockedReason === "PROHIBITED_CONTENT") break;
+    }
+
+    return NextResponse.json(
+      {
+        error:
+          blockedReason === "SAFETY" || blockedReason === "PROHIBITED_CONTENT"
+            ? "A IA recusou esse pedido por política de conteúdo. Ajuste a descrição ou a foto."
+            : "A IA não conseguiu gerar a arte agora. Tente novamente.",
+      },
+      { status: blockedReason ? 422 : 502 }
+    );
   } catch (error) {
     console.error("[criativo] Error:", error);
     return NextResponse.json({ error: "Erro ao gerar a arte." }, { status: 500 });
