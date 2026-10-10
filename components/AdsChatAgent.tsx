@@ -149,7 +149,7 @@ export function AdsChatAgent({
             <Button
               type="submit"
               disabled={!inputValue.trim() || isLoading}
-              className="absolute right-1.5 rounded-full w-11 h-11 p-0 flex items-center justify-center bg-primary text-black hover:scale-105 transition-transform"
+              className="absolute right-1.5 rounded-full w-11 h-11 p-0 flex items-center justify-center bg-primary text-primary-foreground hover:scale-105 transition-transform"
             >
               {isLoading ? (
                 <Loader2 className="w-4 h-4 animate-spin" />

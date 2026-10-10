@@ -118,7 +118,7 @@ export default function ProfilePage() {
                   className="w-full bg-foreground/5 border border-border/20 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-primary/50"
                 />
                 <div className="flex gap-2 pt-1">
-                  <Button onClick={handleSaveName} disabled={isSaving} size="sm" className="flex-1 h-8 text-xs bg-primary text-black">
+                  <Button onClick={handleSaveName} disabled={isSaving} size="sm" className="flex-1 h-8 text-xs bg-primary text-primary-foreground">
                     {isSaving ? <Loader2 className="w-3 h-3 animate-spin" /> : <Check className="w-3 h-3" />}
                     Salvar
                   </Button>

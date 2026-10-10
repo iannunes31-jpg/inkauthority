@@ -83,12 +83,12 @@ export function VideoUploader({ onSuccess }: VideoUploaderProps) {
           <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
             <Upload className="w-8 h-8 text-primary" />
           </div>
-          <h3 className="text-lg font-bold text-white mb-2">Upload de Vídeo</h3>
+          <h3 className="text-lg font-bold text-foreground mb-2">Upload de Vídeo</h3>
           <p className="text-sm text-muted-foreground mb-6">
             Selecione o arquivo da aula (.mp4, .mov). Limite de 5GB.
           </p>
           <label className="cursor-pointer">
-            <span className="bg-primary text-black font-bold px-6 py-2 rounded-full hover:bg-primary/90 transition-colors">
+            <span className="bg-primary text-primary-foreground font-bold px-6 py-2 rounded-full hover:bg-primary/90 transition-colors">
               Selecionar Arquivo
             </span>
             <input
@@ -106,14 +106,14 @@ export function VideoUploader({ onSuccess }: VideoUploaderProps) {
           <div className="flex items-center gap-4 bg-black/40 px-6 py-4 rounded-xl border border-white/5 mb-6">
             <Upload className="w-6 h-6 text-primary" />
             <div className="text-left">
-              <p className="text-sm font-bold text-white max-w-[200px] truncate">{file.name}</p>
+              <p className="text-sm font-bold text-foreground max-w-[200px] truncate">{file.name}</p>
               <p className="text-xs text-muted-foreground">{(file.size / (1024 * 1024)).toFixed(2)} MB</p>
             </div>
-            <button onClick={() => setFile(null)} className="ml-4 text-white/50 hover:text-white transition-colors">
+            <button onClick={() => setFile(null)} className="ml-4 text-white/50 hover:text-foreground transition-colors">
               <X className="w-5 h-5" />
             </button>
           </div>
-          <Button onClick={startUpload} className="w-full sm:w-auto bg-primary text-black font-bold hover:bg-primary/90">
+          <Button onClick={startUpload} className="w-full sm:w-auto bg-primary text-primary-foreground font-bold hover:bg-primary/90">
             Iniciar Upload
           </Button>
           {error && (
@@ -128,7 +128,7 @@ export function VideoUploader({ onSuccess }: VideoUploaderProps) {
       {isUploading && (
         <div className="py-6">
           <div className="flex justify-between items-center mb-2">
-            <span className="text-sm font-bold text-white flex items-center gap-2">
+            <span className="text-sm font-bold text-foreground flex items-center gap-2">
               <Upload className="w-4 h-4 animate-bounce text-primary" />
               Enviando...
             </span>
@@ -151,7 +151,7 @@ export function VideoUploader({ onSuccess }: VideoUploaderProps) {
           <div className="w-16 h-16 rounded-full bg-green-500/20 flex items-center justify-center mb-4">
             <CheckCircle2 className="w-8 h-8 text-green-400" />
           </div>
-          <h3 className="text-lg font-bold text-white mb-2">Upload Concluído!</h3>
+          <h3 className="text-lg font-bold text-foreground mb-2">Upload Concluído!</h3>
           <p className="text-sm text-muted-foreground">
             O vídeo foi processado pelo Cloudflare Stream com sucesso.
           </p>

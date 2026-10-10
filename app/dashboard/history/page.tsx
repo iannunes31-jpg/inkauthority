@@ -89,7 +89,7 @@ export default function HistoryPage() {
       </div>
       
       <div className="mt-10 flex justify-center">
-        <button className="text-xs font-bold uppercase tracking-widest text-primary hover:text-white transition-colors">
+        <button className="text-xs font-bold uppercase tracking-widest text-primary hover:text-foreground transition-colors">
           Carregar eventos anteriores
         </button>
       </div>

@@ -278,7 +278,7 @@ function AssistantPage() {
           onClick={() => setActiveTab("settings")}
           className={cn(
             "px-4 py-2 rounded-lg text-sm font-semibold transition-all flex items-center gap-2",
-            activeTab === "settings" ? "bg-white/10 text-white" : "text-white/50 hover:text-white hover:bg-white/5"
+            activeTab === "settings" ? "bg-white/10 text-foreground" : "text-white/50 hover:text-foreground hover:bg-white/5"
           )}
         >
           <Bot className="w-4 h-4" /> Configurações
@@ -287,7 +287,7 @@ function AssistantPage() {
           onClick={() => setActiveTab("crm")}
           className={cn(
             "px-4 py-2 rounded-lg text-sm font-semibold transition-all flex items-center gap-2",
-            activeTab === "crm" ? "bg-white/10 text-white" : "text-white/50 hover:text-white hover:bg-white/5"
+            activeTab === "crm" ? "bg-white/10 text-foreground" : "text-white/50 hover:text-foreground hover:bg-white/5"
           )}
         >
           <Users className="w-4 h-4" /> CRM (Clientes)
@@ -296,7 +296,7 @@ function AssistantPage() {
           onClick={() => setActiveTab("agenda")}
           className={cn(
             "px-4 py-2 rounded-lg text-sm font-semibold transition-all flex items-center gap-2",
-            activeTab === "agenda" ? "bg-white/10 text-white" : "text-white/50 hover:text-white hover:bg-white/5"
+            activeTab === "agenda" ? "bg-white/10 text-foreground" : "text-white/50 hover:text-foreground hover:bg-white/5"
           )}
         >
           <Calendar className="w-4 h-4" /> Agenda
@@ -305,7 +305,7 @@ function AssistantPage() {
           onClick={() => setActiveTab("copilot")}
           className={cn(
             "px-4 py-2 rounded-lg text-sm font-semibold transition-all flex items-center gap-2",
-            activeTab === "copilot" ? "bg-primary/20 text-primary border border-primary/30" : "text-white/50 hover:text-white hover:bg-white/5"
+            activeTab === "copilot" ? "bg-primary/20 text-primary border border-primary/30" : "text-white/50 hover:text-foreground hover:bg-white/5"
           )}
         >
           <Edit3 className="w-4 h-4" /> Copilot
@@ -348,7 +348,7 @@ function AssistantPage() {
                     className={cn(
                       "p-4 rounded-xl border flex flex-col items-center justify-center gap-2 transition-all text-center",
                       formData.bot_mode === "copilot" 
-                        ? "border-primary bg-primary/10 text-white" 
+                        ? "border-primary bg-primary/10 text-foreground" 
                         : "border-white/10 bg-black/40 text-white/50 hover:bg-white/5"
                     )}
                   >
@@ -362,7 +362,7 @@ function AssistantPage() {
                     className={cn(
                       "p-4 rounded-xl border flex flex-col items-center justify-center gap-2 transition-all text-center",
                       formData.bot_mode === "automatic" 
-                        ? "border-green-500 bg-green-500/10 text-white" 
+                        ? "border-green-500 bg-green-500/10 text-foreground" 
                         : "border-white/10 bg-black/40 text-white/50 hover:bg-white/5"
                     )}
                   >
@@ -414,21 +414,21 @@ function AssistantPage() {
                         <div className={cn("flex items-start gap-3 p-3 rounded-xl transition-colors", !qrCodeData ? "bg-primary/10 border border-primary/30" : "opacity-40")}>
                           <div className="w-6 h-6 rounded-full bg-primary/20 text-primary text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">1</div>
                           <div>
-                            <p className="text-xs font-semibold text-white">Gere o QR Code</p>
+                            <p className="text-xs font-semibold text-foreground">Gere o QR Code</p>
                             <p className="text-[11px] text-white/50 mt-0.5">Clique no botão abaixo para gerar seu código de conexão</p>
                           </div>
                         </div>
                         <div className={cn("flex items-start gap-3 p-3 rounded-xl transition-colors", qrCodeData ? "bg-primary/10 border border-primary/30" : "opacity-40")}>
                           <div className="w-6 h-6 rounded-full bg-primary/20 text-primary text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">2</div>
                           <div>
-                            <p className="text-xs font-semibold text-white">Abra o WhatsApp no celular</p>
+                            <p className="text-xs font-semibold text-foreground">Abra o WhatsApp no celular</p>
                             <p className="text-[11px] text-white/50 mt-0.5">Vá em <strong className="text-white/70">⋮ Menu → Aparelhos Conectados → Conectar Aparelho</strong></p>
                           </div>
                         </div>
                         <div className="flex items-start gap-3 p-3 rounded-xl opacity-40">
                           <div className="w-6 h-6 rounded-full bg-primary/20 text-primary text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">3</div>
                           <div>
-                            <p className="text-xs font-semibold text-white">Escaneie o QR Code</p>
+                            <p className="text-xs font-semibold text-foreground">Escaneie o QR Code</p>
                             <p className="text-[11px] text-white/50 mt-0.5">Aponte a câmera do celular para o QR Code que aparecer</p>
                           </div>
                         </div>

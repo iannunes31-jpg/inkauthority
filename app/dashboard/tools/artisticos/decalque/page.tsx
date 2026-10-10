@@ -324,7 +324,7 @@ function DecalquePage() {
             <div key={s} className="flex items-center gap-2">
               <div className={cn(
                 "flex items-center gap-1.5 text-[11px] font-bold px-3 py-1.5 rounded-full transition-all",
-                active ? "bg-primary text-black" : done ? "bg-primary/20 text-primary" : "bg-white/5 text-muted-foreground"
+                active ? "bg-primary text-primary-foreground" : done ? "bg-primary/20 text-primary" : "bg-white/5 text-muted-foreground"
               )}>
                 {done ? <CheckCircle2 className="w-3 h-3" /> : null}
                 {labels[i]}

@@ -20,7 +20,7 @@ export function NotificationPanel({ isOpen, onClose }: NotificationPanelProps) {
       case "warning":
         return <AlertTriangle className="w-5 h-5 text-yellow-400" />;
       default:
-        return <Bell className="w-5 h-5 text-white" />;
+        return <Bell className="w-5 h-5 text-foreground" />;
     }
   };
 
@@ -39,13 +39,13 @@ export function NotificationPanel({ isOpen, onClose }: NotificationPanelProps) {
             className="absolute top-16 right-0 z-[60] w-80 sm:w-96 glass rounded-2xl border border-white/10 shadow-2xl overflow-hidden origin-top-right"
           >
             <div className="p-4 border-b border-white/5 flex items-center justify-between bg-black/40">
-              <h3 className="font-bold text-sm uppercase tracking-widest text-white flex items-center gap-2">
+              <h3 className="font-bold text-sm uppercase tracking-widest text-foreground flex items-center gap-2">
                 <Bell className="w-4 h-4" />
                 Notificações
               </h3>
               <button 
                 onClick={onClose}
-                className="text-muted-foreground hover:text-white transition-colors"
+                className="text-muted-foreground hover:text-foreground transition-colors"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -70,7 +70,7 @@ export function NotificationPanel({ isOpen, onClose }: NotificationPanelProps) {
                     </div>
                     <div>
                       <div className="flex items-center justify-between gap-2 mb-1">
-                        <h4 className={`text-sm font-semibold ${!notif.read ? "text-white" : "text-muted-foreground"}`}>
+                        <h4 className={`text-sm font-semibold ${!notif.read ? "text-foreground" : "text-muted-foreground"}`}>
                           {notif.title}
                         </h4>
                         {!notif.read && (
@@ -90,7 +90,7 @@ export function NotificationPanel({ isOpen, onClose }: NotificationPanelProps) {
             </div>
 
             <div className="p-3 border-t border-white/5 bg-black/40 text-center">
-              <button className="text-xs font-bold uppercase tracking-widest text-muted-foreground hover:text-white transition-colors">
+              <button className="text-xs font-bold uppercase tracking-widest text-muted-foreground hover:text-foreground transition-colors">
                 Marcar todas como lidas
               </button>
             </div>

@@ -36,7 +36,7 @@ export function AdminSidebar() {
           <div className="w-5 h-5 bg-primary rounded-sm rotate-45 flex items-center justify-center neon-glow group-hover:shadow-[0_0_30px_rgba(229,231,235,0.4)] transition-all duration-500">
              <div className="w-1.5 h-1.5 bg-black rounded-full"></div>
           </div>
-          <span className="font-bold text-[11px] uppercase tracking-[0.2em] text-white ml-2">
+          <span className="font-bold text-[11px] uppercase tracking-[0.2em] text-foreground ml-2">
             ADMIN PANEL
           </span>
         </Link>
@@ -52,7 +52,7 @@ export function AdminSidebar() {
               href={link.path}
               className={cn(
                 "flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all text-sm font-medium relative group",
-                isActive ? "text-white" : "text-muted-foreground hover:text-white hover:bg-white/5"
+                isActive ? "text-foreground" : "text-muted-foreground hover:text-foreground hover:bg-white/5"
               )}
             >
               {isActive && (

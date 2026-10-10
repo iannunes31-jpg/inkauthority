@@ -186,7 +186,7 @@ export default function CriativoPage() {
                     onClick={() => setFormat(f.id)}
                     className={cn(
                       "p-3 rounded-xl border text-center transition-all",
-                      format === f.id ? "border-rose-400 bg-rose-500/10 text-white" : "border-white/10 bg-black/40 text-white/50 hover:bg-white/5"
+                      format === f.id ? "border-rose-400 bg-rose-500/10 text-foreground" : "border-white/10 bg-black/40 text-white/50 hover:bg-white/5"
                     )}
                   >
                     <div className="text-sm font-bold">{f.label}</div>

@@ -76,7 +76,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               href={item.path}
               className={cn(
                 "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all group relative",
-                pathname === item.path ? "text-white bg-white/5" : "text-muted-foreground hover:text-white hover:bg-white/5"
+                pathname === item.path ? "text-foreground bg-white/5" : "text-muted-foreground hover:text-foreground hover:bg-white/5"
               )}
             >
               <div className={cn(
@@ -103,7 +103,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               href={item.path}
               className={cn(
                 "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all group",
-                pathname === item.path ? "text-white bg-white/5" : "text-muted-foreground hover:text-white hover:bg-white/5"
+                pathname === item.path ? "text-foreground bg-white/5" : "text-muted-foreground hover:text-foreground hover:bg-white/5"
               )}
             >
               <div className="group-hover:text-primary transition-colors">

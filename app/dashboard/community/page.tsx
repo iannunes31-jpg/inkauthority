@@ -178,7 +178,7 @@ export default function CommunityPage() {
       <div className="glass p-4 rounded-2xl border border-white/5 mb-8 relative">
         {!user && (
           <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/50 backdrop-blur-sm rounded-2xl">
-            <span className="text-sm font-bold text-white">Faça login para publicar</span>
+            <span className="text-sm font-bold text-foreground">Faça login para publicar</span>
           </div>
         )}
         <div className="flex gap-4">
@@ -273,7 +273,7 @@ export default function CommunityPage() {
                 {user?.id === post.clerk_user_id && (
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <button className="p-2 text-muted-foreground hover:text-white rounded-lg hover:bg-white/5 transition-colors">
+                      <button className="p-2 text-muted-foreground hover:text-foreground rounded-lg hover:bg-white/5 transition-colors">
                         <MoreVertical className="w-4 h-4" />
                       </button>
                     </DropdownMenuTrigger>
@@ -298,10 +298,10 @@ export default function CommunityPage() {
                     className="w-full bg-black/50 border border-white/10 rounded-xl p-3 text-sm focus:outline-none focus:border-primary/50 min-h-[100px]"
                   />
                   <div className="flex justify-end gap-2 mt-2">
-                    <Button variant="ghost" size="sm" onClick={cancelEditing} className="text-muted-foreground hover:text-white">
+                    <Button variant="ghost" size="sm" onClick={cancelEditing} className="text-muted-foreground hover:text-foreground">
                       Cancelar
                     </Button>
-                    <Button size="sm" onClick={() => saveEdit(post.id)} disabled={isSavingEdit || !editingText.trim()} className="bg-primary text-black hover:bg-primary/80 font-bold">
+                    <Button size="sm" onClick={() => saveEdit(post.id)} disabled={isSavingEdit || !editingText.trim()} className="bg-primary text-primary-foreground hover:bg-primary/80 font-bold">
                       {isSavingEdit ? "Salvando..." : "Salvar"}
                     </Button>
                   </div>
@@ -327,7 +327,7 @@ export default function CommunityPage() {
                   <Heart className="w-4 h-4" />
                   <span>{post.likes_count} Curtidas</span>
                 </button>
-                <button className="flex items-center gap-2 text-xs text-muted-foreground hover:text-white transition-colors">
+                <button className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors">
                   <MessageSquare className="w-4 h-4" />
                   <span>{post.comments_count} Comentários</span>
                 </button>

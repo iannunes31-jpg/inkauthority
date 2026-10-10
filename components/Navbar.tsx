@@ -31,7 +31,7 @@ function UserDropdown() {
         {user.hasImage ? (
           <img src={user.imageUrl} alt={user.fullName || "Perfil"} className="w-full h-full object-cover" />
         ) : (
-          <span className="text-xs font-bold text-white">
+          <span className="text-xs font-bold text-foreground">
             {user.firstName ? user.firstName.charAt(0).toUpperCase() : user.primaryEmailAddress?.emailAddress.charAt(0).toUpperCase()}
           </span>
         )}
@@ -46,14 +46,14 @@ function UserDropdown() {
             className="absolute right-0 top-full mt-2 w-56 glass rounded-xl border border-white/10 shadow-2xl py-2 z-50 flex flex-col"
           >
             <div className="px-4 py-2 border-b border-white/10 mb-2">
-              <p className="text-sm font-medium text-white">{user.fullName || "Usuário"}</p>
+              <p className="text-sm font-medium text-foreground">{user.fullName || "Usuário"}</p>
               <p className="text-xs text-muted-foreground truncate">{user.primaryEmailAddress?.emailAddress}</p>
             </div>
             
             <Link 
               href="/dashboard" 
               onClick={() => setIsOpen(false)}
-              className="px-4 py-2 text-sm text-white/70 hover:text-white hover:bg-white/5 flex items-center gap-2 transition-colors"
+              className="px-4 py-2 text-sm text-white/70 hover:text-foreground hover:bg-white/5 flex items-center gap-2 transition-colors"
             >
               <LayoutDashboard className="w-4 h-4" />
               Painel do Aluno
@@ -242,7 +242,7 @@ export function Navbar() {
                           <input 
                             type="text"
                             placeholder="Pesquisar..."
-                            className="w-full bg-white/5 border border-white/10 rounded-full py-1.5 px-4 text-xs text-white placeholder:text-muted-foreground focus:outline-none focus:border-white/30"
+                            className="w-full bg-white/5 border border-white/10 rounded-full py-1.5 px-4 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-white/30"
                             autoFocus
                           />
                         </motion.div>
@@ -250,7 +250,7 @@ export function Navbar() {
                     </AnimatePresence>
                     <button 
                       onClick={() => setIsSearchOpen(!isSearchOpen)}
-                      className="p-2 text-muted-foreground hover:text-white transition-colors"
+                      className="p-2 text-muted-foreground hover:text-foreground transition-colors"
                     >
                       <Search className="w-4 h-4" />
                     </button>
@@ -259,7 +259,7 @@ export function Navbar() {
                   <div className="relative">
                     <button 
                       onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
-                      className="p-2 text-muted-foreground hover:text-white transition-colors relative"
+                      className="p-2 text-muted-foreground hover:text-foreground transition-colors relative"
                     >
                       <Bell className="w-4 h-4" />
                       <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-white rounded-full neon-glow" />
@@ -279,7 +279,7 @@ export function Navbar() {
                     <div ref={langRef} className="relative">
                       <button
                         onClick={() => setIsLangOpen(!isLangOpen)}
-                        className="p-2 text-muted-foreground hover:text-white transition-colors notranslate"
+                        className="p-2 text-muted-foreground hover:text-foreground transition-colors notranslate"
                         title="Mudar Idioma"
                       >
                         <Globe className="w-4 h-4" />
@@ -296,7 +296,7 @@ export function Navbar() {
                               <button
                                 key={lang.code}
                                 onClick={() => changeLanguage(lang.code)}
-                                className="text-left px-4 py-2 text-sm text-white/70 hover:text-white hover:bg-white/5 transition-colors"
+                                className="text-left px-4 py-2 text-sm text-white/70 hover:text-foreground hover:bg-white/5 transition-colors"
                               >
                                 {lang.name}
                               </button>
@@ -308,7 +308,7 @@ export function Navbar() {
 
                     <button
                       onClick={toggleTheme}
-                      className="p-2 text-muted-foreground hover:text-white transition-colors"
+                      className="p-2 text-muted-foreground hover:text-foreground transition-colors"
                       title="Alternar Modo Claro/Escuro"
                     >
                       {theme === "dark"
@@ -347,14 +347,14 @@ export function Navbar() {
             {isLoggedIn && (
               <button 
                 onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
-                className="p-2 text-muted-foreground hover:text-white transition-colors relative"
+                className="p-2 text-muted-foreground hover:text-foreground transition-colors relative"
               >
                 <Bell className="w-5 h-5" />
                 <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-white rounded-full neon-glow" />
               </button>
             )}
             <button 
-              className="p-2 text-muted-foreground hover:text-white"
+              className="p-2 text-muted-foreground hover:text-foreground"
               onClick={() => setIsOpen(!isOpen)}
             >
               {isOpen ? <X size={24} /> : <Menu size={24} />}
@@ -378,7 +378,7 @@ export function Navbar() {
                   onClick={() => setIsOpen(false)}
                   className={cn(
                     "text-sm font-medium px-4 py-2 rounded-lg transition-colors",
-                    pathname === link.path ? "bg-white/10 text-white" : "text-white/60 hover:bg-white/5 hover:text-white"
+                    pathname === link.path ? "bg-white/10 text-foreground" : "text-white/60 hover:bg-white/5 hover:text-foreground"
                   )}
                 >
                   {link.name}
@@ -389,7 +389,7 @@ export function Navbar() {
                 <>
                   <Button 
                     variant="ghost" 
-                    className="w-full justify-start text-muted-foreground hover:text-white"
+                    className="w-full justify-start text-muted-foreground hover:text-foreground"
                     onClick={() => {
                       setIsOpen(false);
                       setAuthView("login");
@@ -418,7 +418,7 @@ export function Navbar() {
                       onClick={() => setIsOpen(false)}
                       className={cn(
                         "flex items-center gap-3 text-sm font-medium px-4 py-2 rounded-lg transition-colors",
-                        pathname === link.path ? "bg-white/10 text-white" : "text-white/60 hover:bg-white/5 hover:text-white"
+                        pathname === link.path ? "bg-white/10 text-foreground" : "text-white/60 hover:bg-white/5 hover:text-foreground"
                       )}
                     >
                       {link.icon}

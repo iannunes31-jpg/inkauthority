@@ -191,7 +191,7 @@ export function LessonComments({ lessonId }: LessonCommentsProps) {
                   {user?.id === comment.clerk_user_id && (
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <button className="p-1.5 text-muted-foreground hover:text-white rounded-lg hover:bg-white/5 transition-colors">
+                        <button className="p-1.5 text-muted-foreground hover:text-foreground rounded-lg hover:bg-white/5 transition-colors">
                           <MoreVertical className="w-4 h-4" />
                         </button>
                       </DropdownMenuTrigger>
@@ -215,10 +215,10 @@ export function LessonComments({ lessonId }: LessonCommentsProps) {
                       className="w-full bg-black/50 border border-white/10 rounded-xl p-3 text-sm focus:outline-none focus:border-primary/50 min-h-[70px]"
                     />
                     <div className="flex justify-end gap-2 mt-2">
-                      <Button variant="ghost" size="sm" onClick={() => setEditingId(null)} className="text-muted-foreground hover:text-white h-7 text-xs">
+                      <Button variant="ghost" size="sm" onClick={() => setEditingId(null)} className="text-muted-foreground hover:text-foreground h-7 text-xs">
                         Cancelar
                       </Button>
-                      <Button size="sm" onClick={() => saveEdit(comment.id)} disabled={isSavingEdit || !editingText.trim()} className="bg-primary text-black hover:bg-primary/80 font-bold h-7 text-xs">
+                      <Button size="sm" onClick={() => saveEdit(comment.id)} disabled={isSavingEdit || !editingText.trim()} className="bg-primary text-primary-foreground hover:bg-primary/80 font-bold h-7 text-xs">
                         {isSavingEdit ? "Salvando..." : "Salvar"}
                       </Button>
                     </div>

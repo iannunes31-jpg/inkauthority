@@ -18,7 +18,7 @@ function PriceTag({ price }: { price?: number }) {
         <span className="text-green-400">Grátis</span>
       ) : (
         <>
-          <span className="text-white">{formatBRL(price)}</span>
+          <span className="text-foreground">{formatBRL(price)}</span>
           <span className="text-white/50 font-medium">/mês</span>
         </>
       )}
@@ -71,7 +71,7 @@ function ComboCard() {
         <div className="text-center md:text-right">
           <p className="text-xs text-white/50 mb-1">No combo, tudo por</p>
           <p className="mb-4">
-            <span className="text-4xl font-black text-white">{formatBRL(PLANS.combo_ia.price)}</span>
+            <span className="text-4xl font-black text-foreground">{formatBRL(PLANS.combo_ia.price)}</span>
             <span className="text-white/60">/mês</span>
           </p>
           {hasCombo ? (

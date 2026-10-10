@@ -14,7 +14,7 @@ function LiveStreamContent() {
     return (
       <div className="flex flex-col items-center justify-center h-[50vh] text-center">
         <Activity className="w-12 h-12 text-muted-foreground mb-4 opacity-50" />
-        <h2 className="text-xl font-bold text-white mb-2">Nenhuma transmissão selecionada</h2>
+        <h2 className="text-xl font-bold text-foreground mb-2">Nenhuma transmissão selecionada</h2>
         <p className="text-muted-foreground">Volte para o painel principal e selecione uma live ativa.</p>
       </div>
     );
@@ -27,7 +27,7 @@ function LiveStreamContent() {
           <div className="flex items-center gap-2 bg-red-500/20 text-red-500 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-widest animate-pulse">
             <span className="w-2 h-2 rounded-full bg-red-500"></span> Ao Vivo
           </div>
-          <h1 className="text-2xl font-bold text-white">Transmissão Exclusiva</h1>
+          <h1 className="text-2xl font-bold text-foreground">Transmissão Exclusiva</h1>
         </div>
         
         {/* O Cloudflare Stream lida automaticamente com inputs de Live pelo mesmo Player usando o ID */}

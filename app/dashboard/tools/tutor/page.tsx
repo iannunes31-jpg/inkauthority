@@ -128,7 +128,7 @@ export default function AssistantPage() {
             <Button
               type="submit"
               disabled={!inputValue.trim() || isLoading}
-              className="absolute right-2 rounded-full w-12 h-12 p-0 flex items-center justify-center bg-primary text-black hover:scale-105 transition-transform"
+              className="absolute right-2 rounded-full w-12 h-12 p-0 flex items-center justify-center bg-primary text-primary-foreground hover:scale-105 transition-transform"
             >
               {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5 ml-1" />}
             </Button>

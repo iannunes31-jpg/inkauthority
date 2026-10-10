@@ -121,7 +121,7 @@ export function PurchaseCourseModal({
 
               <button
                 onClick={onClose}
-                className="absolute right-4 top-4 p-2 text-muted-foreground hover:text-white transition-colors z-10"
+                className="absolute right-4 top-4 p-2 text-muted-foreground hover:text-foreground transition-colors z-10"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -206,7 +206,7 @@ export function PurchaseCourseModal({
 
               <button
                 onClick={onClose}
-                className="w-full text-center text-xs text-muted-foreground hover:text-white transition-colors mt-4 relative z-10"
+                className="w-full text-center text-xs text-muted-foreground hover:text-foreground transition-colors mt-4 relative z-10"
               >
                 Continuar explorando por enquanto
               </button>

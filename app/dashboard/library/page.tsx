@@ -138,7 +138,7 @@ export default function LibraryPage() {
                   </div>
 
                   <div className="relative z-10">
-                    <h4 className="text-white font-black text-lg leading-snug tracking-tight mb-1 group-hover:text-cyan-300 transition-colors">
+                    <h4 className="text-foreground font-black text-lg leading-snug tracking-tight mb-1 group-hover:text-cyan-300 transition-colors">
                       {item.title}
                     </h4>
                     <p className="text-[11px] text-white/50 line-clamp-2">

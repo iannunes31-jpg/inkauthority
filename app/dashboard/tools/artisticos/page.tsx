@@ -33,7 +33,7 @@ export default function ArtisticosPage() {
   return (
     <div className="max-w-5xl mx-auto pb-20">
       <div className="mb-10">
-        <Link href="/dashboard/tools" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-white mb-6 transition-colors">
+        <Link href="/dashboard/tools" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-6 transition-colors">
           <ArrowLeft className="w-4 h-4" /> Voltar para Ferramentas
         </Link>
         <span className="text-[10px] font-bold tracking-[0.3em] uppercase text-primary mb-3 block">

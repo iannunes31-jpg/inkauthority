@@ -57,24 +57,24 @@ export function PlanAccessGate({ plan, description, children }: Props) {
         <div className="absolute inset-0 z-50 flex items-start justify-center p-6 pt-24 backdrop-blur-md bg-black/60 min-h-screen">
           <div className="glass p-8 max-w-lg w-full text-center rounded-3xl border border-white/10 shadow-2xl">
             <Lock className="w-14 h-14 text-primary mx-auto mb-5" />
-            <h2 className="text-2xl font-black uppercase tracking-tighter mb-3 text-white">{p.name}</h2>
+            <h2 className="text-2xl font-black uppercase tracking-tighter mb-3 text-foreground">{p.name}</h2>
             <p className="text-muted-foreground mb-6 text-sm">{description}</p>
 
             <div className="mb-4">
-              <span className="text-4xl font-black text-white">{formatBRL(p.price)}</span>
+              <span className="text-4xl font-black text-foreground">{formatBRL(p.price)}</span>
               <span className="text-muted-foreground">/mês</span>
             </div>
-            <Button onClick={() => startCheckout(plan)} className="w-full bg-primary hover:bg-primary/90 text-black font-bold h-12">
+            <Button onClick={() => startCheckout(plan)} className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-bold h-12">
               Assinar por {formatBRL(p.price)}/mês
             </Button>
 
             <div className="mt-6 pt-6 border-t border-white/10">
               <p className="text-xs text-muted-foreground mb-2">
-                Ou leve <strong className="text-white">Dante + Artísticos + Anúncios</strong> no combo:
+                Ou leve <strong className="text-foreground">Dante + Artísticos + Anúncios</strong> no combo:
               </p>
               <p className="mb-3">
                 <span className="text-sm text-muted-foreground line-through mr-2">{formatBRL(COMBO_FULL_PRICE)}</span>
-                <span className="text-xl font-black text-white">{formatBRL(PLANS.combo_ia.price)}</span>
+                <span className="text-xl font-black text-foreground">{formatBRL(PLANS.combo_ia.price)}</span>
                 <span className="text-muted-foreground text-sm">/mês</span>
               </p>
               <Button onClick={() => startCheckout("combo_ia")} variant="outline" className="w-full font-bold h-11 border-white/20">

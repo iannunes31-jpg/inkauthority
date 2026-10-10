@@ -55,7 +55,7 @@ export function ChatWidget() {
                 <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
                 <span className="font-bold text-sm uppercase tracking-wider metallic-text">Suporte Online</span>
               </div>
-              <button onClick={() => setIsOpen(false)} className="text-muted-foreground hover:text-white">
+              <button onClick={() => setIsOpen(false)} className="text-muted-foreground hover:text-foreground">
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -66,7 +66,7 @@ export function ChatWidget() {
                   <div className={`p-3 rounded-lg text-sm max-w-[85%] leading-relaxed ${
                     msg.role === "user" 
                       ? "bg-white text-black rounded-br-none font-medium" 
-                      : "bg-white/10 text-white rounded-bl-none font-light"
+                      : "bg-white/10 text-foreground rounded-bl-none font-light"
                   }`}>
                     {msg.content}
                     {msg.role === "bot" && i > 0 && (
@@ -91,7 +91,7 @@ export function ChatWidget() {
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleSend()}
                 placeholder="Digite sua dúvida..."
-                className="flex-1 bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder:text-muted-foreground focus:outline-none focus:border-white/30"
+                className="flex-1 bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-white/30"
               />
               <button 
                 onClick={handleSend}

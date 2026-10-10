@@ -374,7 +374,7 @@ export function LoginModal({ isOpen, onClose, initialView = "login" }: LoginModa
 
               <button
                 onClick={onClose}
-                className="absolute right-4 top-4 p-2 text-muted-foreground hover:text-white transition-colors z-10"
+                className="absolute right-4 top-4 p-2 text-muted-foreground hover:text-foreground transition-colors z-10"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -414,7 +414,7 @@ export function LoginModal({ isOpen, onClose, initialView = "login" }: LoginModa
                       value={code}
                       onChange={(e) => setCode(e.target.value)}
                       placeholder="Código de 6 dígitos"
-                      className="w-full bg-black/50 border border-white/10 rounded-xl py-3 pl-10 pr-4 text-center tracking-[0.5em] text-lg text-white focus:outline-none focus:border-white/30 transition-colors"
+                      className="w-full bg-black/50 border border-white/10 rounded-xl py-3 pl-10 pr-4 text-center tracking-[0.5em] text-lg text-foreground focus:outline-none focus:border-white/30 transition-colors"
                       maxLength={6}
                     />
                   </div>
@@ -430,7 +430,7 @@ export function LoginModal({ isOpen, onClose, initialView = "login" }: LoginModa
                       type="button"
                       onClick={handleResendCode}
                       disabled={resendCooldown > 0 || isResending}
-                      className="text-xs text-muted-foreground hover:text-white disabled:opacity-50 disabled:hover:text-muted-foreground"
+                      className="text-xs text-muted-foreground hover:text-foreground disabled:opacity-50 disabled:hover:text-muted-foreground"
                     >
                       {isResending
                         ? "Reenviando..."
@@ -441,7 +441,7 @@ export function LoginModal({ isOpen, onClose, initialView = "login" }: LoginModa
                     <button
                       type="button"
                       onClick={() => setPendingVerification(false)}
-                      className="text-xs text-muted-foreground hover:text-white"
+                      className="text-xs text-muted-foreground hover:text-foreground"
                     >
                       Voltar
                     </button>
@@ -461,7 +461,7 @@ export function LoginModal({ isOpen, onClose, initialView = "login" }: LoginModa
                           value={email}
                           onChange={(e) => setEmail(e.target.value)}
                           placeholder="Seu E-mail"
-                          className="w-full bg-black/50 border border-white/10 rounded-xl py-3 pl-10 pr-4 text-sm text-white placeholder:text-muted-foreground focus:outline-none focus:border-white/30 transition-colors"
+                          className="w-full bg-black/50 border border-white/10 rounded-xl py-3 pl-10 pr-4 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-white/30 transition-colors"
                         />
                       </div>
                       <Button type="submit" disabled={isLoading} className="w-full group h-12 uppercase font-bold tracking-widest text-[11px] rounded-xl mt-6 neon-glow metallic-gradient text-black hover:opacity-90 border-0">
@@ -478,7 +478,7 @@ export function LoginModal({ isOpen, onClose, initialView = "login" }: LoginModa
                           value={code}
                           onChange={(e) => setCode(e.target.value)}
                           placeholder="Código de 6 dígitos"
-                          className="w-full bg-black/50 border border-white/10 rounded-xl py-3 pl-10 pr-4 text-center tracking-[0.5em] text-lg text-white focus:outline-none focus:border-white/30 transition-colors"
+                          className="w-full bg-black/50 border border-white/10 rounded-xl py-3 pl-10 pr-4 text-center tracking-[0.5em] text-lg text-foreground focus:outline-none focus:border-white/30 transition-colors"
                           maxLength={6}
                         />
                       </div>
@@ -489,7 +489,7 @@ export function LoginModal({ isOpen, onClose, initialView = "login" }: LoginModa
                           value={password}
                           onChange={(e) => setPassword(e.target.value)}
                           placeholder="Nova Senha"
-                          className="w-full bg-black/50 border border-white/10 rounded-xl py-3 pl-10 pr-12 text-sm text-white placeholder:text-muted-foreground focus:outline-none focus:border-white/30 transition-colors"
+                          className="w-full bg-black/50 border border-white/10 rounded-xl py-3 pl-10 pr-12 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-white/30 transition-colors"
                         />
                       </div>
                       <Button 
@@ -504,7 +504,7 @@ export function LoginModal({ isOpen, onClose, initialView = "login" }: LoginModa
                     </>
                   )}
                   <div className="text-center mt-4">
-                    <button type="button" onClick={() => { setView("login"); setPendingVerification(false); }} className="text-xs text-muted-foreground hover:text-white">
+                    <button type="button" onClick={() => { setView("login"); setPendingVerification(false); }} className="text-xs text-muted-foreground hover:text-foreground">
                       Voltar para o Login
                     </button>
                   </div>
@@ -520,7 +520,7 @@ export function LoginModal({ isOpen, onClose, initialView = "login" }: LoginModa
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       placeholder="Seu E-mail"
-                      className="w-full bg-black/50 border border-white/10 rounded-xl py-3 pl-10 pr-4 text-sm text-white placeholder:text-muted-foreground focus:outline-none focus:border-white/30 transition-colors"
+                      className="w-full bg-black/50 border border-white/10 rounded-xl py-3 pl-10 pr-4 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-white/30 transition-colors"
                     />
                   </div>
 
@@ -531,12 +531,12 @@ export function LoginModal({ isOpen, onClose, initialView = "login" }: LoginModa
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       placeholder="Sua Senha"
-                      className="w-full bg-black/50 border border-white/10 rounded-xl py-3 pl-10 pr-12 text-sm text-white placeholder:text-muted-foreground focus:outline-none focus:border-white/30 transition-colors"
+                      className="w-full bg-black/50 border border-white/10 rounded-xl py-3 pl-10 pr-12 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-white/30 transition-colors"
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-white transition-colors"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
                     >
                       {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
@@ -596,7 +596,7 @@ export function LoginModal({ isOpen, onClose, initialView = "login" }: LoginModa
                       value={nome}
                       onChange={(e) => setNome(e.target.value)}
                       placeholder="Nome Completo"
-                      className="w-full bg-black/50 border border-white/10 rounded-xl py-3 pl-10 pr-4 text-sm text-white placeholder:text-muted-foreground focus:outline-none focus:border-white/30 transition-colors"
+                      className="w-full bg-black/50 border border-white/10 rounded-xl py-3 pl-10 pr-4 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-white/30 transition-colors"
                     />
                   </div>
 
@@ -607,7 +607,7 @@ export function LoginModal({ isOpen, onClose, initialView = "login" }: LoginModa
                       value={telefone}
                       onChange={(e) => setTelefone(e.target.value)}
                       placeholder="Telefone (WhatsApp)"
-                      className="w-full bg-black/50 border border-white/10 rounded-xl py-3 pl-10 pr-4 text-sm text-white placeholder:text-muted-foreground focus:outline-none focus:border-white/30 transition-colors"
+                      className="w-full bg-black/50 border border-white/10 rounded-xl py-3 pl-10 pr-4 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-white/30 transition-colors"
                     />
                   </div>
 
@@ -618,7 +618,7 @@ export function LoginModal({ isOpen, onClose, initialView = "login" }: LoginModa
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       placeholder="Seu E-mail principal"
-                      className="w-full bg-black/50 border border-white/10 rounded-xl py-3 pl-10 pr-4 text-sm text-white placeholder:text-muted-foreground focus:outline-none focus:border-white/30 transition-colors"
+                      className="w-full bg-black/50 border border-white/10 rounded-xl py-3 pl-10 pr-4 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-white/30 transition-colors"
                     />
                   </div>
 
@@ -629,7 +629,7 @@ export function LoginModal({ isOpen, onClose, initialView = "login" }: LoginModa
                       value={instagram}
                       onChange={(e) => setInstagram(e.target.value)}
                       placeholder="Link do Instagram (@seu.perfil)"
-                      className="w-full bg-black/50 border border-white/10 rounded-xl py-3 pl-10 pr-4 text-sm text-white placeholder:text-muted-foreground focus:outline-none focus:border-white/30 transition-colors"
+                      className="w-full bg-black/50 border border-white/10 rounded-xl py-3 pl-10 pr-4 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-white/30 transition-colors"
                     />
                   </div>
                   
@@ -640,12 +640,12 @@ export function LoginModal({ isOpen, onClose, initialView = "login" }: LoginModa
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       placeholder="Crie uma Senha (minimo 8 caracteres)"
-                      className="w-full bg-black/50 border border-white/10 rounded-xl py-3 pl-10 pr-12 text-sm text-white placeholder:text-muted-foreground focus:outline-none focus:border-white/30 transition-colors"
+                      className="w-full bg-black/50 border border-white/10 rounded-xl py-3 pl-10 pr-12 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-white/30 transition-colors"
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-white transition-colors"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
                     >
                       {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
@@ -664,7 +664,7 @@ export function LoginModal({ isOpen, onClose, initialView = "login" }: LoginModa
                     {view === "login" ? "Ainda nao tem uma conta? " : "Ja possui uma conta? "}
                     <button 
                       onClick={() => setView(view === "login" ? "register" : "login")}
-                      className="text-white hover:underline font-medium"
+                      className="text-foreground hover:underline font-medium"
                     >
                       {view === "login" ? "Matricule-se" : "Fazer Login"}
                     </button>

@@ -198,7 +198,7 @@ function DividirFolhasPage() {
   return (
     <div className="max-w-5xl mx-auto pb-20 p-6 lg:p-10">
       <div className="print:hidden">
-        <Link href="/dashboard/tools/artisticos" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-white mb-6 transition-colors">
+        <Link href="/dashboard/tools/artisticos" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-6 transition-colors">
           <ArrowLeft className="w-4 h-4" /> Voltar para Especialistas Artísticos
         </Link>
 
@@ -216,7 +216,7 @@ function DividirFolhasPage() {
               disabled={!s.enabled}
               className={cn(
                 "px-4 py-2 rounded-lg text-sm font-semibold transition-all flex items-center gap-2",
-                step === s.id ? "bg-white/10 text-white" : s.enabled ? "text-white/50 hover:text-white hover:bg-white/5" : "text-white/20 cursor-not-allowed"
+                step === s.id ? "bg-white/10 text-foreground" : s.enabled ? "text-white/50 hover:text-foreground hover:bg-white/5" : "text-white/20 cursor-not-allowed"
               )}
             >
               <s.icon className="w-4 h-4" /> {s.label}
@@ -249,7 +249,7 @@ function DividirFolhasPage() {
             {/* Controles */}
             <div className="glass p-6 rounded-2xl border border-white/10 space-y-6 h-fit">
               <div>
-                <Button onClick={() => fileInputRef.current?.click()} className="w-full bg-white/5 hover:bg-white/10 text-white font-bold gap-2">
+                <Button onClick={() => fileInputRef.current?.click()} className="w-full bg-white/5 hover:bg-white/10 text-foreground font-bold gap-2">
                   <Upload className="w-4 h-4" /> Trocar Imagem
                 </Button>
                 {fileName && <p className="text-xs text-muted-foreground mt-2 truncate">{fileName}</p>}
@@ -290,13 +290,13 @@ function DividirFolhasPage() {
                 <div className="grid grid-cols-2 gap-2">
                   <button
                     onClick={() => setOrientation("retrato")}
-                    className={`py-2 rounded-lg text-xs font-bold transition-colors ${orientation === "retrato" ? "bg-primary text-black" : "bg-white/5 text-white/70 hover:bg-white/10"}`}
+                    className={`py-2 rounded-lg text-xs font-bold transition-colors ${orientation === "retrato" ? "bg-primary text-primary-foreground" : "bg-white/5 text-white/70 hover:bg-white/10"}`}
                   >
                     Retrato
                   </button>
                   <button
                     onClick={() => setOrientation("paisagem")}
-                    className={`py-2 rounded-lg text-xs font-bold transition-colors ${orientation === "paisagem" ? "bg-primary text-black" : "bg-white/5 text-white/70 hover:bg-white/10"}`}
+                    className={`py-2 rounded-lg text-xs font-bold transition-colors ${orientation === "paisagem" ? "bg-primary text-primary-foreground" : "bg-white/5 text-white/70 hover:bg-white/10"}`}
                   >
                     Paisagem
                   </button>
@@ -345,13 +345,13 @@ function DividirFolhasPage() {
                 <Button onClick={handleDownloadPdf} className="metallic-gradient text-black font-bold gap-2 neon-glow">
                   <FileDown className="w-4 h-4" /> Baixar Tudo em PDF
                 </Button>
-                <Button onClick={handleDownloadAllPng} className="bg-white/5 hover:bg-white/10 text-white font-bold gap-2">
+                <Button onClick={handleDownloadAllPng} className="bg-white/5 hover:bg-white/10 text-foreground font-bold gap-2">
                   <Download className="w-4 h-4" /> Baixar Cada Folha (PNG)
                 </Button>
-                <Button onClick={handlePrint} className="bg-white/5 hover:bg-white/10 text-white font-bold gap-2">
+                <Button onClick={handlePrint} className="bg-white/5 hover:bg-white/10 text-foreground font-bold gap-2">
                   <Printer className="w-4 h-4" /> Imprimir
                 </Button>
-                <Button onClick={() => setStep("ajustar")} variant="ghost" className="bg-white/5 hover:bg-white/10 text-white gap-2">
+                <Button onClick={() => setStep("ajustar")} variant="ghost" className="bg-white/5 hover:bg-white/10 text-foreground gap-2">
                   <SlidersHorizontal className="w-4 h-4" /> Ajustar Novamente
                 </Button>
               </div>

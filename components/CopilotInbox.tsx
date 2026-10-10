@@ -125,7 +125,7 @@ export function CopilotInbox() {
           <div className="flex items-center gap-2">
             <h3 className="font-bold text-sm">Conversas</h3>
             {pendingCount > 0 && (
-              <span className="bg-primary text-black text-[10px] font-bold px-1.5 py-0.5 rounded-full">
+              <span className="bg-primary text-primary-foreground text-[10px] font-bold px-1.5 py-0.5 rounded-full">
                 {pendingCount}
               </span>
             )}
@@ -133,7 +133,7 @@ export function CopilotInbox() {
           <button
             onClick={() => fetchConversations()}
             disabled={refreshing}
-            className="p-1.5 rounded-lg hover:bg-white/10 text-muted-foreground hover:text-white transition-colors"
+            className="p-1.5 rounded-lg hover:bg-white/10 text-muted-foreground hover:text-foreground transition-colors"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? "animate-spin" : ""}`} />
           </button>
@@ -195,8 +195,8 @@ export function CopilotInbox() {
                 <div key={i} className={`flex ${msg.role === "user" ? "" : "flex-row-reverse"}`}>
                   <div className={`max-w-[75%] p-3 rounded-2xl text-sm leading-relaxed ${
                     msg.role === "user"
-                      ? "bg-white/10 text-white rounded-tl-none"
-                      : "bg-primary/15 text-white rounded-tr-none"
+                      ? "bg-white/10 text-foreground rounded-tl-none"
+                      : "bg-primary/15 text-foreground rounded-tr-none"
                   }`}>
                     <p>{msg.content}</p>
                     <p className={`text-[10px] mt-1 opacity-50 ${msg.role === "user" ? "text-left" : "text-right"}`}>
@@ -221,7 +221,7 @@ export function CopilotInbox() {
                 value={editedSuggestion}
                 onChange={(e) => setEditedSuggestion(e.target.value)}
                 rows={3}
-                className="w-full bg-black/40 border border-primary/20 rounded-xl p-3 text-sm text-white resize-none focus:outline-none focus:border-primary/50 transition-colors"
+                className="w-full bg-black/40 border border-primary/20 rounded-xl p-3 text-sm text-foreground resize-none focus:outline-none focus:border-primary/50 transition-colors"
                 placeholder="Sugestão da IA aparecerá aqui..."
               />
               <div className="flex items-center justify-between mt-2">
@@ -229,7 +229,7 @@ export function CopilotInbox() {
                 <Button
                   onClick={handleSend}
                   disabled={sending || !editedSuggestion.trim()}
-                  className="bg-primary text-black font-bold h-9 px-5 flex items-center gap-2 text-sm"
+                  className="bg-primary text-primary-foreground font-bold h-9 px-5 flex items-center gap-2 text-sm"
                 >
                   {sending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
                   {sending ? "Enviando..." : "Enviar"}
