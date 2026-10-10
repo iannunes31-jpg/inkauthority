@@ -104,3 +104,34 @@
     background-clip: text;
   }
 }
+
+/* Light mode: many screens were built dark-only with translucent white/black
+   utilities. Remap those to theme-aware equivalents when .light is active. */
+.light .border-white\/5 { border-color: rgb(0 0 0 / 0.06); }
+.light .border-white\/10 { border-color: rgb(0 0 0 / 0.1); }
+.light .border-white\/20 { border-color: rgb(0 0 0 / 0.15); }
+.light .border-white\/30 { border-color: rgb(0 0 0 / 0.2); }
+.light .bg-white\/5 { background-color: rgb(0 0 0 / 0.04); }
+.light .bg-white\/10 { background-color: rgb(0 0 0 / 0.06); }
+.light .hover\:bg-white\/5:hover { background-color: rgb(0 0 0 / 0.05); }
+.light .hover\:bg-white\/10:hover { background-color: rgb(0 0 0 / 0.08); }
+.light .bg-black\/30,
+.light .bg-black\/40,
+.light .bg-black\/50 { background-color: rgb(0 0 0 / 0.04); }
+.light .text-white\/20 { color: rgb(9 9 11 / 0.3); }
+.light .text-white\/30 { color: rgb(9 9 11 / 0.4); }
+.light .text-white\/40 { color: rgb(9 9 11 / 0.5); }
+.light .text-white\/50 { color: rgb(9 9 11 / 0.6); }
+.light .text-white\/60 { color: rgb(9 9 11 / 0.65); }
+.light .text-white\/70 { color: rgb(9 9 11 / 0.75); }
+.light .text-white\/80,
+.light .text-white\/85,
+.light .text-white\/90 { color: rgb(9 9 11 / 0.85); }
+.light .placeholder\:text-white\/30::placeholder,
+.light .placeholder\:text-white\/40::placeholder { color: rgb(9 9 11 / 0.4); }
+/* Solid white text only flips inside glass cards, never on buttons/links that sit on colored fills. */
+.light .glass .text-white:not(button):not(a):not(button *):not(a *) { color: var(--color-foreground); }
+.light .glass .hover\:text-white:not(button):not(a):hover { color: var(--color-foreground); }
+.light input.text-white,
+.light textarea.text-white,
+.light select.text-white { color: var(--color-foreground); }

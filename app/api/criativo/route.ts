@@ -2,32 +2,18 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import { userHasAccess, planRequired } from "@/lib/access-server";
 import { GoogleAuth } from "google-auth-library";
+import { ART_DIRECTOR_SKILL, CRIATIVO_STYLES, CriativoStyle, imagePrompt } from "@/lib/criativo-skills";
 
 export const maxDuration = 60;
 
-const MODEL = "gemini-3.1-flash-lite-image";
+const IMAGE_MODEL = "gemini-3.1-flash-lite-image";
+const TEXT_MODEL = "gemini-3.1-flash-lite";
 
 const FORMATS: Record<string, { aspectRatio: string; label: string }> = {
   feed: { aspectRatio: "4:5", label: "Instagram feed post (portrait 4:5)" },
   quadrado: { aspectRatio: "1:1", label: "square social media post (1:1)" },
   stories: { aspectRatio: "9:16", label: "Instagram/TikTok story or Reels cover (vertical 9:16)" },
 };
-
-function buildPrompt(request: string, formatLabel: string, hasPhoto: boolean) {
-  return [
-    "You are a senior graphic designer who creates social media and ad creatives for professional tattoo studios.",
-    `Design ONE finished, ready-to-post ${formatLabel}.`,
-    `The tattoo artist's request (in Portuguese): "${request}"`,
-    hasPhoto
-      ? "Use the attached photo as the main visual element. Keep the tattoo artwork and the person faithful to the original: do not redraw, distort or change the tattoo design."
-      : "There is no reference photo: create the visual from the request.",
-    "Rules:",
-    "- Professional, premium composition with a clear visual hierarchy and strong contrast, suited to the tattoo market.",
-    "- Any text in the image must be in Brazilian Portuguese, spelled correctly, short and fully legible.",
-    "- Only include text, prices, phone numbers, handles or addresses that appear in the request. Never invent them.",
-    "- No watermarks, no fake logos, no mockup frames around the art.",
-  ].join("\n");
-}
 
 export async function POST(req: NextRequest) {
   const { userId } = await auth();
@@ -44,22 +30,59 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "JSON do Vertex AI inválido." }, { status: 500 });
   }
 
-  const { prompt, format = "feed", imageBase64, mimeType = "image/jpeg" } = await req.json();
+  const { prompt, format = "feed", style = "premium", imageBase64, mimeType = "image/jpeg" } = await req.json();
   const request = String(prompt || "").trim();
   if (!request) return NextResponse.json({ error: "Descreva o que você quer na arte." }, { status: 400 });
   if (request.length > 1500) return NextResponse.json({ error: "Descrição muito longa (máx. 1500 caracteres)." }, { status: 400 });
   const fmt = FORMATS[format] ?? FORMATS.feed;
+  const styleBrief = (CRIATIVO_STYLES[style as CriativoStyle] ?? CRIATIVO_STYLES.premium).brief;
 
   try {
     const googleAuth = new GoogleAuth({ credentials, scopes: ["https://www.googleapis.com/auth/cloud-platform"] });
     const accessToken = (await (await googleAuth.getClient()).getAccessToken()).token;
     if (!accessToken) return NextResponse.json({ error: "Falha ao autenticar no Vertex AI." }, { status: 500 });
 
-    const parts: any[] = [];
-    if (imageBase64) parts.push({ inlineData: { mimeType, data: imageBase64 } });
-    parts.push({ text: buildPrompt(request, fmt.label, !!imageBase64) });
+    const modelUrl = (model: string) =>
+      `https://aiplatform.googleapis.com/v1/projects/${credentials.project_id}/locations/global/publishers/google/models/${model}:generateContent`;
+    const photoPart = imageBase64 ? [{ inlineData: { mimeType, data: imageBase64 } }] : [];
 
-    const endpoint = `https://aiplatform.googleapis.com/v1/projects/${credentials.project_id}/locations/global/publishers/google/models/${MODEL}:generateContent`;
+    // Step 1: the art director turns the short request into a full visual brief.
+    let brief = `${styleBrief}
+
+The artist's request (Portuguese): "${request}"`;
+    try {
+      const briefRes = await fetch(modelUrl(TEXT_MODEL), {
+        method: "POST",
+        headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          systemInstruction: { parts: [{ text: ART_DIRECTOR_SKILL }] },
+          contents: [{
+            role: "user",
+            parts: [
+              ...photoPart,
+              { text: `Format: ${fmt.label}.
+Visual style to follow: ${styleBrief}
+Artist's request (Portuguese): "${request}"
+${imageBase64 ? "A reference photo is attached." : "No photo attached."}` },
+            ],
+          }],
+          generationConfig: { temperature: 0.9, maxOutputTokens: 900 },
+        }),
+      });
+      if (briefRes.ok) {
+        const data = await briefRes.json();
+        const text = (data.candidates?.[0]?.content?.parts ?? []).map((p: any) => p.text ?? "").join("").trim();
+        if (text) brief = text;
+      } else {
+        console.warn("[criativo] art director failed", briefRes.status, (await briefRes.text()).slice(0, 300));
+      }
+    } catch (err) {
+      console.warn("[criativo] art director error, using plain prompt:", err);
+    }
+
+    // Step 2: render the brief.
+    const parts: any[] = [...photoPart, { text: imagePrompt(brief, fmt.label, !!imageBase64) }];
+    const endpoint = modelUrl(IMAGE_MODEL);
     const call = (withAspect: boolean) =>
       fetch(endpoint, {
         method: "POST",

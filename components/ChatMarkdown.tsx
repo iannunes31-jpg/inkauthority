@@ -15,24 +15,24 @@ const components: Components = {
   ul: ({ children }) => <ul className="list-disc pl-5 my-1.5 space-y-1 marker:opacity-60">{children}</ul>,
   ol: ({ children }) => <ol className="list-decimal pl-5 my-1.5 space-y-1 marker:font-semibold">{children}</ol>,
   li: ({ children }) => <li className="pl-0.5">{children}</li>,
-  strong: ({ children }) => <strong className="font-semibold text-white">{children}</strong>,
-  hr: () => <hr className="border-white/10 my-3" />,
+  strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
+  hr: () => <hr className="border-border my-3" />,
   a: ({ href, children }) => (
     <a href={href} target="_blank" rel="noopener noreferrer" className="underline underline-offset-2 hover:opacity-80">
       {children}
     </a>
   ),
-  blockquote: ({ children }) => <blockquote className="border-l-2 border-white/20 pl-3 my-2 opacity-90">{children}</blockquote>,
-  code: ({ children }) => <code className="bg-white/10 rounded px-1 py-0.5 text-[13px]">{children}</code>,
-  pre: ({ children }) => <pre className="bg-black/40 rounded-lg p-3 my-2 overflow-x-auto text-[13px] [&_code]:bg-transparent [&_code]:p-0">{children}</pre>,
+  blockquote: ({ children }) => <blockquote className="border-l-2 border-border pl-3 my-2 opacity-90">{children}</blockquote>,
+  code: ({ children }) => <code className="bg-muted rounded px-1 py-0.5 text-[13px]">{children}</code>,
+  pre: ({ children }) => <pre className="bg-muted rounded-lg p-3 my-2 overflow-x-auto text-[13px] [&_code]:bg-transparent [&_code]:p-0">{children}</pre>,
   table: ({ children }) => (
-    <div className="my-3 overflow-x-auto rounded-lg border border-white/10">
+    <div className="my-3 overflow-x-auto rounded-lg border border-border">
       <table className="w-full text-[13px] border-collapse">{children}</table>
     </div>
   ),
-  thead: ({ children }) => <thead className="bg-white/5">{children}</thead>,
-  th: ({ children }) => <th className="text-left font-semibold px-3 py-2 border-b border-white/10 whitespace-nowrap">{children}</th>,
-  td: ({ children }) => <td className="px-3 py-2 border-b border-white/5 align-top">{children}</td>,
+  thead: ({ children }) => <thead className="bg-muted">{children}</thead>,
+  th: ({ children }) => <th className="text-left font-semibold px-3 py-2 border-b border-border whitespace-nowrap">{children}</th>,
+  td: ({ children }) => <td className="px-3 py-2 border-b border-border align-top">{children}</td>,
 };
 
 const TABLE_ROW = /^\s*\|.*\|\s*$/;

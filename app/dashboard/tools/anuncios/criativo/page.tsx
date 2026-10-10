@@ -6,6 +6,7 @@ import { ArrowLeft, Sparkles, ImagePlus, X, Download, RefreshCw, Loader2, Wand2 
 import { Button } from "@/components/ui/button";
 import { AdsAccessGate } from "@/components/AdsAccessGate";
 import { cn } from "@/lib/utils";
+import { CRIATIVO_STYLES, CriativoStyle } from "@/lib/criativo-skills";
 
 type Format = "feed" | "quadrado" | "stories";
 
@@ -38,6 +39,7 @@ export default function CriativoPage() {
   const [photo, setPhoto] = useState<{ base64: string; previewUrl: string } | null>(null);
   const [prompt, setPrompt] = useState("");
   const [format, setFormat] = useState<Format>("feed");
+  const [style, setStyle] = useState<CriativoStyle>("premium");
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState("");
   const [results, setResults] = useState<{ url: string; format: Format }[]>([]);
@@ -66,6 +68,7 @@ export default function CriativoPage() {
         body: JSON.stringify({
           prompt,
           format,
+          style,
           ...(photo ? { imageBase64: photo.base64, mimeType: "image/jpeg" } : {}),
         }),
       });
@@ -157,6 +160,24 @@ export default function CriativoPage() {
             </div>
 
             <div className="glass p-6 rounded-2xl border border-white/5">
+              <label className="text-xs font-semibold text-white/70 uppercase tracking-widest mb-3 block">Estilo</label>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                {(Object.keys(CRIATIVO_STYLES) as CriativoStyle[]).map((id) => (
+                  <button
+                    key={id}
+                    onClick={() => setStyle(id)}
+                    className={cn(
+                      "px-3 py-2.5 rounded-xl border text-sm font-semibold transition-all",
+                      style === id ? "border-rose-400 bg-rose-500/10 text-foreground" : "border-white/10 bg-black/40 text-white/50 hover:bg-white/5"
+                    )}
+                  >
+                    {CRIATIVO_STYLES[id].label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="glass p-6 rounded-2xl border border-white/5">
               <label className="text-xs font-semibold text-white/70 uppercase tracking-widest mb-3 block">Formato</label>
               <div className="grid grid-cols-3 gap-3">
                 {FORMATS.map((f) => (
@@ -199,7 +220,7 @@ export default function CriativoPage() {
               {isGenerating ? (
                 <div className="flex flex-col items-center gap-3 text-white/50">
                   <Loader2 className="w-8 h-8 animate-spin text-rose-400" />
-                  <span className="text-xs">Isso leva uns 10 a 30 segundos</span>
+                  <span className="text-xs">O diretor de arte está montando sua peça (20 a 40 segundos)</span>
                 </div>
               ) : current ? (
                 <img src={current.url} alt="Criativo gerado" className="w-full h-full object-contain" />
