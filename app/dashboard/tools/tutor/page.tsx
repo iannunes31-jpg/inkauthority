@@ -5,6 +5,7 @@ import { DefaultChatTransport } from "ai";
 import { Bot, User, Send, Loader2, Sparkles, Lock } from "lucide-react";
 import { useEffect, useRef, useState, useMemo } from "react";
 import { ChatMarkdown } from "@/components/ChatMarkdown";
+import { useStickToBottom } from "@/lib/use-stick-to-bottom";
 import { Button } from "@/components/ui/button";
 
 export default function AssistantPage() {
@@ -50,14 +51,7 @@ export default function AssistantPage() {
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    const container = scrollContainerRef.current;
-    if (!container) return;
-    const isNearBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 200;
-    if (isNearBottom) {
-      messagesEndRef.current?.scrollIntoView({ behavior: "instant" });
-    }
-  }, [messages]);
+  useStickToBottom(scrollContainerRef, messages);
 
   return (
     <div className="h-[calc(100vh-80px)] flex flex-col bg-background relative">

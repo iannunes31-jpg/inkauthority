@@ -7,6 +7,7 @@ import { useChat, Chat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
 import { useEffect, useRef, useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
+import { useStickToBottom } from "@/lib/use-stick-to-bottom";
 import { AdsAccessGate } from "@/components/AdsAccessGate";
 
 const WELCOME = `Olá! Sou o Agente de Campanha Google Ads especializado em tatuadores. 🔍
@@ -44,11 +45,7 @@ export default function GoogleAdsPage() {
 
   const lastAssistantRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    const c = scrollContainerRef.current;
-    if (!c) return;
-    c.scrollTop = c.scrollHeight;
-  }, [messages, isLoading]);
+  useStickToBottom(scrollContainerRef, messages);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

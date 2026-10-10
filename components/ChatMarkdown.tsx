@@ -1,72 +1,64 @@
 "use client";
 
-import React from "react";
+import { memo } from "react";
+import ReactMarkdown, { type Components } from "react-markdown";
+import remarkGfm from "remark-gfm";
 
-function renderInline(text: string): React.ReactNode[] {
-  const parts = text.split(/(\*\*\*[^*]+\*\*\*|\*\*[^*]+\*\*|\*[^*]+\*)/g);
-  return parts.map((part, i) => {
-    if (part.startsWith("***") && part.endsWith("***")) {
-      return <strong key={i}><em>{part.slice(3, -3)}</em></strong>;
-    }
-    if (part.startsWith("**") && part.endsWith("**")) {
-      return <strong key={i}>{part.slice(2, -2)}</strong>;
-    }
-    if (part.startsWith("*") && part.endsWith("*")) {
-      return <em key={i}>{part.slice(1, -1)}</em>;
-    }
-    return <React.Fragment key={i}>{part}</React.Fragment>;
-  });
-}
+const components: Components = {
+  h1: ({ children }) => <p className="font-bold text-base mt-4 mb-1">{children}</p>,
+  h2: ({ children }) => <p className="font-bold mt-4 mb-1">{children}</p>,
+  h3: ({ children }) => <p className="font-bold text-[13px] uppercase tracking-wide mt-3 mb-1 opacity-80">{children}</p>,
+  h4: ({ children }) => <p className="font-semibold mt-3 mb-1">{children}</p>,
+  h5: ({ children }) => <p className="font-semibold mt-2 mb-1">{children}</p>,
+  h6: ({ children }) => <p className="font-semibold mt-2 mb-1">{children}</p>,
+  p: ({ children }) => <p className="my-1.5">{children}</p>,
+  ul: ({ children }) => <ul className="list-disc pl-5 my-1.5 space-y-1 marker:opacity-60">{children}</ul>,
+  ol: ({ children }) => <ol className="list-decimal pl-5 my-1.5 space-y-1 marker:font-semibold">{children}</ol>,
+  li: ({ children }) => <li className="pl-0.5">{children}</li>,
+  strong: ({ children }) => <strong className="font-semibold text-white">{children}</strong>,
+  hr: () => <hr className="border-white/10 my-3" />,
+  a: ({ href, children }) => (
+    <a href={href} target="_blank" rel="noopener noreferrer" className="underline underline-offset-2 hover:opacity-80">
+      {children}
+    </a>
+  ),
+  blockquote: ({ children }) => <blockquote className="border-l-2 border-white/20 pl-3 my-2 opacity-90">{children}</blockquote>,
+  code: ({ children }) => <code className="bg-white/10 rounded px-1 py-0.5 text-[13px]">{children}</code>,
+  pre: ({ children }) => <pre className="bg-black/40 rounded-lg p-3 my-2 overflow-x-auto text-[13px] [&_code]:bg-transparent [&_code]:p-0">{children}</pre>,
+  table: ({ children }) => (
+    <div className="my-3 overflow-x-auto rounded-lg border border-white/10">
+      <table className="w-full text-[13px] border-collapse">{children}</table>
+    </div>
+  ),
+  thead: ({ children }) => <thead className="bg-white/5">{children}</thead>,
+  th: ({ children }) => <th className="text-left font-semibold px-3 py-2 border-b border-white/10 whitespace-nowrap">{children}</th>,
+  td: ({ children }) => <td className="px-3 py-2 border-b border-white/5 align-top">{children}</td>,
+};
 
-export function ChatMarkdown({ text, className = "" }: { text: string; className?: string }) {
+const TABLE_ROW = /^\s*\|.*\|\s*$/;
+const TABLE_SEPARATOR = /^\s*\|?\s*:?-{3,}:?\s*(\|\s*:?-{3,}:?\s*)*\|?\s*$/;
+
+// Gemini often starts a table right under a list item; without a blank line
+// Markdown reads it as part of that item and the raw pipes show up.
+function separateTables(text: string) {
   const lines = text.split("\n");
-  const elements: React.ReactNode[] = [];
-
+  const out: string[] = [];
   for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
-    const trimmed = line.trim();
-
-    if (/^---+$/.test(trimmed) || /^—{2,}$/.test(trimmed)) {
-      elements.push(<hr key={i} className="border-white/10 my-2" />);
-    } else if (/^###\s/.test(line)) {
-      elements.push(
-        <p key={i} className="font-bold text-[13px] uppercase tracking-wide mt-3 mb-0.5 opacity-70">
-          {renderInline(line.replace(/^###\s/, ""))}
-        </p>
-      );
-    } else if (/^##\s/.test(line)) {
-      elements.push(
-        <p key={i} className="font-bold mt-3 mb-0.5">
-          {renderInline(line.replace(/^##\s/, ""))}
-        </p>
-      );
-    } else if (/^#\s/.test(line)) {
-      elements.push(
-        <p key={i} className="font-bold text-base mt-3 mb-0.5">
-          {renderInline(line.replace(/^#\s/, ""))}
-        </p>
-      );
-    } else if (/^[-•]\s/.test(line)) {
-      elements.push(
-        <p key={i} className="pl-3 flex gap-1.5">
-          <span className="shrink-0 mt-[3px] opacity-60">•</span>
-          <span>{renderInline(line.replace(/^[-•]\s/, ""))}</span>
-        </p>
-      );
-    } else if (/^\d+\.\s/.test(line)) {
-      const match = line.match(/^(\d+)\.\s(.*)/)!;
-      elements.push(
-        <p key={i} className="pl-3 flex gap-1.5">
-          <span className="shrink-0 font-semibold">{match[1]}.</span>
-          <span>{renderInline(match[2])}</span>
-        </p>
-      );
-    } else if (trimmed === "") {
-      elements.push(<div key={i} className="h-1.5" />);
-    } else {
-      elements.push(<p key={i}>{renderInline(line)}</p>);
-    }
+    const startsTable = TABLE_ROW.test(lines[i]) && TABLE_SEPARATOR.test(lines[i + 1] ?? "");
+    const prev = out[out.length - 1];
+    if (startsTable && prev !== undefined && prev.trim() !== "" && !TABLE_ROW.test(prev)) out.push("");
+    out.push(lines[i]);
   }
-
-  return <div className={`space-y-1 leading-relaxed text-[14px] ${className}`}>{elements}</div>;
+  return out.join("\n");
 }
+
+// Memoized so earlier messages don't re-parse on every streamed token.
+export const ChatMarkdown = memo(function ChatMarkdown({ text, className = "" }: { text: string; className?: string }) {
+  return (
+    <div className={`leading-relaxed text-[14px] break-words [&>*:first-child]:mt-0 [&>*:last-child]:mb-0 ${className}`}>
+      <ReactMarkdown remarkPlugins={[remarkGfm]} components={components}>
+        {separateTables(text)}
+      </ReactMarkdown>
+    </div>
+  );
+});

@@ -8,6 +8,7 @@ import { useChat, Chat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
 import { useEffect, useRef, useMemo } from "react";
 import { Button } from "@/components/ui/button";
+import { useStickToBottom } from "@/lib/use-stick-to-bottom";
 import { AdsAccessGate } from "@/components/AdsAccessGate";
 
 const WELCOME = "Olá! Sou o Agente de Público da Ink Authority. Vou te ajudar a entender quem é o seu cliente ideal e como falar com ele. Preencha o formulário ao lado para eu começar a análise do seu perfil! 🎯";
@@ -51,11 +52,7 @@ export default function PublicoPage() {
 
   const lastAssistantRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    const c = scrollContainerRef.current;
-    if (!c) return;
-    c.scrollTop = c.scrollHeight;
-  }, [messages, isLoading]);
+  useStickToBottom(scrollContainerRef, messages);
 
   const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
