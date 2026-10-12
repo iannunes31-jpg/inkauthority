@@ -5,7 +5,7 @@ import { useParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { VideoPlayer } from "@/components/VideoPlayer";
 import { LessonComments } from "@/components/LessonComments";
-import { PlayCircle, CheckCircle, ChevronDown, ChevronUp, Layers, BookOpen, Link2, Package } from "lucide-react";
+import { PlayCircle, CheckCircle, ChevronDown, ChevronUp, Layers, BookOpen, Link2, Package, GraduationCap } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 
@@ -16,9 +16,14 @@ export default function StudentCoursePlayer() {
   const [loading, setLoading] = useState(true);
   const [activeLesson, setActiveLesson] = useState<any>(null);
   const [expandedModules, setExpandedModules] = useState<string[]>([]);
+  const [exam, setExam] = useState<{ title: string; passed: boolean } | null>(null);
 
   useEffect(() => {
     fetchCourseData();
+    fetch(`/api/exams/${id}`, { cache: "no-store" })
+      .then((r) => r.json())
+      .then((d) => setExam(d.available ? { title: d.exam.title, passed: !!d.passed } : null))
+      .catch(() => setExam(null));
   }, [id]);
 
   const fetchCourseData = async () => {
@@ -207,6 +212,19 @@ export default function StudentCoursePlayer() {
                   </div>
                 );
               })
+            )}
+
+            {exam && (
+              <Link
+                href={`/dashboard/courses/${id}/prova`}
+                className="flex items-center gap-3 m-4 p-4 rounded-xl border border-primary/30 bg-primary/10 hover:bg-primary/15 transition-colors"
+              >
+                <GraduationCap className="w-5 h-5 text-primary shrink-0" />
+                <div>
+                  <p className="text-sm font-bold">{exam.title}</p>
+                  <p className="text-xs text-muted-foreground">{exam.passed ? "Você já foi aprovado ✓" : "Teste o que você aprendeu"}</p>
+                </div>
+              </Link>
             )}
 
             {/* Materiais de Apoio */}
