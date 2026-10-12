@@ -31,7 +31,28 @@ export const POSITIONING_OPTIONS = [
   },
 ] as const;
 
-export type ArtistInfo = Partial<Record<(typeof ARTIST_INFO_FIELDS)[number]["key"] | "positioning" | "greeting" | (typeof TRAITS)[number]["key"], string>>;
+export type ArtistInfo = Partial<Record<(typeof ARTIST_INFO_FIELDS)[number]["key"] | "positioning" | "greeting" | "pricing_model" | (typeof TRAITS)[number]["key"], string>>;
+
+export const PRICING_MODELS = [
+  {
+    value: "peca",
+    label: "Por peça",
+    hint: "Valor fechado do projeto inteiro",
+    prompt: "Forma de cobranca: POR PECA. Informe um valor fechado para o projeto inteiro, com base na tabela por regiao do corpo (ou no valor base minimo).",
+  },
+  {
+    value: "sessao",
+    label: "Por sessão",
+    hint: "Valor por sessão × número de sessões",
+    prompt: "Forma de cobranca: POR SESSAO. Estime quantas sessoes o projeto precisa e informe o Valor por Sessao vezes o numero de sessoes, deixando claro que o valor e por sessao.",
+  },
+  {
+    value: "hora",
+    label: "Por hora",
+    hint: "Valor por hora × horas estimadas",
+    prompt: "Forma de cobranca: POR HORA. Estime as horas de trabalho e informe o Valor por Hora vezes as horas estimadas, deixando claro que e uma estimativa.",
+  },
+] as const;
 
 // Communication traits the artist picks; each option becomes a line in Dante's prompt.
 export const TRAITS = [

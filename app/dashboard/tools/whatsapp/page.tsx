@@ -9,7 +9,7 @@ import { supabase } from "@/lib/supabase";
 import { PlanAccessGate } from "@/components/PlanAccessGate";
 import { BODY_PART_GROUPS, CURRENCIES, formatMoney } from "@/lib/body-parts";
 import { COUNTRIES, OTHER_COUNTRIES, countryName, type CountryRule } from "@/lib/countries";
-import { ARTIST_INFO_FIELDS, POSITIONING_OPTIONS, TRAITS } from "@/lib/artist-info";
+import { ARTIST_INFO_FIELDS, POSITIONING_OPTIONS, PRICING_MODELS, TRAITS } from "@/lib/artist-info";
 import { motion, AnimatePresence } from "motion/react";
 import { cn } from "@/lib/utils";
 
@@ -37,7 +37,7 @@ function AssistantPage() {
     payment_methods: "",
     bot_personality: "Profissional e educado",
     is_active: false,
-    bot_mode: "copilot",
+    bot_mode: "automatic",
     price_session: "",
     price_arm: "",
     price_leg: "",
@@ -143,7 +143,7 @@ function AssistantPage() {
         payment_methods: data.payment_methods || "",
         bot_personality: data.bot_personality || "Profissional e educado",
         is_active: data.is_active || false,
-        bot_mode: data.bot_mode || "copilot",
+        bot_mode: data.bot_mode || "automatic",
         price_session: data.price_session || "",
         price_arm: data.price_arm || "",
         price_leg: data.price_leg || "",
@@ -242,6 +242,20 @@ function AssistantPage() {
     const newImageUrl = currentUrls.join(",");
     setFormData(prev => ({ ...prev, style_image_url: newImageUrl }));
     await saveImageUrl(newImageUrl);
+  };
+
+  // Status and mode take effect immediately; artists expected the toggle to work without "Salvar".
+  const saveNow = async (patch: Partial<typeof formData>) => {
+    setFormData((f) => ({ ...f, ...patch }));
+    const res = await fetch("/api/ai-settings", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(patch),
+    });
+    if (!res.ok) {
+      const result = await res.json().catch(() => ({}));
+      alert(`⚠️ Não foi possível salvar.\n\n${result.error || "Tente novamente."}`);
+    }
   };
 
   const setInfo = (key: string, value: string) =>
@@ -366,7 +380,8 @@ function AssistantPage() {
                     Status do Assistente
                   </h2>
                   <button 
-                    onClick={() => setFormData({...formData, is_active: !formData.is_active})}
+                    onClick={() => saveNow({ is_active: !formData.is_active })}
+                    aria-label={formData.is_active ? "Desligar assistente" : "Ligar assistente"}
                     className={cn(
                       "relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-black",
                       formData.is_active ? "bg-green-500" : "bg-white/20"
@@ -378,7 +393,7 @@ function AssistantPage() {
 
                 <div className="grid grid-cols-2 gap-4 mb-6">
                   <button
-                    onClick={() => setFormData({...formData, bot_mode: "copilot"})}
+                    onClick={() => saveNow({ bot_mode: "copilot" })}
                     className={cn(
                       "p-4 rounded-xl border flex flex-col items-center justify-center gap-2 transition-all text-center",
                       formData.bot_mode === "copilot" 
@@ -388,11 +403,11 @@ function AssistantPage() {
                   >
                     <Edit3 className={cn("w-6 h-6", formData.bot_mode === "copilot" ? "text-primary" : "")} />
                     <div className="text-sm font-bold">Modo Copilot</div>
-                    <div className="text-[10px] opacity-80 leading-tight">Escreve e você revisa.</div>
+                    <div className="text-[10px] opacity-80 leading-tight">Escreve e você revisa. Não responde sozinho.</div>
                   </button>
                   
                   <button
-                    onClick={() => setFormData({...formData, bot_mode: "automatic"})}
+                    onClick={() => saveNow({ bot_mode: "automatic" })}
                     className={cn(
                       "p-4 rounded-xl border flex flex-col items-center justify-center gap-2 transition-all text-center",
                       formData.bot_mode === "automatic" 
@@ -405,6 +420,17 @@ function AssistantPage() {
                     <div className="text-[10px] opacity-80 leading-tight">Atende 24/7.</div>
                   </button>
                 </div>
+
+                {!formData.is_active && (
+                  <div className="mb-6 rounded-xl border border-yellow-500/30 bg-yellow-500/10 p-3 text-xs text-yellow-500">
+                    O assistente está <strong>desligado</strong>: ele não responde ninguém. Ligue no botão acima.
+                  </div>
+                )}
+                {formData.is_active && formData.bot_mode === "copilot" && (
+                  <div className="mb-6 rounded-xl border border-primary/30 bg-primary/10 p-3 text-xs">
+                    No modo Copilot o Dante <strong>não responde sozinho</strong>: as respostas ficam na aba Copilot para você revisar e enviar.
+                  </div>
+                )}
 
                 {/* QR Code de Conexão */}
                 <div className="border-t border-white/10 pt-6">
@@ -432,7 +458,13 @@ function AssistantPage() {
                         <Zap className="w-8 h-8 text-green-400" />
                       </div>
                       <p className="text-sm font-semibold text-green-400">WhatsApp Conectado!</p>
-                      <p className="text-xs text-white/50 max-w-xs">Seu assistente está ativo e pronto para atender clientes automaticamente.</p>
+                      <p className="text-xs text-white/50 max-w-xs">
+                        {!formData.is_active
+                          ? "WhatsApp conectado, mas o assistente está desligado. Ligue o Status do Assistente para ele responder."
+                          : formData.bot_mode === "copilot"
+                          ? "Assistente ligado no modo Copilot: as respostas aguardam sua revisão."
+                          : "Seu assistente está ativo e respondendo clientes automaticamente."}
+                      </p>
                       <button
                         onClick={handleGenerateQr}
                         disabled={isGeneratingQr}
@@ -590,6 +622,23 @@ function AssistantPage() {
                 
                 <div className="space-y-4">
                   <div>
+                    <label className="text-xs font-semibold text-white/70 uppercase tracking-widest mb-2 block">Forma de cobrança</label>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-4">
+                      {PRICING_MODELS.map((m) => (
+                        <button
+                          type="button"
+                          key={m.value}
+                          onClick={() => setInfo("pricing_model", m.value)}
+                          className={cn(
+                            "p-3 rounded-xl border text-left transition-all",
+                            formData.artist_info.pricing_model === m.value ? "border-primary bg-primary/10" : "border-white/10 hover:bg-white/5"
+                          )}
+                        >
+                          <div className="text-sm font-bold">{m.label}</div>
+                          <div className="text-[11px] text-white/50">{m.hint}</div>
+                        </button>
+                      ))}
+                    </div>
                     <label className="text-xs font-semibold text-white/70 uppercase tracking-widest mb-1 block">Moeda</label>
                     <select
                       value={formData.currency}

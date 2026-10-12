@@ -3,7 +3,7 @@ import { auth } from '@clerk/nextjs/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { BODY_PART_LABELS, CURRENCIES } from '@/lib/body-parts';
 import { COUNTRIES, OTHER_COUNTRIES } from '@/lib/countries';
-import { ARTIST_INFO_FIELDS, POSITIONING_OPTIONS, TRAITS } from '@/lib/artist-info';
+import { ARTIST_INFO_FIELDS, POSITIONING_OPTIONS, PRICING_MODELS, TRAITS } from '@/lib/artist-info';
 
 /**
  * Reads/writes the signed-in artist's own ai_settings row. The row is always
@@ -71,6 +71,7 @@ function sanitize(body: any) {
     if (POSITIONING_OPTIONS.some((p) => p.key === body.artist_info.positioning)) info.positioning = body.artist_info.positioning;
     const greeting = String(body.artist_info.greeting ?? '').trim().slice(0, 600);
     if (greeting) info.greeting = greeting;
+    if (PRICING_MODELS.some((p) => p.value === body.artist_info.pricing_model)) info.pricing_model = body.artist_info.pricing_model;
     for (const t of TRAITS) {
       const v = body.artist_info[t.key];
       if (t.options.some((o) => o.value === v)) info[t.key] = v;
@@ -132,7 +133,7 @@ export async function POST(req: Request) {
   const write = (f: Record<string, any>) =>
     existing && existing.length > 0
       ? supabaseAdmin.from('ai_settings').update({ ...f, updated_at }).eq('clerk_user_id', userId)
-      : supabaseAdmin.from('ai_settings').insert({ studio_name: '', ...f, clerk_user_id: userId, updated_at });
+      : supabaseAdmin.from('ai_settings').insert({ studio_name: '', bot_mode: 'automatic', ...f, clerk_user_id: userId, updated_at });
 
   let { error } = await write(fields);
   let warning: string | undefined;

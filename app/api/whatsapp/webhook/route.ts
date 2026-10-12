@@ -5,7 +5,7 @@ import { supabaseAdmin as supabase } from '@/lib/supabase-admin';
 import { SALES_INSTANCE, getSalesSettings, buildSalesPrompt } from '@/lib/sales-assistant';
 import { BODY_PART_LABELS, formatMoney } from '@/lib/body-parts';
 import { countryFromPhone, OTHER_COUNTRIES, CountryRule, CountrySettings } from '@/lib/countries';
-import { ARTIST_INFO_FIELDS, POSITIONING_OPTIONS, ArtistInfo, traitPrompts } from '@/lib/artist-info';
+import { ARTIST_INFO_FIELDS, POSITIONING_OPTIONS, PRICING_MODELS, ArtistInfo, traitPrompts } from '@/lib/artist-info';
 
 // Ink Authority's own sales WhatsApp: answers tattoo artists asking about the platform.
 async function handleSalesMessage(opts: {
@@ -262,6 +262,7 @@ export async function POST(req: Request) {
     const infoLines = ARTIST_INFO_FIELDS.filter((f) => artistInfo[f.key]).map((f) => `- ${f.label}: ${artistInfo[f.key]}`);
     const positioning = POSITIONING_OPTIONS.find((p) => p.key === artistInfo.positioning)?.prompt;
     const traits = traitPrompts(artistInfo);
+    const pricingRule = PRICING_MODELS.find((p) => p.value === artistInfo.pricing_model)?.prompt;
     const transcribeAudio = artistInfo.audio !== 'pedir_texto';
     const artistSection = [
       traits.length ? `### ESTILO DE COMUNICACAO (siga sempre)\n${traits.map((t) => `- ${t}`).join('\n')}` : '',
@@ -323,7 +324,7 @@ ${countryInstructions ? '- Siga as instrucoes do tatuador para o pais deste clie
 
 4. **Valor e sinal (SO DEPOIS DA ETAPA 3):**
 - Somente agora, com o agendamento confirmado, apresente o valor.
-- SE OS VALORES DA TABELA estiverem como "N/A" ou zerados, NAO passe valor nenhum — diga que o artista vai enviar o orcamento exato do projeto.
+${pricingRule ? `- ${pricingRule}\n` : ''}- SE OS VALORES DA TABELA estiverem como "N/A" ou zerados, NAO passe valor nenhum — diga que o artista vai enviar o orcamento exato do projeto.
 - Se houver valor configurado, use como base o valor da regiao do corpo correspondente (ou o valor base minimo, se a regiao nao estiver na tabela), apresentando o valor cheio e o parcelado primeiro.
 - Explique que, para garantir que a data fique exclusivamente reservada, e necessario um sinal para CADA sessao, abatido do total no dia da sessao.
 - Informe que o pagamento pode ser feito via Pix para: "CNPJ: [Inserir o CNPJ do estudio ou chave Pix informada pelo artista. Se nao souber, diga que o artista enviara a chave]".
