@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Bot, Save, Calendar, Users, MapPin, Instagram, CreditCard, Link as LinkIcon, MessageSquare, Clock, Power, QrCode, Zap, Edit3, Loader2, Lock } from "lucide-react";
 import { CopilotInbox } from "@/components/CopilotInbox";
 import { Button } from "@/components/ui/button";
@@ -17,6 +17,9 @@ function AssistantPage() {
   const { user } = useUser();
   const [activeTab, setActiveTab] = useState<"settings" | "crm" | "agenda" | "copilot">("settings");
   const [isSaving, setIsSaving] = useState(false);
+  const [saveState, setSaveState] = useState<"idle" | "saving" | "saved" | "error">("idle");
+  const loadedRef = useRef(false);
+  const lastSavedRef = useRef("");
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [qrCodeData, setQrCodeData] = useState<string | null>(null);
   const [connectionStatus, setConnectionStatus] = useState<string>(() => {
@@ -131,11 +134,21 @@ function AssistantPage() {
 
   const fetchSettings = async () => {
     if (!user) return;
-    const res = await fetch("/api/ai-settings", { cache: "no-store" });
-    const data = res.ok ? await res.json() : null;
+    const res = await fetch("/api/ai-settings", { cache: "no-store" }).catch(() => null);
+    // If loading failed, keep autosave off so blank defaults never overwrite the real settings.
+    if (!res || !res.ok) {
+      setSaveState("error");
+      return;
+    }
+    const data = await res.json().catch(() => null);
 
-    if (data) {
-      setFormData({
+    if (!data) {
+      lastSavedRef.current = JSON.stringify(buildPayload(formData));
+      loadedRef.current = true;
+      return;
+    }
+    {
+      const loaded = {
         studio_name: data.studio_name || "",
         base_price: data.base_price || "",
         hourly_rate: data.hourly_rate || "",
@@ -164,7 +177,10 @@ function AssistantPage() {
         artist_examples: data.artist_examples || "",
         artist_info: data.artist_info || {},
         country_settings: data.country_settings?.home ? data.country_settings : { home: "BR", rules: [] },
-      });
+      };
+      setFormData(loaded);
+      lastSavedRef.current = JSON.stringify(buildPayload(loaded));
+      loadedRef.current = true;
     }
   };
 
@@ -276,40 +292,63 @@ function AssistantPage() {
     setCountry({ rules: [...formData.country_settings.rules, { country, currency: next?.currency ?? "USD", factor: 1, instructions: "" }] });
   };
 
+  const persist = async (fd: typeof formData) => {
+    const body = JSON.stringify(buildPayload(fd));
+    setSaveState("saving");
+    try {
+      const res = await fetch("/api/ai-settings", { method: "POST", headers: { "Content-Type": "application/json" }, body });
+      const result = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(result.error || "Erro desconhecido");
+      lastSavedRef.current = body;
+      setSaveState("saved");
+      if (result.warning) alert(`Salvo, mas atenção:\n\n${result.warning}`);
+      return true;
+    } catch (err: any) {
+      setSaveState("error");
+      console.error("Erro ao salvar configurações", err);
+      return false;
+    }
+  };
+
+  // Every field saves on its own ~1s after the artist stops typing.
+  useEffect(() => {
+    if (!loadedRef.current) return;
+    if (JSON.stringify(buildPayload(formData)) === lastSavedRef.current) return;
+    setSaveState("saving");
+    const t = setTimeout(() => persist(formData), 1000);
+    return () => clearTimeout(t);
+  }, [formData]);
+
   const handleSave = async () => {
     if (!user) return;
     setIsSaving(true);
+    const ok = await persist(formData);
+    setIsSaving(false);
+    alert(ok ? "Configurações do Assistente salvas!" : "⚠️ Não foi possível salvar. Verifique sua conexão e tente de novo.");
+  };
 
-    const payload = {
-      ...formData,
-      base_price: Number(formData.base_price) || 0,
-      hourly_rate: Number(formData.hourly_rate) || 0,
-      price_session: Number(formData.price_session) || null,
-      price_arm: Number(formData.body_prices.braco_fechado) || null,
-      price_leg: Number(formData.body_prices.perna_fechada) || null,
-      price_front: Number(formData.body_prices.frente_completa) || null,
-      price_back: Number(formData.body_prices.costas_completas) || null,
-    };
+  const priceFilled =
+    Number(formData.base_price) > 0 ||
+    Number(formData.hourly_rate) > 0 ||
+    Number(formData.price_session) > 0 ||
+    Object.values(formData.body_prices).some((v) => Number(v) > 0);
+  const requirements = [
+    { label: "Nome do estúdio / tatuador", ok: !!formData.studio_name.trim() },
+    { label: "Estilos principais", ok: !!formData.styles.trim() },
+    { label: "Endereço completo", ok: !!formData.address.trim() },
+    { label: "Métodos de pagamento", ok: !!formData.payment_methods.trim() },
+    { label: "Forma de cobrança", ok: !!formData.artist_info.pricing_model },
+    { label: "Pelo menos um valor (mínimo, hora, sessão ou parte do corpo)", ok: priceFilled },
+    { label: "WhatsApp conectado", ok: connectionStatus === "Conectado" },
+  ];
+  const missing = requirements.filter((r) => !r.ok);
 
-    try {
-      const res = await fetch("/api/ai-settings", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-      const result = await res.json();
-
-      if (!res.ok) {
-        console.error("Erro ao salvar configurações", result);
-        alert(`⚠️ Erro ao salvar!\n\n${result.error || "Erro desconhecido"}`);
-      } else {
-        alert(result.warning ? `Salvo, mas atenção:\n\n${result.warning}` : "Configurações do Assistente salvas com sucesso!");
-      }
-    } catch (error: any) {
-      alert(`Erro: ${error.message}`);
-    } finally {
-      setIsSaving(false);
+  const toggleActive = () => {
+    if (!formData.is_active && missing.length > 0) {
+      alert(`Para ligar o assistente, preencha antes:\n\n${missing.map((m) => "• " + m.label).join("\n")}`);
+      return;
     }
+    saveNow({ is_active: !formData.is_active });
   };
 
   return (
@@ -376,6 +415,29 @@ function AssistantPage() {
             {/* Coluna Esquerda */}
             <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="space-y-6">
               
+              <div className={cn("glass p-5 rounded-2xl border", missing.length ? "border-yellow-500/40" : "border-green-500/40")}>
+                <div className="flex items-center justify-between mb-3">
+                  <h2 className="text-sm font-bold">
+                    {missing.length ? `Falta preencher ${missing.length} item(ns) para o Dante funcionar` : "Tudo pronto para o Dante atender ✓"}
+                  </h2>
+                  <span className={cn(
+                    "text-[11px] font-semibold",
+                    saveState === "error" ? "text-red-500" : saveState === "saving" ? "text-yellow-500" : "text-green-500"
+                  )}>
+                    {saveState === "saving" ? "Salvando…" : saveState === "saved" ? "Salvo ✓" : saveState === "error" ? "Erro ao salvar" : ""}
+                  </span>
+                </div>
+                <ul className="grid sm:grid-cols-2 gap-x-4 gap-y-1">
+                  {requirements.map((r) => (
+                    <li key={r.label} className={cn("text-xs flex items-start gap-1.5", r.ok ? "text-white/50" : "text-yellow-500 font-semibold")}>
+                      <span>{r.ok ? "✓" : "•"}</span>
+                      <span>{r.label}</span>
+                    </li>
+                  ))}
+                </ul>
+                <p className="text-[11px] text-white/40 mt-3">Os campos marcados com * são obrigatórios. Tudo é salvo automaticamente.</p>
+              </div>
+
               {/* Central de Operações (Bot) */}
               <div className="glass p-6 rounded-2xl border border-primary/30 bg-primary/5">
                 <div className="flex items-center justify-between mb-6">
@@ -384,7 +446,7 @@ function AssistantPage() {
                     Status do Assistente
                   </h2>
                   <button 
-                    onClick={() => saveNow({ is_active: !formData.is_active })}
+                    onClick={toggleActive}
                     aria-label={formData.is_active ? "Desligar assistente" : "Ligar assistente"}
                     className={cn(
                       "relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-black",
@@ -587,7 +649,7 @@ function AssistantPage() {
                 
                 <div className="space-y-4">
                   <div>
-                    <label className="text-xs font-semibold text-white/70 uppercase tracking-widest mb-1 block">Nome do Estúdio / Tatuador</label>
+                    <label className="text-xs font-semibold text-white/70 uppercase tracking-widest mb-1 block">Nome do Estúdio / Tatuador <span className="text-red-500">*</span></label>
                     <input 
                       type="text" 
                       value={formData.studio_name}
@@ -597,7 +659,7 @@ function AssistantPage() {
                     />
                   </div>
                   <div>
-                    <label className="text-xs font-semibold text-white/70 uppercase tracking-widest mb-1 block">Estilos Principais</label>
+                    <label className="text-xs font-semibold text-white/70 uppercase tracking-widest mb-1 block">Estilos Principais <span className="text-red-500">*</span></label>
                     <input 
                       type="text" 
                       value={formData.styles}
@@ -670,7 +732,7 @@ function AssistantPage() {
                 
                 <div className="space-y-4">
                   <div>
-                    <label className="text-xs font-semibold text-white/70 uppercase tracking-widest mb-2 block">Forma de cobrança</label>
+                    <label className="text-xs font-semibold text-white/70 uppercase tracking-widest mb-2 block">Forma de cobrança <span className="text-red-500">*</span></label>
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-4">
                       {PRICING_MODELS.map((m) => (
                         <button
@@ -753,7 +815,7 @@ function AssistantPage() {
                     </div>
                   </div>
                   <div>
-                    <label className="text-xs font-semibold text-white/70 uppercase tracking-widest mb-1 block">Métodos de Pagamento</label>
+                    <label className="text-xs font-semibold text-white/70 uppercase tracking-widest mb-1 block">Métodos de Pagamento <span className="text-red-500">*</span></label>
                     <input 
                       type="text" 
                       value={formData.payment_methods}
@@ -957,7 +1019,7 @@ function AssistantPage() {
                 
                 <div className="space-y-4">
                   <div>
-                    <label className="text-xs font-semibold text-white/70 uppercase tracking-widest mb-1 block">Endereço Completo</label>
+                    <label className="text-xs font-semibold text-white/70 uppercase tracking-widest mb-1 block">Endereço Completo <span className="text-red-500">*</span></label>
                     <textarea 
                       value={formData.address}
                       onChange={(e) => setFormData({...formData, address: e.target.value})}
@@ -1000,7 +1062,7 @@ function AssistantPage() {
                   className="w-full metallic-gradient text-black font-bold h-12 rounded-xl"
                 >
                   <Save className="w-4 h-4 mr-2" />
-                  {isSaving ? "Salvando..." : "Salvar Conhecimento da IA"}
+                  {isSaving ? "Salvando..." : saveState === "saved" ? "Tudo salvo ✓ (salvar de novo)" : "Salvar Conhecimento da IA"}
                 </Button>
               </div>
             </motion.div>
@@ -1060,6 +1122,19 @@ function AssistantPage() {
       </AnimatePresence>
     </div>
   );
+}
+
+function buildPayload(fd: any) {
+  return {
+    ...fd,
+    base_price: Number(fd.base_price) || 0,
+    hourly_rate: Number(fd.hourly_rate) || 0,
+    price_session: Number(fd.price_session) || null,
+    price_arm: Number(fd.body_prices?.braco_fechado) || null,
+    price_leg: Number(fd.body_prices?.perna_fechada) || null,
+    price_front: Number(fd.body_prices?.frente_completa) || null,
+    price_back: Number(fd.body_prices?.costas_completas) || null,
+  };
 }
 
 const LEGACY_FECHAMENTOS = { price_arm: "braco_fechado", price_leg: "perna_fechada", price_front: "frente_completa", price_back: "costas_completas" } as const;
