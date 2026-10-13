@@ -23,6 +23,9 @@ function AssistantPage() {
     try { return localStorage.getItem("wpp-status") || "Carregando..."; } catch { return "Carregando..."; }
   });
   const [isGeneratingQr, setIsGeneratingQr] = useState(false);
+  const [pairingCode, setPairingCode] = useState<string | null>(null);
+  const [showCodeForm, setShowCodeForm] = useState(false);
+  const [phoneForCode, setPhoneForCode] = useState("");
 
 
   const [formData, setFormData] = useState({
@@ -90,37 +93,38 @@ function AssistantPage() {
     return () => clearInterval(interval);
   }, [connectionStatus, user?.id]);
 
-  const handleGenerateQr = async () => {
+  // "reset" drops the old number's session first; "number" asks for a pairing code instead of a QR.
+  const handleGenerateQr = async (action: "connect" | "reset" = "connect", number?: string) => {
     if (!user) return;
+    if (action === "reset" && !number && !confirm("Isso desconecta o número atual do assistente e gera uma conexão nova. Continuar?")) return;
     setIsGeneratingQr(true);
+    setPairingCode(null);
     try {
       const res = await fetch("/api/whatsapp/instance", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ instanceName: user.id, action: "connect" })
+        body: JSON.stringify({ action, ...(number ? { number } : {}) }),
       });
       const data = await res.json();
-
-      // Extrai o base64 do QR code — a Evolution API pode retornar em vários formatos
-      const qrBase64 =
-        data?.base64 ||                  // /instance/connect → { code, base64 }
-        data?.qrcode?.base64 ||          // /instance/create  → { qrcode: { code, base64 } }
-        (typeof data?.qrcode === "string" ? data.qrcode : null) || // formato string direto
-        data?.hash?.qrcode ||            // formato legado
-        null;
-
-      if (qrBase64) {
-        setQrCodeData(qrBase64);
+      if (!res.ok) {
+        alert(data?.error || "Não foi possível conectar agora. Tente de novo.");
+      } else if (number && data?.pairingCode) {
+        setPairingCode(data.pairingCode);
+        setQrCodeData(null);
         setConnectionStatus("Aguardando leitura do QR Code");
+      } else if (data?.qr) {
+        setQrCodeData(data.qr);
+        setConnectionStatus("Aguardando leitura do QR Code");
+      } else if (data?.instance?.state === "open") {
+        setConnectionStatus("Conectado");
       } else {
-        // Mostra o que a API retornou para facilitar debug
-        const detail = data?.message || data?.error || data?.status || JSON.stringify(data).slice(0, 120);
-        alert(`Erro ao buscar QR Code.\n\nResposta da API: ${detail}\n\nVerifique se EVOLUTION_API_KEY está configurada no Vercel.`);
+        const detail = data?.message || data?.error || JSON.stringify(data).slice(0, 120);
+        alert(`Não veio o código de conexão.\n\nResposta do servidor: ${detail}`);
         console.error("[WhatsApp QR] Resposta inesperada:", data);
       }
     } catch (e) {
       console.error(e);
-      alert("Erro ao gerar QR Code");
+      alert("Erro de conexão ao gerar o código. Tente de novo.");
     }
     setIsGeneratingQr(false);
   };
@@ -466,11 +470,11 @@ function AssistantPage() {
                           : "Seu assistente está ativo e respondendo clientes automaticamente."}
                       </p>
                       <button
-                        onClick={handleGenerateQr}
+                        onClick={() => handleGenerateQr("reset")}
                         disabled={isGeneratingQr}
                         className="mt-2 text-xs text-white/30 hover:text-white/60 underline transition-colors"
                       >
-                        Reconectar com outro número
+                        {isGeneratingQr ? "Reiniciando conexão..." : "Conectar outro número"}
                       </button>
                     </div>
                   ) : (
@@ -501,7 +505,15 @@ function AssistantPage() {
                       </div>
 
                       {/* QR Code ou Botão */}
-                      {qrCodeData ? (
+                      {pairingCode ? (
+                        <div className="flex flex-col items-center gap-3 text-center">
+                          <p className="text-xs text-white/60">No celular: WhatsApp → ⋮ → Aparelhos conectados → Conectar aparelho → <strong>Conectar com número de telefone</strong> e digite:</p>
+                          <div className="font-mono text-3xl font-black tracking-[0.3em] bg-white/5 border border-white/10 rounded-xl px-5 py-3">
+                            {pairingCode.length === 8 ? `${pairingCode.slice(0, 4)}-${pairingCode.slice(4)}` : pairingCode}
+                          </div>
+                          <p className="text-xs text-yellow-400 animate-pulse font-medium">Aguardando você digitar o código...</p>
+                        </div>
+                      ) : qrCodeData ? (
                         <div className="flex flex-col items-center gap-3">
                           <div className="bg-white p-3 rounded-2xl shadow-lg">
                             <img src={qrCodeData} alt="QR Code" className="w-52 h-52 object-contain" />
@@ -510,7 +522,7 @@ function AssistantPage() {
                         </div>
                       ) : (
                         <button
-                          onClick={handleGenerateQr}
+                          onClick={() => handleGenerateQr("connect")}
                           disabled={isGeneratingQr}
                           className="w-full flex items-center justify-center gap-2 bg-primary/10 hover:bg-primary/20 border border-primary/40 hover:border-primary text-primary font-semibold py-4 rounded-xl transition-all text-sm disabled:opacity-50"
                         >
@@ -521,6 +533,42 @@ function AssistantPage() {
                           )}
                         </button>
                       )}
+
+                      {(qrCodeData || pairingCode) && (
+                        <div className="flex flex-col items-center gap-2 text-xs">
+                          <button
+                            onClick={() => handleGenerateQr("reset")}
+                            disabled={isGeneratingQr}
+                            className="text-white/50 hover:text-foreground underline disabled:opacity-50"
+                          >
+                            {isGeneratingQr ? "Reiniciando..." : "Não está conectando? Reiniciar a conexão"}
+                          </button>
+                        </div>
+                      )}
+
+                      <div className="rounded-xl border border-white/10 p-3">
+                        <button onClick={() => setShowCodeForm((v) => !v)} className="text-xs font-semibold text-foreground w-full text-left">
+                          {showCodeForm ? "▾" : "▸"} Conectar com código (sem QR Code)
+                        </button>
+                        {showCodeForm && (
+                          <div className="mt-3 flex gap-2">
+                            <input
+                              value={phoneForCode}
+                              onChange={(e) => setPhoneForCode(e.target.value)}
+                              placeholder="DDI + DDD + número, ex: 5521999998888"
+                              inputMode="numeric"
+                              className="flex-1 bg-black/50 border border-white/10 rounded-lg py-2 px-3 text-sm focus:border-primary focus:outline-none"
+                            />
+                            <button
+                              onClick={() => handleGenerateQr("reset", phoneForCode)}
+                              disabled={isGeneratingQr || phoneForCode.replace(/\D/g, "").length < 10}
+                              className="px-3 rounded-lg bg-primary text-primary-foreground text-xs font-bold disabled:opacity-50"
+                            >
+                              {isGeneratingQr ? <Loader2 className="w-4 h-4 animate-spin" /> : "Gerar código"}
+                            </button>
+                          </div>
+                        )}
+                      </div>
 
                       <div className="bg-yellow-500/8 border border-yellow-500/20 p-3 rounded-lg">
                         <p className="text-[11px] text-yellow-500/80">
