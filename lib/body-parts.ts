@@ -4,11 +4,9 @@ export const BODY_PART_GROUPS: { group: string; parts: { key: string; label: str
     group: "Braços",
     parts: [
       { key: "braco_externo", label: "Braço — parte externa" },
-      { key: "braco_interno", label: "Braço — parte interna" },
+      { key: "braco_interno", label: "Braço — parte interna (bíceps)" },
       { key: "antebraco_externo", label: "Antebraço — parte externa" },
       { key: "antebraco_interno", label: "Antebraço — parte interna" },
-      { key: "ombro", label: "Ombro" },
-      { key: "cotovelo", label: "Cotovelo" },
     ],
   },
   {

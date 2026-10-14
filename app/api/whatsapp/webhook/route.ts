@@ -3,7 +3,7 @@ import { createVertex } from '@ai-sdk/google-vertex';
 import { generateText } from 'ai';
 import { supabaseAdmin as supabase } from '@/lib/supabase-admin';
 import { SALES_INSTANCE, getSalesSettings, buildSalesPrompt } from '@/lib/sales-assistant';
-import { BODY_PART_LABELS, formatMoney } from '@/lib/body-parts';
+import { BODY_PART_GROUPS, BODY_PART_LABELS, formatMoney } from '@/lib/body-parts';
 import { countryFromPhone, OTHER_COUNTRIES, CountryRule, CountrySettings } from '@/lib/countries';
 import { ARTIST_INFO_FIELDS, POSITIONING_OPTIONS, PRICING_MODELS, ArtistInfo, traitPrompts } from '@/lib/artist-info';
 
@@ -255,8 +255,8 @@ export async function POST(req: Request) {
     };
     const bodyPrices = { ...legacyBodyPrices, ...(settings.body_prices || {}) };
     const bodyPriceLines = Object.entries(bodyPrices)
-      .filter(([, v]) => Number(v) > 0)
-      .map(([k, v]) => `- ${BODY_PART_LABELS[k] ?? k}: a partir de ${money(v)}`)
+      .filter(([k, v]) => k in BODY_PART_LABELS && Number(v) > 0)
+      .map(([k, v]) => `- ${BODY_PART_LABELS[k]}: a partir de ${money(v)}`)
       .join('\n');
     const artistInfo: ArtistInfo = settings.artist_info || {};
     const infoLines = ARTIST_INFO_FIELDS.filter((f) => artistInfo[f.key]).map((f) => `- ${f.label}: ${artistInfo[f.key]}`);
@@ -313,6 +313,8 @@ ${bodyPriceLines || '- N/A'}
 1. **Qualificacao:**
 - Chame o cliente pelo nome (se souber).
 - Entenda a ideia da tatuagem, o local do corpo, o tamanho aproximado e o estilo.
+- O LOCAL DO CORPO PRECISA SER EXATO. Se o cliente disser algo generico (ex: "braco", "perna", "costas", "mao"), pergunte qual parte exatamente, oferecendo as opcoes dessa area da lista abaixo (ex: para braco: parte externa, parte interna/biceps, antebraco externo, antebraco interno ou braco fechado). So siga com o local exato definido, porque cada parte tem um valor diferente.
+${BODY_PART_GROUPS.map((g) => `  * ${g.group}: ${g.parts.map((p) => p.label).join('; ')}`).join('\n')}
 - Se precisar de uma foto da regiao do corpo para analisar a anatomia, peca a foto e inclua OBRIGATORIAMENTE a tag [ENVIAR_EXEMPLO_FOTO] no final da sua resposta. O sistema vera essa tag e mandara uma imagem de exemplo pro cliente.
 
 2. **Criacao do projeto:**
