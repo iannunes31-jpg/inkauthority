@@ -1,11 +1,15 @@
-import { NextResponse } from 'next/server';
+import { NextResponse, after } from 'next/server';
 import { createVertex } from '@ai-sdk/google-vertex';
 import { generateText } from 'ai';
 import { supabaseAdmin as supabase } from '@/lib/supabase-admin';
 import { SALES_INSTANCE, getSalesSettings, buildSalesPrompt } from '@/lib/sales-assistant';
 import { BODY_PART_GROUPS, BODY_PART_LABELS, formatMoney } from '@/lib/body-parts';
 import { countryFromPhone, OTHER_COUNTRIES, CountryRule, CountrySettings } from '@/lib/countries';
-import { ARTIST_INFO_FIELDS, POSITIONING_OPTIONS, PRICING_MODELS, ArtistInfo, traitPrompts } from '@/lib/artist-info';
+import { ARTIST_INFO_FIELDS, POSITIONING_OPTIONS, PRICING_MODELS, ArtistInfo, traitPrompts, automationSettings } from '@/lib/artist-info';
+import { isStage, sendImage, generateImage } from '@/lib/dante';
+
+// Previews are generated after the reply is sent; give that work room to finish.
+export const maxDuration = 120;
 
 // Ink Authority's own sales WhatsApp: answers tattoo artists asking about the platform.
 async function handleSalesMessage(opts: {
@@ -188,7 +192,7 @@ export async function POST(req: Request) {
     try {
       const { data: existingCustomer, error: selectErr } = await supabase
         .from('customers')
-        .select('id, name, status')
+        .select('*')
         .eq('clerk_user_id', clerk_user_id)
         .eq('phone_number', remoteJid)
         .limit(1)
@@ -207,6 +211,21 @@ export async function POST(req: Request) {
       }
     } catch (crmErr: any) {
       console.log('[WPP] CRM exception:', crmErr.message);
+    }
+
+    const nowIso = new Date().toISOString();
+    if (customer?.id) {
+      const { error: trackErr } = await supabase
+        .from('customers')
+        .update({
+          last_message_at: nowIso,
+          last_client_message_at: nowIso,
+          message_count: (customer.message_count ?? 0) + 1,
+          followups_sent: 0,
+          ...(customer.stage === 'perdido' ? { stage: 'qualificando' } : {}),
+        })
+        .eq('id', customer.id);
+      if (trackErr) console.log('[WPP] tracking update skipped:', trackErr.message);
     }
 
     // Determine if it's a foreign number
@@ -285,6 +304,12 @@ ${[...infoLines, positioning ? `- ${positioning}` : ''].filter(Boolean).join('\n
     const clientCountryLabel = clientCountry ? `${clientCountry.name} (+${clientCountry.ddi})` : 'nao identificado';
     const countryInstructions = countryRule?.instructions?.trim();
 
+    const automation = automationSettings(artistInfo);
+    const allowPreviews = automation.allow_previews === 'sim' && (customer?.previews_sent ?? 0) < 2;
+    const previewRule = allowPreviews
+      ? '- Se o cliente pedir para ver uma previa, rascunho ou exemplo do desenho e a ideia ja estiver definida (o que, estilo e tamanho), diga que vai mandar uma previa ilustrativa e inclua no FINAL da resposta a tag [GERAR_PREVIA: descricao detalhada em ingles do desenho — elementos, estilo, composicao, nivel de detalhe]. Deixe claro que o desenho final e criado com exclusividade pelo artista.'
+      : '- Se o cliente pedir uma previa ou rascunho do desenho, explique com naturalidade que o artista cria o desenho exclusivo nos dias antes da sessao e que ele vai ver tudo antes de tatuar.';
+
     const systemPrompt = `Voce e Dante, o assistente virtual do estudio de tatuagem "${settings.studio_name}".
 Seu tom de voz e: "${settings.bot_personality}".
 Estilos de Tatuagem que voce faz: ${settings.styles}
@@ -335,7 +360,18 @@ ${pricingRule ? `- ${pricingRule}\n` : ''}- SE OS VALORES DA TABELA estiverem co
 5. **Comportamento:**
 - NAO responda a mesma coisa duas vezes. Leia o historico.
 - Se o cliente mandar uma foto, dedique atencao extra para elogiar ou fazer perguntas tecnicas (tamanho, anatomia, local do corpo).
-- Voce NAO deve parecer um robo. O cliente nao deve perceber facilmente que esta falando com uma IA.`;
+- Voce NAO deve parecer um robo. O cliente nao deve perceber facilmente que esta falando com uma IA.
+${previewRule}
+
+### MARCACAO DE ETAPA (OBRIGATORIA, O CLIENTE NAO VE)
+No FINAL de TODA resposta inclua exatamente uma tag [ETAPA: x], onde x e a etapa em que a conversa esta DEPOIS da sua resposta:
+- qualificando: ainda entendendo ideia, local exato, tamanho ou estilo
+- projeto: explicando a criacao do projeto
+- orcamento: voce ja passou o valor
+- agendamento: combinando data, dados ou sinal
+- fechado: agendamento confirmado
+- perdido: o cliente disse claramente que desistiu
+`;
 
     const messagesToSend: any[] = [...formattedHistory];
     
@@ -405,6 +441,22 @@ ${pricingRule ? `- ${pricingRule}\n` : ''}- SE OS VALORES DA TABELA estiverem co
       });
     }
 
+    // Hidden tags: stage of the conversation and preview requests
+    const stageMatch = finalResponse.match(/\[ETAPA:\s*([a-z_]+)\s*\]/i);
+    const previewMatch = finalResponse.match(/\[GERAR_PREVIA:([^\]]*)\]/i);
+    finalResponse = finalResponse
+      .replace(/\[ETAPA:[^\]]*\]/gi, '')
+      .replace(/\[GERAR_PREVIA:[^\]]*\]/gi, '')
+      .trim();
+    const newStage = agendamentoMatch ? 'fechado' : stageMatch && isStage(stageMatch[1].toLowerCase()) ? stageMatch[1].toLowerCase() : null;
+    if (customer?.id) {
+      const { error: stageErr } = await supabase
+        .from('customers')
+        .update({ last_message_at: new Date().toISOString(), ...(newStage ? { stage: newStage } : {}) })
+        .eq('id', customer.id);
+      if (stageErr) console.log('[WPP] stage update skipped:', stageErr.message);
+    }
+
     // Check for Photo Example Tag
     const needsExamplePhoto = finalResponse.includes('[ENVIAR_EXEMPLO_FOTO]');
     if (needsExamplePhoto) {
@@ -447,18 +499,25 @@ ${pricingRule ? `- ${pricingRule}\n` : ''}- SE OS VALORES DA TABELA estiverem co
 
       // Send photo example if tag was present
       if (needsExamplePhoto) {
-        await fetch(`${evolutionUrl}/message/sendMedia/${instanceName}`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'apikey': apiKey },
-          body: JSON.stringify({
-            number: remoteJid,
-            options: { delay: 3000, presence: 'composing' },
-            mediaMessage: {
-              mediatype: "image",
-              caption: "Exemplo de como tirar a foto do local:",
-              media: `https://${req.headers.get('host')}/exemplo-foto.jpg`
-            }
-          })
+        const site = process.env.NEXT_PUBLIC_APP_URL || `https://${req.headers.get('host')}`;
+        await sendImage(instanceName, phoneNumber, `${site}/exemplo-foto.jpg`, 'Guia de como tirar a foto do local da tatuagem 📸');
+      }
+
+      // AI preview: generated after the reply so the client isn't kept waiting
+      const previewDesc = previewMatch?.[1]?.trim();
+      if (previewDesc && allowPreviews && customer?.id) {
+        after(async () => {
+          try {
+            const img = await generateImage(
+              `Tattoo design preview for a client: ${previewDesc}. Studio styles: ${settings.styles || 'any'}. Clean, professional tattoo flash illustration on a plain white background, centered, no text, no watermark, no body or skin.`
+            );
+            if (!img) return;
+            await sendImage(instanceName, phoneNumber, img.base64, 'Prévia ilustrativa gerada por IA ✨ O desenho final é criado com exclusividade pelo artista.', img.mimeType);
+            await supabase.from('customers').update({ previews_sent: (customer.previews_sent ?? 0) + 1 }).eq('id', customer.id);
+            await supabase.from('chat_history').insert({ clerk_user_id, phone_number: remoteJid, role: 'assistant', content: '[Prévia ilustrativa enviada ao cliente]' });
+          } catch (err) {
+            console.error('[WPP] preview failed:', err);
+          }
         });
       }
 

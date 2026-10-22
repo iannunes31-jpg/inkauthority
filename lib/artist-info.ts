@@ -31,7 +31,7 @@ export const POSITIONING_OPTIONS = [
   },
 ] as const;
 
-export type ArtistInfo = Partial<Record<(typeof ARTIST_INFO_FIELDS)[number]["key"] | "positioning" | "greeting" | "pricing_model" | (typeof TRAITS)[number]["key"], string>>;
+export type ArtistInfo = Partial<Record<(typeof ARTIST_INFO_FIELDS)[number]["key"] | "positioning" | "greeting" | "pricing_model" | (typeof TRAITS)[number]["key"] | keyof typeof AUTOMATION_OPTIONS, string>>;
 
 export const PRICING_MODELS = [
   {
@@ -120,4 +120,28 @@ export const TRAITS = [
 
 export function traitPrompts(info: Record<string, string | undefined>) {
   return TRAITS.map((t) => t.options.find((o) => o.value === info[t.key])?.prompt).filter(Boolean) as string[];
+}
+
+// Dante automations; stored in artist_info like the other preferences.
+export const AUTOMATION_OPTIONS = {
+  allow_previews: ["nao", "sim"],
+  followup_enabled: ["sim", "nao"],
+  followup_hours: ["24", "48", "72"],
+  followup_max: ["1", "2", "3"],
+} as const;
+
+export const AUTOMATION_DEFAULTS: Record<keyof typeof AUTOMATION_OPTIONS, string> = {
+  allow_previews: "nao",
+  followup_enabled: "sim",
+  followup_hours: "48",
+  followup_max: "2",
+};
+
+export function automationSettings(info: Record<string, string | undefined> | null | undefined) {
+  const out = { ...AUTOMATION_DEFAULTS };
+  for (const k of Object.keys(AUTOMATION_OPTIONS) as (keyof typeof AUTOMATION_OPTIONS)[]) {
+    const v = info?.[k];
+    if (v && (AUTOMATION_OPTIONS[k] as readonly string[]).includes(v)) out[k] = v;
+  }
+  return out;
 }

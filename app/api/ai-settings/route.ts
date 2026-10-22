@@ -3,7 +3,7 @@ import { auth } from '@clerk/nextjs/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { BODY_PART_LABELS, CURRENCIES } from '@/lib/body-parts';
 import { COUNTRIES, OTHER_COUNTRIES } from '@/lib/countries';
-import { ARTIST_INFO_FIELDS, POSITIONING_OPTIONS, PRICING_MODELS, TRAITS } from '@/lib/artist-info';
+import { ARTIST_INFO_FIELDS, AUTOMATION_OPTIONS, POSITIONING_OPTIONS, PRICING_MODELS, TRAITS } from '@/lib/artist-info';
 
 /**
  * Reads/writes the signed-in artist's own ai_settings row. The row is always
@@ -72,6 +72,10 @@ function sanitize(body: any) {
     const greeting = String(body.artist_info.greeting ?? '').trim().slice(0, 600);
     if (greeting) info.greeting = greeting;
     if (PRICING_MODELS.some((p) => p.value === body.artist_info.pricing_model)) info.pricing_model = body.artist_info.pricing_model;
+    for (const [k, allowed] of Object.entries(AUTOMATION_OPTIONS)) {
+      const v = body.artist_info[k];
+      if ((allowed as readonly string[]).includes(v)) info[k] = v;
+    }
     for (const t of TRAITS) {
       const v = body.artist_info[t.key];
       if (t.options.some((o) => o.value === v)) info[t.key] = v;

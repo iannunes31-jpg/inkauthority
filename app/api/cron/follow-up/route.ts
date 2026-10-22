@@ -2,128 +2,99 @@ import { NextResponse } from 'next/server';
 import { supabaseAdmin as supabase } from '@/lib/supabase-admin';
 import { createVertex } from '@ai-sdk/google-vertex';
 import { generateText } from 'ai';
+import { automationSettings } from '@/lib/artist-info';
+import { sendText } from '@/lib/dante';
 
-export const maxDuration = 60; // Allow more time for processing multiple leads
+export const maxDuration = 120;
 
+const OPEN_STAGES = ['novo', 'qualificando', 'projeto', 'orcamento', 'agendamento'];
+const MAX_AGE_DAYS = 14;
+
+// Daily: nudges leads who stopped replying, following each artist's follow-up settings.
 export async function GET(req: Request) {
-  const evolutionUrl = process.env.EVOLUTION_API_URL;
-  const evolutionKey = process.env.EVOLUTION_API_KEY;
-
-  if (!evolutionUrl || !evolutionKey) {
-    return NextResponse.json({ error: "Evolution API credenciais ausentes." }, { status: 500 });
+  // Vercel cron sends "Authorization: Bearer <CRON_SECRET>"; without it anyone could trigger
+  // messages to every artist's clients.
+  const secret = process.env.CRON_SECRET;
+  if (!secret || req.headers.get('authorization') !== `Bearer ${secret}`) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  // 1. Fetch all leads
-  const { data: leads, error } = await supabase
-    .from('customers')
-    .select('*')
-    .eq('status', 'lead');
+  const { data: artists, error: artistsErr } = await supabase
+    .from('ai_settings')
+    .select('clerk_user_id, studio_name, is_active, bot_mode, artist_info')
+    .eq('is_active', true);
+  if (artistsErr) return NextResponse.json({ error: artistsErr.message }, { status: 500 });
 
-  if (error || !leads) {
-    return NextResponse.json({ error: "Failed to fetch leads" }, { status: 500 });
-  }
+  const credentials = process.env.GOOGLE_VERTEX_CREDENTIALS ? JSON.parse(process.env.GOOGLE_VERTEX_CREDENTIALS) : null;
+  const vertex = credentials
+    ? createVertex({ project: credentials.project_id, location: 'global', googleAuthOptions: { credentials } })
+    : null;
 
-  const now = new Date();
-  const followedUpCount = 0;
+  const now = Date.now();
+  let sent = 0;
 
-  for (const lead of leads) {
-    // 2. Fetch the latest message for this lead
-    const { data: latestMsg } = await supabase
-      .from('chat_history')
-      .select('created_at, role')
-      .eq('clerk_user_id', lead.clerk_user_id)
-      .eq('phone_number', lead.phone_number)
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .single();
+  for (const artist of artists ?? []) {
+    const auto = automationSettings(artist.artist_info);
+    if (auto.followup_enabled !== 'sim' || artist.bot_mode === 'copilot') continue;
+    const waitMs = Number(auto.followup_hours) * 3600_000;
+    const maxFollowups = Number(auto.followup_max);
 
-    if (!latestMsg) continue;
+    const { data: leads } = await supabase
+      .from('customers')
+      .select('*')
+      .eq('clerk_user_id', artist.clerk_user_id)
+      .in('stage', OPEN_STAGES)
+      .lt('followups_sent', maxFollowups);
 
-    const lastInteractionDate = new Date(latestMsg.created_at);
-    const diffHours = (now.getTime() - lastInteractionDate.getTime()) / (1000 * 60 * 60);
-
-    // If the last message was from the assistant and it's been more than 48 hours
-    if (latestMsg.role === 'assistant' && diffHours >= 48 && diffHours <= 72) {
-      
-      // Fetch the context (last 5 messages)
-      const { data: contextMsgs } = await supabase
+    for (const lead of leads ?? []) {
+      const { data: history } = await supabase
         .from('chat_history')
-        .select('role, content')
-        .eq('clerk_user_id', lead.clerk_user_id)
+        .select('role, content, created_at')
+        .eq('clerk_user_id', artist.clerk_user_id)
         .eq('phone_number', lead.phone_number)
+        .in('role', ['user', 'assistant'])
         .order('created_at', { ascending: false })
-        .limit(5);
+        .limit(8);
+      const last = history?.[0];
+      if (!last || last.role !== 'assistant') continue; // only when the client is the one who went quiet
 
-      const contextText = contextMsgs 
-        ? contextMsgs.reverse().map(m => `${m.role.toUpperCase()}: ${m.content}`).join('\n')
-        : '';
+      const idle = now - new Date(last.created_at).getTime();
+      if (idle < waitMs || idle > MAX_AGE_DAYS * 86400_000) continue;
+      if (lead.last_followup_at && now - new Date(lead.last_followup_at).getTime() < waitMs) continue;
 
-      // Use AI to pick the best follow up
-      let followUpMessage = "Ola! Vi que voce nao retornou e queria saber se ainda tem interesse em realizar esse projeto. Caso tenha alguma duvida, pode me chamar.";
-      
-      try {
-        if (process.env.GOOGLE_VERTEX_CREDENTIALS) {
-          const credentials = JSON.parse(process.env.GOOGLE_VERTEX_CREDENTIALS);
-          const vertex = createVertex({
-            project: credentials.project_id,
-            location: 'global',
-            googleAuthOptions: { credentials }
-          });
-
+      const context = (history ?? []).slice().reverse().map((m) => `${m.role === 'user' ? 'CLIENTE' : 'ESTUDIO'}: ${m.content}`).join('\n');
+      let message = 'Oi! Passando para saber se ficou alguma dúvida sobre o seu projeto. Estou à disposição para te ajudar 😊';
+      if (vertex) {
+        try {
           const { text } = await generateText({
             model: vertex('gemini-3.1-flash-lite'),
-            system: `Voce e um assistente de vendas de um estudio de tatuagem. Seu objetivo e escolher a MELHOR mensagem de follow-up para um cliente que parou de responder ha 2 dias.
-O nome do cliente e ${lead.name || 'Cliente'}.
-Aqui esta o historico final da conversa:
-${contextText}
-
-ESCOLHA APENAS UMA DAS 4 OPCOES ABAIXO baseado no contexto da conversa. RESPONDA APENAS COM O TEXTO DA OPCAO ESCOLHIDA (sem aspas, sem numeros).
-Opcao 1 (Se pararam discutindo o desenho/criacao): Ola, ${lead.name || 'tudo bem'}? Ficou alguma duvida, em relacao ao seu projeto?
-Opcao 2 (Se sumiram na hora de marcar data/pagar): Ola, ${lead.name || 'tudo bem'}? Vi que nao respondeu, ainda desejar dar continuidade ao seu atendimento?
-Opcao 3 (Abordagem amigavel padrao): Oi, tudo bem, ${lead.name || ''}? Passando para saber se ficou alguma duvida sobre o projeto. Estou a disposicao para te ajudar no que precisar.
-Opcao 4 (Retomada de interesse geral): Oi! Vi que voce nao retornou e queria saber se ainda tem interesse em realizar esse projeto. Caso tenha alguma duvida ou precise ajustar alguma coisa, pode me chamar.`,
-            prompt: "Qual opcao eu devo enviar?"
+            system: `Voce escreve UMA mensagem curta de follow-up de WhatsApp para um cliente de um estudio de tatuagem ("${artist.studio_name || 'estudio'}") que parou de responder.
+Regras: no idioma do cliente, natural e gentil, sem pressao, no maximo 2 frases, retome exatamente o ponto onde a conversa parou (ideia, local, valor ou data), nunca informe precos novos, sem tags nem colchetes.
+${lead.followups_sent > 0 ? 'Este e um segundo lembrete: seja ainda mais leve e deixe a porta aberta.' : ''}`,
+            prompt: `Conversa ate agora:\n${context}\n\nEscreva so a mensagem de follow-up.`,
           });
-
-          if (text) followUpMessage = text.trim();
+          if (text?.trim()) message = text.trim();
+        } catch (e) {
+          console.error('[follow-up] AI error', e);
         }
-      } catch (e) {
-        console.error("AI FollowUp Error", e);
       }
 
-      // Send via Evolution API using the artist's instance (clerk_user_id)
-      let cleanPhone = lead.phone_number.replace(/\D/g, '');
-      if (!cleanPhone.startsWith('55') && cleanPhone.length === 11) {
-        cleanPhone = `55${cleanPhone}`;
-      }
-
-      try {
-        await fetch(`${evolutionUrl}/message/sendText/${lead.clerk_user_id}`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'apikey': evolutionKey
-          },
-          body: JSON.stringify({
-            number: cleanPhone,
-            options: { delay: 1200, presence: 'composing' },
-            textMessage: { text: followUpMessage }
-          })
-        });
-
-        // Save follow up to history
-        await supabase.from('chat_history').insert({
-          clerk_user_id: lead.clerk_user_id,
-          phone_number: lead.phone_number,
-          role: 'assistant',
-          content: followUpMessage
-        });
-
-      } catch (e) {
-        console.error("Failed to send follow up to", cleanPhone, e);
-      }
+      const ok = await sendText(artist.clerk_user_id, lead.phone_number.split('@')[0], message);
+      if (!ok) continue;
+      sent++;
+      await supabase.from('chat_history').insert({
+        clerk_user_id: artist.clerk_user_id,
+        phone_number: lead.phone_number,
+        role: 'assistant',
+        content: message,
+      });
+      await supabase
+        .from('customers')
+        .update({ followups_sent: (lead.followups_sent ?? 0) + 1, last_followup_at: new Date().toISOString() })
+        .eq('id', lead.id);
     }
   }
 
-  return NextResponse.json({ status: 'success', message: 'Cron executado com sucesso.' });
+  console.log('[follow-up] sent', sent);
+  return NextResponse.json({ status: 'ok', sent });
 }

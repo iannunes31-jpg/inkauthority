@@ -9,7 +9,8 @@ import { supabase } from "@/lib/supabase";
 import { PlanAccessGate } from "@/components/PlanAccessGate";
 import { BODY_PART_GROUPS, CURRENCIES, formatMoney } from "@/lib/body-parts";
 import { COUNTRIES, OTHER_COUNTRIES, countryName, type CountryRule } from "@/lib/countries";
-import { ARTIST_INFO_FIELDS, POSITIONING_OPTIONS, PRICING_MODELS, TRAITS } from "@/lib/artist-info";
+import { ARTIST_INFO_FIELDS, POSITIONING_OPTIONS, PRICING_MODELS, TRAITS, AUTOMATION_DEFAULTS } from "@/lib/artist-info";
+import { DanteInsights } from "@/components/DanteInsights";
 import { motion, AnimatePresence } from "motion/react";
 import { cn } from "@/lib/utils";
 
@@ -381,7 +382,7 @@ function AssistantPage() {
             activeTab === "crm" ? "bg-white/10 text-foreground" : "text-white/50 hover:text-foreground hover:bg-white/5"
           )}
         >
-          <Users className="w-4 h-4" /> CRM (Clientes)
+          <Users className="w-4 h-4" /> Painel
         </button>
         <button
           onClick={() => setActiveTab("agenda")}
@@ -924,6 +925,38 @@ function AssistantPage() {
 
               <div className="glass p-6 rounded-2xl border border-white/5">
                 <h2 className="text-lg font-bold mb-1 flex items-center gap-2">
+                  <Zap className="w-4 h-4 text-primary" /> Automação
+                </h2>
+                <p className="text-xs text-muted-foreground mb-4">
+                  O Dante já envia sozinho o guia de foto (21 posições) quando precisa ver o local da tatuagem.
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {([
+                    { key: "allow_previews", label: "Criar prévias de arte para o cliente", options: [["nao", "Não"], ["sim", "Sim, quando o cliente pedir"]] },
+                    { key: "followup_enabled", label: "Follow-up automático", options: [["sim", "Ligado"], ["nao", "Desligado"]] },
+                    { key: "followup_hours", label: "Mandar follow-up depois de", options: [["24", "24 horas sem resposta"], ["48", "48 horas sem resposta"], ["72", "72 horas sem resposta"]] },
+                    { key: "followup_max", label: "Máximo de follow-ups por cliente", options: [["1", "1"], ["2", "2"], ["3", "3"]] },
+                  ] as const).map((o) => (
+                    <div key={o.key}>
+                      <label className="text-[11px] text-white/60 block mb-1">{o.label}</label>
+                      <select
+                        value={formData.artist_info[o.key] || AUTOMATION_DEFAULTS[o.key]}
+                        onChange={(e) => setInfo(o.key, e.target.value)}
+                        disabled={o.key.startsWith("followup_") && o.key !== "followup_enabled" && (formData.artist_info.followup_enabled || AUTOMATION_DEFAULTS.followup_enabled) === "nao"}
+                        className="w-full bg-black/50 border border-white/10 rounded-lg py-2 px-3 text-sm focus:border-primary focus:outline-none transition-colors disabled:opacity-40"
+                      >
+                        {o.options.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+                      </select>
+                    </div>
+                  ))}
+                </div>
+                <p className="text-[11px] text-white/40 mt-3">
+                  Prévias são artes de exemplo geradas por IA só para o cliente visualizar a ideia — o Dante sempre avisa que não é o desenho final. O follow-up só é enviado quando o cliente parou de responder, nunca no modo Copiloto.
+                </p>
+              </div>
+
+              <div className="glass p-6 rounded-2xl border border-white/5">
+                <h2 className="text-lg font-bold mb-1 flex items-center gap-2">
                   <MapPin className="w-4 h-4 text-primary" /> Atendimento por país
                 </h2>
                 <p className="text-xs text-muted-foreground mb-4">
@@ -1075,13 +1108,8 @@ function AssistantPage() {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
-            className="glass p-8 rounded-2xl border border-white/5 flex flex-col items-center text-center py-20"
           >
-            <Users className="w-12 h-12 text-primary mb-4 opacity-50" />
-            <h2 className="text-xl font-bold mb-2">CRM de Clientes</h2>
-            <p className="text-muted-foreground max-w-md mx-auto">
-              Aqui aparecerão todos os leads e clientes que interagirem com o seu Assistente IA. 
-            </p>
+            <DanteInsights />
           </motion.div>
         )}
 
