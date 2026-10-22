@@ -79,7 +79,9 @@ ${lead.followups_sent > 0 ? 'Este e um segundo lembrete: seja ainda mais leve e 
         }
       }
 
-      const ok = await sendText(artist.clerk_user_id, lead.phone_number.split('@')[0], message);
+      // "@lid" contacts have no phone number; Evolution accepts the full JID instead.
+      const to = lead.phone_number.endsWith('@lid') ? lead.phone_number : lead.phone_number.split('@')[0];
+      const ok = await sendText(artist.clerk_user_id, to, message);
       if (!ok) continue;
       sent++;
       await supabase.from('chat_history').insert({

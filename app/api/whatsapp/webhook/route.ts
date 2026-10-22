@@ -14,6 +14,7 @@ export const maxDuration = 120;
 // Ink Authority's own sales WhatsApp: answers tattoo artists asking about the platform.
 async function handleSalesMessage(opts: {
   remoteJid: string;
+  replyTo: string;
   messageText: string;
   hasAudio: boolean;
   base64Media: string | null;
@@ -21,7 +22,7 @@ async function handleSalesMessage(opts: {
   evolutionUrl: string;
   apiKey: string;
 }) {
-  const { remoteJid, messageText, hasAudio, base64Media, mimeType, evolutionUrl, apiKey } = opts;
+  const { remoteJid, replyTo, messageText, hasAudio, base64Media, mimeType, evolutionUrl, apiKey } = opts;
   const settings = await getSalesSettings();
   if (!settings.is_active) return NextResponse.json({ status: 'sales_inactive' });
 
@@ -62,7 +63,7 @@ async function handleSalesMessage(opts: {
   const sendRes = await fetch(`${evolutionUrl}/message/sendText/${SALES_INSTANCE}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', apikey: apiKey },
-    body: JSON.stringify({ number: remoteJid.split('@')[0], text: reply, delay: 1500 }),
+    body: JSON.stringify({ number: replyTo, text: reply, delay: 1500 }),
   });
   console.log('[WPP sales] replied', remoteJid, sendRes.status);
   return NextResponse.json({ status: 'sales_replied' });
@@ -100,10 +101,18 @@ export async function POST(req: Request) {
 
     console.log('[WPP] remoteJid:', remoteJid, 'fromMe:', fromMe, 'instance:', instanceName, 'msgKeys:', Object.keys(messageData || {}));
 
-    if (!remoteJid || fromMe || remoteJid.includes('@g.us')) {
-      console.log('[WPP] ignored: fromMe or group or no jid');
+    // Groups, contacts' status posts and channels are not conversations with a client.
+    if (!remoteJid || fromMe || /@(g\.us|broadcast|newsletter)$/.test(remoteJid)) {
+      console.log('[WPP] ignored: fromMe, group, status/channel or no jid');
       return NextResponse.json({ status: 'ignored' });
     }
+
+    // WhatsApp hides some senders behind a "@lid" id; the real number comes in an alternate key.
+    // Without it, reply to the full lid JID (Evolution accepts it) instead of a fake number.
+    const altJid = [messageData.key?.senderPn, messageData.key?.remoteJidAlt, messageData.key?.participantAlt]
+      .find((j) => typeof j === 'string' && j.endsWith('@s.whatsapp.net'));
+    const clientDigits = (altJid || remoteJid).split('@')[0];
+    const replyTo = remoteJid.endsWith('@lid') && !altJid ? remoteJid : clientDigits;
 
     const messageTimestamp = messageData.messageTimestamp;
     const now = Math.floor(Date.now() / 1000);
@@ -168,7 +177,7 @@ export async function POST(req: Request) {
     }
 
     if (instanceName === SALES_INSTANCE) {
-      return handleSalesMessage({ remoteJid, messageText, hasAudio, base64Media, mimeType, evolutionUrl, apiKey });
+      return handleSalesMessage({ remoteJid, replyTo, messageText, hasAudio, base64Media, mimeType, evolutionUrl, apiKey });
     }
 
     // 1. Fetch AI Settings for this artist
@@ -254,7 +263,7 @@ export async function POST(req: Request) {
     const countrySettings: CountrySettings = settings.country_settings?.home
       ? settings.country_settings
       : { home: 'BR', rules: [] };
-    const clientCountry = countryFromPhone(remoteJid.split('@')[0]);
+    const clientCountry = altJid || !remoteJid.endsWith('@lid') ? countryFromPhone(clientDigits) : undefined;
     const isForeign = !!clientCountry && clientCountry.code !== countrySettings.home;
     const countryRule: CountryRule | undefined = clientCountry
       ? countrySettings.rules.find((r) => r.country === clientCountry.code) ??
@@ -310,11 +319,12 @@ ${[...infoLines, positioning ? `- ${positioning}` : ''].filter(Boolean).join('\n
       ? '- Se o cliente pedir para ver uma previa, rascunho ou exemplo do desenho e a ideia ja estiver definida (o que, estilo e tamanho), diga que vai mandar uma previa ilustrativa e inclua no FINAL da resposta a tag [GERAR_PREVIA: descricao detalhada em ingles do desenho — elementos, estilo, composicao, nivel de detalhe]. Deixe claro que o desenho final e criado com exclusividade pelo artista.'
       : '- Se o cliente pedir uma previa ou rascunho do desenho, explique com naturalidade que o artista cria o desenho exclusivo nos dias antes da sessao e que ele vai ver tudo antes de tatuar.';
 
-    const systemPrompt = `Voce e Dante, o assistente virtual do estudio de tatuagem "${settings.studio_name}".
-Seu tom de voz e: "${settings.bot_personality}".
-Estilos de Tatuagem que voce faz: ${settings.styles}
-Endereco do Estudio: ${settings.address}
-Metodos de Pagamento: ${settings.payment_methods}
+    // New accounts may have empty fields; never let "null" leak into the prompt.
+    const systemPrompt = `Voce e Dante, o assistente virtual do estudio de tatuagem "${settings.studio_name || 'do artista'}".
+Seu tom de voz e: "${settings.bot_personality || 'simpatico, profissional e acolhedor'}".
+Estilos de Tatuagem que voce faz: ${settings.styles || 'consulte o artista'}
+Endereco do Estudio: ${settings.address || 'o artista informa ao confirmar o agendamento'}
+Metodos de Pagamento: ${settings.payment_methods || 'o artista informa ao confirmar o agendamento'}
 ${artistSection ? `\n${artistSection}\n` : ''}
 ### ESTE CLIENTE
 - Pais (pelo DDI do telefone): ${clientCountryLabel}. ${isForeign ? 'E um cliente ESTRANGEIRO para este estudio.' : 'E do mesmo pais do estudio.'}
@@ -482,7 +492,7 @@ No FINAL de TODA resposta inclua exatamente uma tag [ETAPA: x], onde x e a etapa
 
     // Send text response via Evolution API
     // Evolution API expects just the phone number, not the full JID
-    const phoneNumber = remoteJid.split('@')[0];
+    const phoneNumber = replyTo;
     console.log('[WPP] sending to', phoneNumber, 'via instance', instanceName);
     try {
       const sendRes = await fetch(`${evolutionUrl}/message/sendText/${instanceName}`, {
