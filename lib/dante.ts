@@ -1,22 +1,6 @@
 import { GoogleAuth } from "google-auth-library";
+export { STAGES, CLOSING_STAGES, STALLED_AFTER_HOURS, isStage, type StageKey } from "@/lib/dante-stages";
 
-export const STAGES = [
-  { key: "novo", label: "Novo contato" },
-  { key: "qualificando", label: "Qualificando" },
-  { key: "projeto", label: "Projeto" },
-  { key: "orcamento", label: "Orçamento enviado" },
-  { key: "agendamento", label: "Agendando" },
-  { key: "fechado", label: "Fechado" },
-  { key: "perdido", label: "Perdido" },
-] as const;
-export type StageKey = (typeof STAGES)[number]["key"];
-
-export const CLOSING_STAGES: StageKey[] = ["orcamento", "agendamento"];
-export const STALLED_AFTER_HOURS = 48;
-
-export function isStage(v: unknown): v is StageKey {
-  return STAGES.some((s) => s.key === v);
-}
 
 const evolutionUrl = () => process.env.EVOLUTION_API_URL || "https://evolution-api-production-fbfd.up.railway.app";
 

@@ -6,7 +6,7 @@ import { DefaultChatTransport } from "ai";
 import { MessageSquare, Flame, PauseCircle, CheckCircle2, Users, TrendingUp, Loader2, Send, Sparkles, RefreshCw } from "lucide-react";
 import { ChatMarkdown } from "@/components/ChatMarkdown";
 import { useStickToBottom } from "@/lib/use-stick-to-bottom";
-import { STAGES } from "@/lib/dante";
+import { STAGES } from "@/lib/dante-stages";
 import { cn } from "@/lib/utils";
 
 type Insights = {
