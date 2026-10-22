@@ -22,14 +22,14 @@ const T: Record<string, Record<string, string>> = {
   pt: {
     nav_what: "O Que É",
     nav_tools: "Ferramentas",
-    nav_course: "Workshop",
+    nav_course: "Stream Class",
     nav_pricing: "Preços",
     nav_cta: "Começar Agora",
     hero_tag: "Plataforma Exclusiva Para Tatuadores",
     hero_h1a: "Transforme Seu",
     hero_h1b: "Talento",
     hero_h1c: "em Negócio",
-    hero_sub: "A única plataforma que une workshop de marketing, tutoria com IA e ferramentas de criação — tudo pensado para tatuadores que querem faturar mais.",
+    hero_sub: "A única plataforma que une uma Stream Class de marketing, tutoria com IA e ferramentas de criação — tudo pensado para tatuadores que querem faturar mais.",
     hero_cta: "Ver Planos e Preços",
     hero_cta2: "Conhecer a Plataforma",
     stat_artists: "Tatuadores Ativos",
@@ -37,11 +37,11 @@ const T: Record<string, Record<string, string>> = {
     stat_tools: "Ferramentas de IA",
     stat_rating: "Avaliação Média",
     what_tag: "O Que é a Ink Authority",
-    what_title: "Não é só um workshop. É uma plataforma completa.",
-    what_desc: "A Ink Authority reúne tudo que um tatuador profissional precisa para crescer: um workshop de marketing e posicionamento, tutores com inteligência artificial, agentes de anúncios, gerador de decalque com IA e muito mais.",
+    what_title: "Não é só uma Stream Class. É uma plataforma completa.",
+    what_desc: "A Ink Authority reúne tudo que um tatuador profissional precisa para crescer: uma Stream Class de marketing e posicionamento, tutores com inteligência artificial, agentes de anúncios, gerador de decalque com IA e muito mais.",
     tools_tag: "Ferramentas",
     tools_title: "Tudo que você precisa para crescer",
-    course_tag: "Workshop Exclusivo",
+    course_tag: "Stream Class Exclusiva",
     course_title: "Marketing & Posicionamento para Tatuadores",
     course_desc: "Aprenda os segredos exatos para se posicionar como autoridade no mercado, atrair clientes que pagam bem e transformar sua arte num negócio lucrativo.",
     course_includes: "O que está incluído",
@@ -49,7 +49,7 @@ const T: Record<string, Record<string, string>> = {
     course_price: "R$ 759",
     course_installment: "12x de R$ 63,25",
     course_cash: "ou R$ 759,00 à vista",
-    course_cta: "Garantir Vaga no Workshop",
+    course_cta: "Garantir Vaga na Stream Class",
     course_f1: "Posicionamento e autoridade de marca",
     course_f2: "Estruturação das redes sociais",
     course_f3: "Criação de conteúdo que converte",
@@ -80,7 +80,7 @@ const T: Record<string, Record<string, string>> = {
     pricing_free_desc: "Para começar",
     pricing_prem: "Combo IA",
     pricing_prem_desc: "Para crescer rápido",
-    pricing_course: "Workshop + Combo IA",
+    pricing_course: "Stream Class + Combo IA",
     pricing_course_desc: "Pacote completo",
     pricing_mo: "/mês",
     pricing_life: "vitalício",
@@ -174,14 +174,14 @@ const T: Record<string, Record<string, string>> = {
   es: {
     nav_what: "Qué Es",
     nav_tools: "Herramientas",
-    nav_course: "Workshop",
+    nav_course: "Stream Class",
     nav_pricing: "Precios",
     nav_cta: "Empezar Ahora",
     hero_tag: "Plataforma Exclusiva Para Tatuadores",
     hero_h1a: "Convierte Tu",
     hero_h1b: "Talento",
     hero_h1c: "en Negocio",
-    hero_sub: "La única plataforma que une un workshop de marketing, tutoría con IA y herramientas de creación — todo pensado para tatuadores que quieren ganar más.",
+    hero_sub: "La única plataforma que une una Stream Class de marketing, tutoría con IA y herramientas de creación — todo pensado para tatuadores que quieren ganar más.",
     hero_cta: "Ver Planes y Precios",
     hero_cta2: "Conocer la Plataforma",
     stat_artists: "Tatuadores Activos",
@@ -189,11 +189,11 @@ const T: Record<string, Record<string, string>> = {
     stat_tools: "Herramientas de IA",
     stat_rating: "Calificación Promedio",
     what_tag: "Qué es Ink Authority",
-    what_title: "No es solo un workshop. Es una plataforma completa.",
-    what_desc: "Ink Authority reúne todo lo que un tatuador profesional necesita para crecer: un workshop de marketing y posicionamiento, tutores con IA, agentes de anuncios, generador de calcomanías con IA y mucho más.",
+    what_title: "No es solo una Stream Class. Es una plataforma completa.",
+    what_desc: "Ink Authority reúne todo lo que un tatuador profesional necesita para crecer: una Stream Class de marketing y posicionamiento, tutores con IA, agentes de anuncios, generador de calcomanías con IA y mucho más.",
     tools_tag: "Herramientas",
     tools_title: "Todo lo que necesitas para crecer",
-    course_tag: "Workshop Exclusivo",
+    course_tag: "Stream Class Exclusiva",
     course_title: "Marketing y Posicionamiento para Tatuadores",
     course_desc: "Aprende los secretos exactos para posicionarte como autoridad, atraer clientes que pagan bien y convertir tu arte en un negocio rentable.",
     course_includes: "Qué incluye",
@@ -232,7 +232,7 @@ const T: Record<string, Record<string, string>> = {
     pricing_free_desc: "Para comenzar",
     pricing_prem: "Combo IA",
     pricing_prem_desc: "Para crecer rápido",
-    pricing_course: "Workshop + Combo IA",
+    pricing_course: "Stream Class + Combo IA",
     pricing_course_desc: "Paquete completo",
     pricing_mo: "/mes",
     pricing_life: "de por vida",
@@ -360,7 +360,7 @@ export default function VendasPage() {
 
   const FAQS = [
     { q: "O que está incluído no Combo IA?", a: "Dante (assistente de WhatsApp, R$ 259/mês), Especialistas Artísticos (Decalque e Dividir Folhas, R$ 99/mês) e Especialistas em Anúncios (7 agentes, R$ 129/mês). Separados custam R$ 487/mês; no combo, R$ 347/mês. O Tutor IA é grátis. Cancele quando quiser." },
-    { q: "Qual a diferença entre o Workshop e o Premium?", a: "O Workshop de Marketing & Posicionamento tem acesso vitalício (R$ 759, pagamento único) e foca em estratégia e vendas. O Combo IA (R$ 347/mês) dá acesso às ferramentas de IA para o dia a dia. Recomendamos os dois juntos." },
+    { q: "Qual a diferença entre a Stream Class e o Combo IA?", a: "A Stream Class de Marketing & Posicionamento tem acesso vitalício (R$ 759, pagamento único) e foca em estratégia e vendas. O Combo IA (R$ 347/mês) dá acesso às ferramentas de IA para o dia a dia. Recomendamos os dois juntos." },
     { q: "As ferramentas funcionam para qualquer estilo de tatuagem?", a: "Sim! Todos os agentes e o tutor são treinados para atender tatuadores de todos os estilos — realismo, blackwork, old school, aquarela, geométrico, etc." },
     { q: "Posso cancelar a assinatura quando quiser?", a: "Sim. Todas as assinaturas são mensais e sem fidelidade. Cancele a qualquer momento diretamente na plataforma." },
     { q: "O Gerador de Decalque substitui o papel de decalque?", a: "Não — ele gera o traçado/arte que você vai imprimir no papel de decalque. A IA extrai os contornos da imagem com precisão profissional, pronto para você imprimir e transferir para a pele." },
@@ -507,7 +507,7 @@ export default function VendasPage() {
             <p className="text-muted-foreground text-lg leading-relaxed mb-8">{t("what_desc")}</p>
             <div className="flex flex-col gap-3">
               {[
-                { icon: <BookOpen className="w-4 h-4" />, text: "Workshop de Marketing & Posicionamento" },
+                { icon: <BookOpen className="w-4 h-4" />, text: "Stream Class de Marketing & Posicionamento" },
                 { icon: <Bot className="w-4 h-4" />, text: "Tutor IA disponível 24h" },
                 { icon: <Megaphone className="w-4 h-4" />, text: "7 Agentes de Anúncios com IA" },
                 { icon: <Contrast className="w-4 h-4" />, text: "Gerador de Decalque com Gemini 2.5" },
@@ -597,7 +597,7 @@ export default function VendasPage() {
                     <span className="text-sm font-bold">4.9/5</span>
                   </div>
                   <p className="text-sm text-muted-foreground leading-relaxed italic">
-                    "Depois do workshop minha agenda encheu em 3 semanas. Os conteúdos são práticos e diretos — sem enrolação."
+                    "Depois da Stream Class minha agenda encheu em 3 semanas. Os conteúdos são práticos e diretos — sem enrolação."
                   </p>
                   <p className="text-xs font-bold mt-3">— Marina S., Tatuadora SP</p>
                 </div>
@@ -819,7 +819,7 @@ export default function VendasPage() {
                 <p className="text-xs text-muted-foreground mb-2">{t("course_cash")} · {t("pricing_life")}</p>
                 <p className="text-xs text-muted-foreground mb-6">+ R$ 347/mês Combo IA (opcional)</p>
                 <div className="space-y-2.5 mb-8 flex-1">
-                  {["Workshop Marketing & Posicionamento", "Acesso Vitalício ao Workshop", "Comunidade Exclusiva", "🎁 Análise de Perfil Gratuita"].map((f) => (
+                  {["Stream Class Marketing & Posicionamento", "Acesso Vitalício à Stream Class", "Comunidade Exclusiva", "🎁 Análise de Perfil Gratuita"].map((f) => (
                     <div key={f} className="flex items-center gap-2 text-sm">
                       <CheckCircle className="w-3.5 h-3.5 text-purple-400 shrink-0" /> {f}
                     </div>

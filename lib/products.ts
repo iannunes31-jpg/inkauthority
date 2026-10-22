@@ -17,7 +17,7 @@ export const PRODUCT_CATALOG: Record<string, CatalogProduct> = {
     Object.values(PLANS).map((p) => [p.id, { name: p.name, price: p.price, isSubscription: true, type: p.accessType }])
   ),
   marketing_posicionamento: {
-    name: "Curso Marketing & Posicionamento",
+    name: "Stream Class Marketing & Posicionamento",
     price: 759,
     isSubscription: false,
     type: "catalog",

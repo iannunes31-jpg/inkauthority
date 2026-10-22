@@ -171,12 +171,12 @@ export function PurchaseCourseModal({
                   {isSubscription ? "Assinatura mensal" : "O Primeiro Passo Para o Topo"}
                 </span>
                 <h2 className="text-2xl font-bold tracking-tight mb-2 uppercase text-glow">
-                  {plan ? plan.name : "Workshop Marketing & Posicionamento"}
+                  {plan ? plan.name : "Stream Class Marketing & Posicionamento"}
                 </h2>
                 <p className="text-sm text-muted-foreground font-light">
                   {isSubscription
                     ? "Sem fidelidade. Cancele quando quiser."
-                    : "Você ainda não desbloqueou o workshop completo. Aprenda a se posicionar como autoridade e atrair clientes que pagam caro."}
+                    : "Você ainda não desbloqueou a Stream Class completa. Aprenda a se posicionar como autoridade e atrair clientes que pagam caro."}
                 </p>
               </div>
 

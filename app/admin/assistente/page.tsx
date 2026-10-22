@@ -97,7 +97,7 @@ export default function AdminAssistentePage() {
         <div>
           <h1 className="text-2xl font-black uppercase tracking-tighter">Assistente de Vendas (WhatsApp)</h1>
           <p className="text-sm text-muted-foreground">
-            Responde tatuadores interessados na Ink Authority: preços, Workshop, planos e links de compra.
+            Responde tatuadores interessados na Ink Authority: preços, Stream Class, planos e links de compra.
           </p>
         </div>
       </div>
@@ -167,7 +167,7 @@ export default function AdminAssistentePage() {
           onChange={(e) => setSettings({ ...settings, extra_info: e.target.value })}
           rows={8}
           maxLength={6000}
-          placeholder={"Ex:\n- Esta semana o cupom WORK10 dá 10% no Workshop.\n- A próxima live é quinta às 20h.\n- Sempre convide para o Tutor IA grátis."}
+          placeholder={"Ex:\n- Esta semana o cupom WORK10 dá 10% na Stream Class.\n- A próxima live é quinta às 20h.\n- Sempre convide para o Tutor IA grátis."}
           className={`${input} resize-y`}
         />
         <Button onClick={() => save()} disabled={saving} className="bg-primary text-primary-foreground font-bold">

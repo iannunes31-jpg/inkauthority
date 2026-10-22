@@ -109,9 +109,9 @@ export default function StudentCoursePlayer() {
   if (!course) {
     return (
       <div className="text-center py-20 text-muted-foreground">
-        <p>Workshop não encontrado ou não está disponível.</p>
+        <p>Stream Class não encontrada ou não está disponível.</p>
         <Link href="/dashboard/courses">
-          <Button variant="link" className="text-primary mt-4">Voltar aos Workshops</Button>
+          <Button variant="link" className="text-primary mt-4">Voltar às Stream Classes</Button>
         </Link>
       </div>
     );
@@ -143,7 +143,7 @@ export default function StudentCoursePlayer() {
               {activeLesson ? activeLesson.title : course.title}
             </h1>
             <p className="text-muted-foreground">
-               {course.description || "Nenhuma descrição fornecida para este workshop."}
+               {course.description || "Nenhuma descrição fornecida para esta Stream Class."}
             </p>
           </div>
 
@@ -153,7 +153,7 @@ export default function StudentCoursePlayer() {
         {/* Lado Direito - Módulos + Materiais */}
         <div className="lg:col-span-1 xl:col-span-1 glass rounded-2xl border border-white/10 flex flex-col lg:h-[calc(100vh-120px)] overflow-hidden">
           <div className="p-5 border-b border-white/10 bg-black/40">
-            <h2 className="text-lg font-bold">Conteúdo do Workshop</h2>
+            <h2 className="text-lg font-bold">Conteúdo da Stream Class</h2>
             <div className="text-sm text-muted-foreground mt-1">
                {modules.length} {modules.length === 1 ? 'Módulo' : 'Módulos'}
             </div>

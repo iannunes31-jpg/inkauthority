@@ -20,7 +20,7 @@ const platformAreas = [
   { name: "Ao Vivo", path: "/dashboard/lives", icon: Radio, description: "Assista transmissões e mentorias ao vivo com a comunidade.", previewKey: "live" },
   { name: "Comunidade", path: "/dashboard/community", icon: Users, description: "Compartilhe resultados e conecte-se com outros artistas.", previewKey: "post" },
   { name: "Especialistas", path: "/dashboard/tools", icon: Bot, description: "Tutor IA e assistente de WhatsApp para automatizar seu estúdio.", previewKey: null },
-  { name: "Workshop", path: "/dashboard/courses", icon: Compass, description: "Explore os workshops disponíveis e continue seus estudos.", previewKey: "courses" },
+  { name: "Stream Class", path: "/dashboard/courses", icon: Compass, description: "Explore as Stream Classes disponíveis e continue seus estudos.", previewKey: "courses" },
   { name: "Biblioteca", path: "/dashboard/library", icon: Download, description: "Baixe materiais, e-books e guias exclusivos.", previewKey: "library" },
   { name: "Meu Perfil", path: "/dashboard/profile", icon: User, description: "Gerencie sua conta e informações de segurança.", previewKey: null },
 ];
@@ -154,7 +154,7 @@ export default function Dashboard() {
     if (previewKey === "courses" && previews.coursesCount > 0) {
       return (
         <div className="mt-3 pt-3 border-t border-white/5 text-[12px] text-white/60">
-          {previews.coursesCount} {previews.coursesCount === 1 ? "workshop disponível" : "workshops disponíveis"}
+          {previews.coursesCount} {previews.coursesCount === 1 ? "Stream Class disponível" : "Stream Classes disponíveis"}
         </div>
       );
     }
@@ -202,13 +202,13 @@ export default function Dashboard() {
             <div className="w-16 h-16 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center mb-4 text-primary">
               <Compass className="w-8 h-8" />
             </div>
-            <h3 className="text-xl font-bold mb-2">Nenhum workshop em andamento</h3>
+            <h3 className="text-xl font-bold mb-2">Nenhuma Stream Class em andamento</h3>
             <p className="text-sm text-muted-foreground max-w-md mb-6 font-light">
-              Seu progresso de estudo aparecerá aqui conforme você acessar e concluir as aulas dos workshops disponíveis.
+              Seu progresso de estudo aparecerá aqui conforme você acessar e concluir as aulas das Stream Classes disponíveis.
             </p>
             <Link href="/dashboard/courses">
               <Button size="lg" className="rounded-full font-bold px-8 metallic-gradient text-black neon-glow">
-                Explorar Workshops Disponíveis
+                Explorar Stream Classes Disponíveis
               </Button>
             </Link>
           </div>
@@ -224,7 +224,7 @@ export default function Dashboard() {
             : null;
           const isLastWatchedFeatured = !!(lastWatched && lastWatched.courseId === featured.id);
           const heroTitle = isLastWatchedFeatured && lastWatched ? lastWatched.lessonTitle : featured.title;
-          const heroSub = isLastWatchedFeatured ? featured.title : (featured.description || "Workshop da metodologia Ink Authority.");
+          const heroSub = isLastWatchedFeatured ? featured.title : (featured.description || "Stream Class da metodologia Ink Authority.");
           const isContinuing = isLastWatchedFeatured;
 
           return (
@@ -248,7 +248,7 @@ export default function Dashboard() {
                   {/* Texto */}
                   <div className="absolute inset-0 flex flex-col justify-end p-5 md:p-8">
                     <p className="text-[10px] md:text-[11px] font-bold uppercase tracking-[0.2em] text-primary mb-1.5">
-                      {isContinuing ? "Continuar Assistindo" : "Começar Workshop"}
+                      {isContinuing ? "Continuar Assistindo" : "Começar Stream Class"}
                     </p>
                     <h3 className="text-lg md:text-3xl font-black mb-1 leading-tight max-w-xl line-clamp-2">
                       {heroTitle}

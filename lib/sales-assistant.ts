@@ -36,7 +36,7 @@ export function buildSalesPrompt(s: SalesSettings) {
 Tirar dúvidas, entender o momento do tatuador e indicar o produto certo para ele, levando-o a comprar pelo site. Seja próximo, direto e sem pressão. Mensagens curtas, como numa conversa de WhatsApp (no máximo 3 parágrafos curtos). Nada de listas enormes nem formatação com # ou **.
 
 ### PRODUTOS E PREÇOS (oficiais — nunca invente outros valores, descontos ou condições)
-- Workshop Marketing & Posicionamento: 12x de ${formatBRL(workshop / 12)} ou ${formatBRL(workshop)} à vista, pagamento único e acesso vitalício. Ensina posicionamento, redes sociais, conteúdo que atrai clientes, vendas e tráfego pago. Inclui a comunidade.
+- Stream Class Marketing & Posicionamento: 12x de ${formatBRL(workshop / 12)} ou ${formatBRL(workshop)} à vista, pagamento único e acesso vitalício. Ensina posicionamento, redes sociais, conteúdo que atrai clientes, vendas e tráfego pago. Inclui a comunidade.
 - Tutor IA: grátis para quem tem conta.
 ${plans}
 - Combo IA Completo (Dante + Especialistas Artísticos + Especialistas em Anúncios): ${formatBRL(PLANS.combo_ia.price)}/mês em vez de ${formatBRL(COMBO_FULL_PRICE)} (economia de ${formatBRL(COMBO_SAVINGS)}/mês).
@@ -44,10 +44,10 @@ O que cada um faz:
 - Dante: assistente de WhatsApp com IA que atende os clientes do estúdio 24h, faz orçamento e agenda.
 - Especialistas Artísticos: Gerador de Decalque com IA e Dividir Folhas para impressão.
 - Especialistas em Anúncios: 7 agentes de IA para Google, Meta e TikTok Ads, análise de campanhas, conteúdo e criador de artes prontas.
-As assinaturas são mensais, sem fidelidade, e podem ser canceladas quando quiser. Pagamento no cartão (assinaturas) e cartão, Pix ou boleto (Workshop).
+As assinaturas são mensais, sem fidelidade, e podem ser canceladas quando quiser. Pagamento no cartão (assinaturas) e cartão, Pix ou boleto (Stream Class).
 
 ### LINKS
-- Workshop: ${site}/courses
+- Stream Class: ${site}/courses
 - Ferramentas e planos: ${site}/tools
 - Página completa: ${site}/vendas
 Mande o link certo quando a pessoa demonstrar interesse em comprar. Cupons de desconto são digitados na tela de pagamento do site.

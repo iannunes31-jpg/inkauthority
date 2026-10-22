@@ -173,7 +173,7 @@ export function Navbar() {
 
   const navLinks = [
     { name: "HOME", path: "/" },
-    { name: "WORKSHOPS", path: "/courses" },
+    { name: "STREAM CLASSES", path: "/courses" },
     { name: "TOOLS", path: "/tools" },
     ...(isLoggedIn ? [{ name: "DASHBOARD", path: "/dashboard" }] : []),
   ];
@@ -185,7 +185,7 @@ export function Navbar() {
   // what surfaced as "no menu after logging in on mobile."
   const dashboardLinks = [
     { name: "Meu Aprendizado", path: "/dashboard", icon: <BookOpen className="w-4 h-4" /> },
-    { name: "Workshop", path: "/dashboard/courses", icon: <Compass className="w-4 h-4" /> },
+    { name: "Stream Class", path: "/dashboard/courses", icon: <Compass className="w-4 h-4" /> },
     { name: "Especialistas", path: "/dashboard/tools", icon: <Bot className="w-4 h-4" /> },
     { name: "Ao Vivo", path: "/dashboard/lives", icon: <Radio className="w-4 h-4" /> },
     { name: "Comunidade", path: "/dashboard/community", icon: <Users className="w-4 h-4" /> },

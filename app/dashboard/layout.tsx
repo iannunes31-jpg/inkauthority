@@ -52,7 +52,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   const menuItems = [
     { name: "Meu Aprendizado", path: "/dashboard", icon: <BookOpen className="w-5 h-5" /> },
-    { name: "Workshop", path: "/dashboard/courses", icon: <Compass className="w-5 h-5" /> },
+    { name: "Stream Class", path: "/dashboard/courses", icon: <Compass className="w-5 h-5" /> },
     { name: "Especialistas", path: "/dashboard/tools", icon: <Bot className="w-5 h-5" /> },
     { name: "Ao Vivo", path: "/dashboard/lives", icon: <Radio className="w-5 h-5" /> },
     { name: "Comunidade", path: "/dashboard/community", icon: <Users className="w-5 h-5" /> },
@@ -138,7 +138,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               onClick={() => setShowPurchaseModal(true)}
               className="fixed bottom-24 left-6 z-40 metallic-gradient text-black font-bold uppercase tracking-[0.15em] text-[11px] h-12 px-5 rounded-full flex items-center gap-2 shadow-lg hover:scale-105 transition-transform neon-glow"
             >
-              Comprar Workshop
+              Comprar Stream Class
               <ArrowRight className="w-3.5 h-3.5" />
             </motion.button>
           )}
