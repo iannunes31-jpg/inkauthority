@@ -7,6 +7,19 @@ import { supabaseAdmin } from '@/lib/supabase-admin';
 // wrote straight to Supabase from the browser with the anon key, so anyone
 // who had that key could create or delete courses directly via the REST API.
 
+// One course, read on the server so the admin always sees the saved state.
+export async function GET(req: Request) {
+  if (!(await checkIsAdmin())) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  }
+  const id = new URL(req.url).searchParams.get('id');
+  if (!id) return NextResponse.json({ error: 'Missing id' }, { status: 400 });
+  const { data, error } = await supabaseAdmin.from('courses').select('*').eq('id', id).maybeSingle();
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (!data) return NextResponse.json({ error: 'Curso não encontrado.' }, { status: 404 });
+  return NextResponse.json(data, { headers: { 'Cache-Control': 'no-store' } });
+}
+
 export async function POST(req: Request) {
   if (!(await checkIsAdmin())) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
@@ -50,16 +63,18 @@ export async function PATCH(req: Request) {
   }
   if (!Object.keys(patch).length) return NextResponse.json({ error: 'Nada para atualizar.' }, { status: 400 });
 
-  const { error } = await supabaseAdmin
+  const { data, error } = await supabaseAdmin
     .from('courses')
     .update(patch)
-    .eq('id', body.id);
+    .eq('id', body.id)
+    .select()
+    .single();
   if (error) {
     console.error('Erro ao atualizar curso:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  return NextResponse.json({ success: true });
+  return NextResponse.json(data);
 }
 
 export async function DELETE(req: Request) {

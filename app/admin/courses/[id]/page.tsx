@@ -79,12 +79,13 @@ export default function CourseManagerPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id, ...patch }),
     }).catch(() => null);
+    const body = await res?.json().catch(() => ({}));
     if (!res?.ok) {
       setCourse(previous);
-      const body = await res?.json().catch(() => ({}));
       alert(body?.error || failMsg);
       return false;
     }
+    if (body?.id) setCourse(body);
     return true;
   };
   const updateCover = (url: string) => updateCourse({ thumbnail_url: url }, "Não foi possível salvar a capa. Tente de novo.");
@@ -111,13 +112,9 @@ export default function CourseManagerPage() {
     try {
       setLoading(true);
       // Fetch course
-      const { data: courseData, error: courseError } = await supabase
-        .from("courses")
-        .select("*")
-        .eq("id", id)
-        .single();
-      
-      if (courseError) throw courseError;
+      const courseRes = await fetch(`/api/admin/courses?id=${id}`, { cache: "no-store" });
+      const courseData = await courseRes.json();
+      if (!courseRes.ok) throw new Error(courseData.error);
       setCourse(courseData);
 
       // Fetch modules with lessons
@@ -304,7 +301,14 @@ export default function CourseManagerPage() {
              <div className="mb-4 text-left">
                 <ImageUpload value={course.thumbnail_url || ""} onChange={updateCover} />
              </div>
-             <p className="text-sm font-semibold mb-3">{course.is_published ? "🟢 Publicado" : "🟡 Rascunho"}</p>
+             <span
+               className={`inline-flex items-center gap-2 text-xs font-bold uppercase tracking-wider px-3 py-1.5 rounded-full border mb-3 ${
+                 course.is_published ? "bg-green-500/15 text-green-400 border-green-500/40" : "bg-yellow-500/15 text-yellow-400 border-yellow-500/40"
+               }`}
+             >
+               <span className={`w-2 h-2 rounded-full ${course.is_published ? "bg-green-400" : "bg-yellow-400"}`} />
+               {course.is_published ? "Publicado" : "Rascunho"}
+             </span>
              <Button
                onClick={togglePublished}
                variant={course.is_published ? "outline" : "default"}
