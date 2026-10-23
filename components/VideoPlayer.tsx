@@ -106,12 +106,24 @@ export function VideoPlayer({ videoId, poster, className = "", lessonId, onProgr
     if (terms !== "accepted" || !iframeRef.current) return;
     let player: any = null;
     let cancelled = false;
+    // The SDK doesn't always report the duration; the video's HLS playlist always has it.
+    let knownDuration = 0;
+    fetch(`https://videodelivery.net/${videoId}/manifest/video.m3u8`)
+      .then((r) => r.text())
+      .then(async (master) => {
+        const rendition = master.split("\n").find((l) => l && !l.startsWith("#"));
+        if (!rendition) return;
+        const playlist = await (await fetch(new URL(rendition, `https://videodelivery.net/${videoId}/manifest/`).href)).text();
+        knownDuration = [...playlist.matchAll(/#EXTINF:([\d.]+)/g)].reduce((sum, m) => sum + Number(m[1]), 0);
+      })
+      .catch(() => {});
     loadStreamSdk().then((Stream) => {
       if (cancelled || !Stream || !iframeRef.current) return;
       player = Stream(iframeRef.current);
+      (iframeRef.current as any).__player = player;
       player.addEventListener("timeupdate", () => {
         const current = player.currentTime || 0;
-        const duration = player.duration || 0;
+        const duration = player.duration || knownDuration;
         if (!duration) return;
         const percent = Math.min(100, Math.round((current / duration) * 100));
         if (lessonId) try { localStorage.setItem(`progress_${lessonId}`, String(percent)); } catch {}
