@@ -2,11 +2,10 @@
 export const TERMS_VERSION = "2026-10-23";
 export const TERMS_UPDATED_AT = "23 de outubro de 2026";
 
-// Fill these in before publishing (ask a lawyer to review the whole text).
 const COMPANY = "Ink Authority";
-const COMPANY_ID = "[CNPJ da empresa]";
+const COMPANY_ID = "CNPJ 69.359.319/0001-04";
 const CONTACT = "inkauthorityapp@gmail.com";
-const FORUM = "[cidade/UF]";
+const FORUM = "Rio de Janeiro/RJ";
 
 export const TERMS_SECTIONS: { title: string; body: string[] }[] = [
   {
