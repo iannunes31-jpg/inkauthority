@@ -481,7 +481,7 @@ export default function CourseManagerPage() {
                        <Button size="sm" variant="ghost" onClick={() => setEditingModule(null)} className="h-9">Cancelar</Button>
                      </div>
                    ) : (
-                     <h3 className="text-lg font-bold flex items-center gap-2">
+                     <h3 className="text-lg font-bold flex items-center gap-2 flex-1 min-w-0">
                        <span className="bg-white/10 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs">{index + 1}</span>
                        {mod.title}
                        <button onClick={() => setEditingModule({ id: mod.id, title: mod.title.trim() })} className="text-muted-foreground hover:text-foreground" title="Renomear módulo" aria-label="Renomear módulo">
@@ -528,7 +528,7 @@ export default function CourseManagerPage() {
                           style={dropLine(`les-${lesson.id}`)}
                           className={`flex items-center justify-between p-3 hover:bg-white/5 rounded-lg group transition-colors cursor-grab active:cursor-grabbing ${drag?.id === lesson.id ? "opacity-40" : ""}`}
                         >
-                           <div className="flex items-center gap-3 min-w-0">
+                           <div className="flex items-center gap-3 min-w-0 flex-1" title={lesson.title}>
                               <GripVertical className="w-4 h-4 text-muted-foreground/60 shrink-0" aria-label="Arraste para mudar a ordem da aula" />
                               <PlayCircle className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
                               <span className="text-sm font-medium whitespace-nowrap truncate">{lIndex + 1}. {lesson.title}</span>
