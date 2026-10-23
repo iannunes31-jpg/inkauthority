@@ -142,7 +142,7 @@ export function CertificateView({ data }: { data: CertificateData }) {
             <div className="bt">
               <div className="sig"><div className="s">Yuri Andrade</div><div className="l" /><b>YURI ANDRADE</b><span>Fundador · Ink Authority</span></div>
               <Seal year={issued.getFullYear()} />
-              <div className="sig"><div className="s" /><div className="l" /><b>INK AUTHORITY</b><span>Direção pedagógica</span></div>
+              <div className="sig"><div className="s">Ink Authority</div><div className="l" /><b>INK AUTHORITY</b><span>Direção pedagógica</span></div>
             </div>
           </div>
           <div className="meta">

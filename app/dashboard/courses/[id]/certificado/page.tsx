@@ -48,6 +48,27 @@ export default function CertificatePage() {
     setState({ certificate: body.certificate });
   };
 
+  // Renders the certificate (at its full A4 size) into an image and saves it as a real PDF file.
+  const [downloading, setDownloading] = useState(false);
+  const downloadPdf = async () => {
+    const node = document.querySelector<HTMLElement>(".iac");
+    if (!node || !state?.certificate) return;
+    setDownloading(true);
+    try {
+      const [{ toJpeg }, { jsPDF }] = await Promise.all([import("html-to-image"), import("jspdf")]);
+      await document.fonts.ready;
+      const image = await toJpeg(node, { quality: 0.95, pixelRatio: 3, width: 1123, height: 794, cacheBust: true });
+      const pdf = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
+      pdf.addImage(image, "JPEG", 0, 0, 297, 210);
+      pdf.save(`certificado-ink-authority-${state.certificate.code}.pdf`);
+    } catch (err) {
+      console.error("[certificado] pdf", err);
+      alert("Não foi possível gerar o PDF. Tente de novo.");
+    } finally {
+      setDownloading(false);
+    }
+  };
+
   const back = (
     <Link href={`/dashboard/courses/${id}`} className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-6">
       <ArrowLeft className="w-4 h-4" /> Voltar para o curso
@@ -65,8 +86,9 @@ export default function CertificatePage() {
             <h1 className="text-2xl font-black flex items-center gap-2"><Award className="w-6 h-6 text-primary" /> Seu certificado</h1>
             <p className="text-sm text-muted-foreground mt-1">Parabéns pela conquista! Baixe em PDF e compartilhe nas suas redes.</p>
           </div>
-          <Button onClick={() => window.print()} className="metallic-gradient text-black font-bold">
-            <Download className="w-4 h-4 mr-2" /> Baixar PDF
+          <Button onClick={downloadPdf} disabled={downloading} className="metallic-gradient text-black font-bold">
+            {downloading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Download className="w-4 h-4 mr-2" />}
+            {downloading ? "Gerando PDF..." : "Baixar PDF"}
           </Button>
         </div>
         <div className="rounded-xl overflow-hidden shadow-2xl border border-white/10">
@@ -76,9 +98,7 @@ export default function CertificatePage() {
           <ShieldCheck className="w-4 h-4" />
           Qualquer pessoa pode confirmar a autenticidade em{" "}
           <Link href={`/certificado/${state.certificate.code}`} target="_blank" className="underline">inkauthority.com.br/certificado/{state.certificate.code}</Link>
-        </p>
-        <p className="text-xs text-muted-foreground mt-2">Dica: na janela de impressão, escolha "Salvar como PDF".</p>
-      </div>
+        </p>      </div>
     );
   }
 
