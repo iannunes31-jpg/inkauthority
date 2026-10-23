@@ -40,10 +40,17 @@ const PLAN_BULLETS: Record<PlanId, string[]> = {
   combo_ia: ["Dante · Assistente de WhatsApp", "Especialistas Artísticos", "Especialistas em Anúncios (7 agentes)"],
 };
 
+// Modules of the Stream Class, as listed by Isabela.
 const COURSE_BULLETS = [
-  "Posicionamento e estruturação das suas redes sociais",
-  "Técnicas de vendas e conversão de clientes",
-  "Acesso à comunidade exclusiva da Ink Authority",
+  "Abertura",
+  "Posicionamento",
+  "Construindo um Perfil Atraente",
+  "Conteúdos Estratégicos",
+  "Tráfego Pago - Criativos para Campanha",
+  "Tráfego Pago - Como subir uma campanha no Meta Ads e no Google Ads",
+  "Processos de Vendas",
+  "Encerramento",
+  "Bônus (em breve)",
 ];
 
 type AppliedCoupon = { code: string; label: string; finalPrice: number; originalPrice: number };
@@ -171,22 +178,25 @@ export function PurchaseCourseModal({
                   {isSubscription ? "Assinatura mensal" : "O Primeiro Passo Para o Topo"}
                 </span>
                 <h2 className="text-2xl font-bold tracking-tight mb-2 uppercase text-glow">
-                  {plan ? plan.name : "Stream Class Marketing & Posicionamento"}
+                  {plan ? plan.name : "Posicionamento para Tatuadores"}
                 </h2>
                 <p className="text-sm text-muted-foreground font-light">
                   {isSubscription
                     ? "Sem fidelidade. Cancele quando quiser."
-                    : "Você ainda não desbloqueou a Stream Class completa. Aprenda a se posicionar como autoridade e atrair clientes que pagam caro."}
+                    : "Você ainda não desbloqueou a Stream Class. Aprenda a se posicionar com autoridade e atrair clientes que valorizam o seu trabalho."}
                 </p>
               </div>
 
-              <div className="space-y-3 mb-6 relative z-10">
-                {bullets.map((bullet, i) => (
-                  <div key={i} className="flex items-center gap-3">
-                    <CheckCircle2 className="w-4 h-4 text-foreground/50 shrink-0" />
-                    <span className="text-sm font-medium text-foreground/80">{bullet}</span>
-                  </div>
-                ))}
+              <div className="mb-6 relative z-10">
+                {!plan && <p className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground mb-3">Módulos</p>}
+                <div className="space-y-2.5">
+                  {bullets.map((bullet, i) => (
+                    <div key={i} className="flex items-start gap-3">
+                      <CheckCircle2 className="w-4 h-4 text-foreground/50 shrink-0 mt-0.5" />
+                      <span className="text-sm font-medium text-foreground/80 leading-snug">{bullet}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
 
               {/* Price */}
