@@ -9,6 +9,7 @@ import { ArrowLeft, Plus, PlayCircle, Save, X, Layers, Settings, Trash2, Link2, 
 import Link from "next/link";
 import { VideoUploader } from "@/components/admin/VideoUploader";
 import { ImageUpload } from "@/components/admin/ImageUpload";
+import { MaterialsEditor, type Material } from "@/components/admin/MaterialsEditor";
 
 export default function CourseManagerPage() {
   const { id } = useParams();
@@ -28,8 +29,6 @@ export default function CourseManagerPage() {
   const [isSavingLesson, setIsSavingLesson] = useState(false);
   const [materials, setMaterials] = useState<{ name: string; url: string }[]>([]);
   const [equipment, setEquipment] = useState<{ name: string; url: string }[]>([]);
-  const [matName, setMatName] = useState("");
-  const [matUrl, setMatUrl] = useState("");
   const [eqName, setEqName] = useState("");
   const [eqUrl, setEqUrl] = useState("");
   const [generatingCaptions, setGeneratingCaptions] = useState<string | null>(null);
@@ -150,7 +149,6 @@ export default function CourseManagerPage() {
     setNewLessonVideoId(null);
     setMaterials([]);
     setEquipment([]);
-    setMatName(""); setMatUrl("");
     setEqName(""); setEqUrl("");
     setIsLessonModalOpen(true);
   };
@@ -183,6 +181,30 @@ export default function CourseManagerPage() {
     } finally {
       setIsSavingLesson(false);
     }
+  };
+
+  // Editing the materials of a lesson that already exists.
+  const [editingLesson, setEditingLesson] = useState<any | null>(null);
+  const [editMaterials, setEditMaterials] = useState<Material[]>([]);
+  const [savingMaterials, setSavingMaterials] = useState(false);
+
+  const openMaterials = (lesson: any) => {
+    setEditingLesson(lesson);
+    setEditMaterials(Array.isArray(lesson.support_materials) ? lesson.support_materials : []);
+  };
+
+  const saveMaterials = async () => {
+    if (!editingLesson) return;
+    setSavingMaterials(true);
+    const res = await fetch("/api/admin/lessons", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: editingLesson.id, support_materials: editMaterials }),
+    }).catch(() => null);
+    setSavingMaterials(false);
+    if (!res?.ok) return alert("Não foi possível salvar os materiais. Tente de novo.");
+    setEditingLesson(null);
+    fetchCourseData();
   };
 
   const handleDeleteLesson = async (lessonId: string) => {
@@ -278,6 +300,15 @@ export default function CourseManagerPage() {
                               )}
                               <Button
                                 variant="ghost" size="sm"
+                                onClick={() => openMaterials(lesson)}
+                                className="text-muted-foreground hover:text-primary h-8 text-xs gap-1.5"
+                                title="Materiais de apoio (PDFs e links)"
+                              >
+                                <BookOpen className="w-3.5 h-3.5" />
+                                Materiais{Array.isArray(lesson.support_materials) && lesson.support_materials.length > 0 ? ` (${lesson.support_materials.length})` : ""}
+                              </Button>
+                              <Button
+                                variant="ghost" size="sm"
                                 onClick={() => handleGenerateCaptions(lesson)}
                                 disabled={generatingCaptions === lesson.id}
                                 className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-primary transition-all h-8 text-xs gap-1.5"
@@ -300,6 +331,26 @@ export default function CourseManagerPage() {
           )}
         </div>
       </div>
+
+      {/* Modal Materiais de uma aula existente */}
+      {editingLesson && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+          <div className="bg-[#111] border border-white/10 rounded-2xl p-6 w-full max-w-xl relative shadow-2xl overflow-y-auto max-h-[90vh]">
+            <button onClick={() => setEditingLesson(null)} className="absolute top-4 right-4 text-muted-foreground hover:text-white" aria-label="Fechar">
+              <X className="w-5 h-5" />
+            </button>
+            <h3 className="text-xl font-bold mb-1">Materiais de apoio</h3>
+            <p className="text-sm text-muted-foreground mb-5">{editingLesson.title}</p>
+            <MaterialsEditor value={editMaterials} onChange={setEditMaterials} />
+            <div className="flex justify-end gap-2 pt-5 mt-5 border-t border-white/5">
+              <Button variant="outline" onClick={() => setEditingLesson(null)}>Cancelar</Button>
+              <Button onClick={saveMaterials} disabled={savingMaterials} className="metallic-gradient text-black font-bold">
+                {savingMaterials ? "Salvando..." : "Salvar materiais"}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Modal Criar Módulo */}
       {isModuleModalOpen && (
@@ -393,35 +444,7 @@ export default function CourseManagerPage() {
                  <label className="text-sm text-muted-foreground mb-2 flex items-center gap-1 block">
                    <BookOpen className="w-4 h-4" /> Materiais de Apoio <span className="text-white/30">(opcional)</span>
                  </label>
-                 <div className="space-y-2 mb-2">
-                   {materials.map((m, i) => (
-                     <div key={i} className="flex items-center gap-2 bg-white/5 rounded-lg px-3 py-2 text-xs">
-                       <span className="flex-1 truncate font-medium">{m.name}</span>
-                       <span className="text-white/40 truncate flex-1">{m.url}</span>
-                       <button onClick={() => setMaterials(prev => prev.filter((_, idx) => idx !== i))} className="text-red-400 hover:text-red-300 shrink-0">
-                         <X className="w-3 h-3" />
-                       </button>
-                     </div>
-                   ))}
-                 </div>
-                 <div className="flex gap-2">
-                   <Input value={matName} onChange={e => setMatName(e.target.value)} placeholder="Nome do material" className="bg-black/50 text-xs h-9" />
-                   <Input value={matUrl} onChange={e => setMatUrl(e.target.value)} placeholder="URL (link)" className="bg-black/50 text-xs h-9" />
-                   <Button
-                     type="button"
-                     variant="outline"
-                     size="sm"
-                     className="border-white/10 shrink-0 h-9"
-                     onClick={() => {
-                       if (matName.trim() && matUrl.trim()) {
-                         setMaterials(prev => [...prev, { name: matName.trim(), url: matUrl.trim() }]);
-                         setMatName(""); setMatUrl("");
-                       }
-                     }}
-                   >
-                     <Plus className="w-4 h-4" />
-                   </Button>
-                 </div>
+                 <MaterialsEditor value={materials} onChange={setMaterials} />
                </div>
 
                {/* Links de Equipamento */}

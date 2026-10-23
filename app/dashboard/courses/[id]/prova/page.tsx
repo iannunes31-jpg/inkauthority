@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, GraduationCap, Loader2, CheckCircle2, XCircle, Trophy, RotateCcw } from "lucide-react";
+import { ArrowLeft, GraduationCap, Loader2, CheckCircle2, XCircle, Trophy, RotateCcw, Award } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -118,6 +118,13 @@ export default function CourseExamPage() {
           <p className={cn("font-bold", result.passed ? "text-green-500" : "text-red-500")}>
             {result.passed ? "Parabéns, você foi aprovado!" : "Ainda não foi dessa vez."}
           </p>
+          {result.passed && !data.preview && (
+            <Link href={`/dashboard/courses/${id}/certificado`}>
+              <Button className="mt-4 metallic-gradient text-black font-bold">
+                <Award className="w-4 h-4 mr-2" /> Emitir meu certificado
+              </Button>
+            </Link>
+          )}
           {!result.passed && (result.attemptsLeft == null || result.attemptsLeft > 0) && (
             <Button onClick={load} variant="outline" className="mt-4 border-white/20">
               <RotateCcw className="w-4 h-4 mr-2" /> Tentar de novo
@@ -130,6 +137,11 @@ export default function CourseExamPage() {
         <div className="glass p-6 rounded-2xl border border-green-500/40 mb-8 text-center">
           <Trophy className="w-10 h-10 text-green-500 mx-auto mb-3" />
           <p className="font-bold text-green-500">Você já foi aprovado nesta prova{bestScore != null ? ` com ${bestScore}%` : ""}.</p>
+          <Link href={`/dashboard/courses/${id}/certificado`}>
+            <Button className="mt-4 metallic-gradient text-black font-bold">
+              <Award className="w-4 h-4 mr-2" /> Ver meu certificado
+            </Button>
+          </Link>
         </div>
       )}
 

@@ -5,7 +5,7 @@ import { checkIsAdmin } from '@/lib/auth-server';
 
 const BUCKET = 'assets';
 // Course covers are admin-only; everything else is an artist's style reference.
-const ADMIN_FOLDERS = ['course-covers'];
+const ADMIN_FOLDERS = ['course-covers', 'course-materials'];
 const ALLOWED_EXT = ['jpg', 'jpeg', 'png', 'webp', 'gif', 'heic', 'heif'];
 
 async function signedUpload(path: string) {
@@ -41,7 +41,8 @@ export async function POST(req: Request) {
   const uploads = [];
   for (const f of files) {
     const ext = String(f?.ext || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '');
-    if (!ALLOWED_EXT.includes(ext)) {
+    // Lesson materials are PDFs; everything else is an image.
+    if (!(folder === 'course-materials' ? ['pdf'] : ALLOWED_EXT).includes(ext)) {
       return NextResponse.json({ error: `Formato não suportado: .${ext}` }, { status: 400 });
     }
     const path = `${folder}/${userId}-${crypto.randomUUID()}.${ext}`;

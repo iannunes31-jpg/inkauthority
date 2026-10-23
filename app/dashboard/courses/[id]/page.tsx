@@ -5,7 +5,7 @@ import { useParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { VideoPlayer } from "@/components/VideoPlayer";
 import { LessonComments } from "@/components/LessonComments";
-import { PlayCircle, CheckCircle, ChevronDown, ChevronUp, Layers, BookOpen, Link2, Package, GraduationCap } from "lucide-react";
+import { PlayCircle, CheckCircle, ChevronDown, ChevronUp, Layers, BookOpen, Link2, Package, GraduationCap, Award } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 
@@ -223,6 +223,18 @@ export default function StudentCoursePlayer() {
                 <div>
                   <p className="text-sm font-bold">{exam.title}</p>
                   <p className="text-xs text-muted-foreground">{exam.passed ? "Você já foi aprovado ✓" : "Teste o que você aprendeu"}</p>
+                </div>
+              </Link>
+            )}
+            {exam?.passed && (
+              <Link
+                href={`/dashboard/courses/${id}/certificado`}
+                className="flex items-center gap-3 mx-4 mb-4 p-4 rounded-xl border border-white/15 bg-white/5 hover:bg-white/10 transition-colors"
+              >
+                <Award className="w-5 h-5 text-primary shrink-0" />
+                <div>
+                  <p className="text-sm font-bold">Certificado de conclusão</p>
+                  <p className="text-xs text-muted-foreground">Emita e baixe o seu certificado</p>
                 </div>
               </Link>
             )}

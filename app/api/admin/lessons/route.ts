@@ -29,6 +29,30 @@ export async function POST(req: Request) {
   return NextResponse.json({ success: true });
 }
 
+// Edits the support materials of an existing lesson.
+export async function PATCH(req: Request) {
+  if (!(await checkIsAdmin())) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  }
+
+  const { id, support_materials } = await req.json();
+  if (!id || !Array.isArray(support_materials)) {
+    return NextResponse.json({ error: 'id and support_materials are required' }, { status: 400 });
+  }
+  const materials = support_materials
+    .filter((m: any) => m && typeof m.name === 'string' && typeof m.url === 'string' && /^https?:\/\//.test(m.url))
+    .map((m: any) => ({ name: m.name.trim().slice(0, 120) || 'Material', url: m.url.trim() }))
+    .slice(0, 30);
+
+  const { error } = await supabaseAdmin.from('lessons').update({ support_materials: materials }).eq('id', id);
+  if (error) {
+    console.error('Erro ao atualizar materiais:', error);
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+
+  return NextResponse.json({ success: true });
+}
+
 export async function DELETE(req: Request) {
   if (!(await checkIsAdmin())) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
