@@ -25,7 +25,6 @@ export function VideoPlayer({ videoId, poster, className = "", lessonId, onProgr
   const [agree, setAgree] = useState(false);
   const [accepting, setAccepting] = useState(false);
   const [fullscreen, setFullscreen] = useState(false);
-  const [markPos, setMarkPos] = useState({ top: 12, left: 8 });
 
   useEffect(() => {
     if (termsAccepted) return;
@@ -56,12 +55,6 @@ export function VideoPlayer({ videoId, poster, className = "", lessonId, onProgr
     setTerms("accepted");
     setShowTerms(false);
   };
-
-  // The watermark jumps around so it can't be cropped or covered in a recording.
-  useEffect(() => {
-    const t = setInterval(() => setMarkPos({ top: 5 + Math.random() * 78, left: 3 + Math.random() * 55 }), 6000);
-    return () => clearInterval(t);
-  }, []);
 
   useEffect(() => {
     const onChange = () => setFullscreen(document.fullscreenElement === wrapperRef.current);
@@ -135,13 +128,7 @@ export function VideoPlayer({ videoId, poster, className = "", lessonId, onProgr
             />
             {mark && (
               <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden>
-                <span
-                  className="absolute text-white/45 font-semibold text-[11px] sm:text-sm tracking-wide whitespace-nowrap transition-all duration-[1500ms] ease-in-out"
-                  style={{ top: `${markPos.top}%`, left: `${markPos.left}%`, textShadow: "0 1px 2px rgba(0,0,0,0.6)" }}
-                >
-                  {mark}
-                </span>
-                <div className="absolute inset-0 flex flex-wrap content-around justify-around -rotate-12 scale-125 opacity-[0.07]">
+                <div className="absolute inset-0 flex flex-wrap content-around justify-around -rotate-12 scale-125 opacity-[0.04]">
                   {Array.from({ length: 12 }).map((_, i) => (
                     <span key={i} className="text-white text-xs font-semibold whitespace-nowrap px-6 py-8">{mark}</span>
                   ))}
