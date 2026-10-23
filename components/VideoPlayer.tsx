@@ -211,7 +211,7 @@ export function VideoPlayer({ videoId, poster, className = "", lessonId, onProgr
             {next && nearEnd && countdown === null && (
               <button
                 onClick={next.onGo}
-                className="absolute bottom-16 right-4 z-10 flex items-center gap-2 bg-white text-black font-bold text-sm pl-4 pr-5 py-2.5 rounded-full shadow-xl animate-in fade-in slide-in-from-right-4 max-w-[70%]"
+                className="absolute top-3 right-14 z-10 flex items-center gap-2 bg-white text-black font-bold text-sm pl-4 pr-5 py-2.5 rounded-full shadow-xl animate-in fade-in slide-in-from-right-4 max-w-[70%]"
               >
                 <SkipForward className="w-4 h-4 shrink-0" />
                 <span className="truncate">Próxima aula: {next.title}</span>
