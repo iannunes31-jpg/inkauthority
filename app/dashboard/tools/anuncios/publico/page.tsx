@@ -10,6 +10,7 @@ import { useEffect, useRef, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { useStickToBottom } from "@/lib/use-stick-to-bottom";
 import { AdsAccessGate } from "@/components/AdsAccessGate";
+import { Select } from "@/components/ui/select";
 
 const WELCOME = "Olá! Sou o Agente de Público da Ink Authority. Vou te ajudar a entender quem é o seu cliente ideal e como falar com ele. Preencha o formulário ao lado para eu começar a análise do seu perfil! 🎯";
 
@@ -170,7 +171,7 @@ Por favor, faça uma análise completa do meu público-alvo e personas.`;
                 <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider block mb-1">
                   Tempo no mercado
                 </label>
-                <select
+                <Select
                   value={form.tempo}
                   onChange={(e) => setForm({ ...form, tempo: e.target.value })}
                   disabled={submitted}
@@ -181,13 +182,13 @@ Por favor, faça uma análise completa do meu público-alvo e personas.`;
                   <option value="1 a 3 anos">1 a 3 anos</option>
                   <option value="3 a 5 anos">3 a 5 anos</option>
                   <option value="mais de 5 anos">Mais de 5 anos</option>
-                </select>
+                </Select>
               </div>
               <div>
                 <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider block mb-1">
                   Objetivo principal
                 </label>
-                <select
+                <Select
                   value={form.objetivo}
                   onChange={(e) => setForm({ ...form, objetivo: e.target.value })}
                   disabled={submitted}
@@ -199,7 +200,7 @@ Por favor, faça uma análise completa do meu público-alvo e personas.`;
                   <option value="crescer no instagram">Crescer no Instagram</option>
                   <option value="montar equipe">Montar equipe / estúdio maior</option>
                   <option value="vender cursos">Vender cursos online</option>
-                </select>
+                </Select>
               </div>
 
               {!submitted ? (

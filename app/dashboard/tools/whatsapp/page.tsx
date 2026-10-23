@@ -13,6 +13,7 @@ import { ARTIST_INFO_FIELDS, POSITIONING_OPTIONS, PRICING_MODELS, TRAITS, AUTOMA
 import { DanteInsights } from "@/components/DanteInsights";
 import { motion, AnimatePresence } from "motion/react";
 import { cn } from "@/lib/utils";
+import { Select } from "@/components/ui/select";
 
 function AssistantPage() {
   const { user } = useUser();
@@ -713,7 +714,7 @@ function AssistantPage() {
                   </div>
                   <div>
                     <label className="text-xs font-semibold text-white/70 uppercase tracking-widest mb-1 block">Tom de Voz da IA</label>
-                    <select 
+                    <Select 
                       value={formData.bot_personality}
                       onChange={(e) => setFormData({...formData, bot_personality: e.target.value})}
                       className="w-full bg-black/50 border border-white/10 rounded-lg py-2 px-3 text-sm focus:border-primary focus:outline-none transition-colors"
@@ -721,7 +722,7 @@ function AssistantPage() {
                       <option value="Profissional e educado">Profissional e Educado</option>
                       <option value="Descolado e amigável">Descolado e Amigável</option>
                       <option value="Direto e objetivo">Direto e Objetivo</option>
-                    </select>
+                    </Select>
                   </div>
                 </div>
               </div>
@@ -751,13 +752,13 @@ function AssistantPage() {
                       ))}
                     </div>
                     <label className="text-xs font-semibold text-white/70 uppercase tracking-widest mb-1 block">Moeda</label>
-                    <select
+                    <Select
                       value={formData.currency}
                       onChange={(e) => setFormData({ ...formData, currency: e.target.value })}
                       className="w-full bg-black/50 border border-white/10 rounded-lg py-2 px-3 text-sm focus:border-primary focus:outline-none transition-colors"
                     >
                       {CURRENCIES.map((c) => <option key={c.code} value={c.code}>{c.label}</option>)}
-                    </select>
+                    </Select>
                     <p className="text-[11px] text-white/40 mt-1">O Dante passa todos os valores nessa moeda.</p>
                   </div>
 
@@ -878,14 +879,14 @@ function AssistantPage() {
                       {TRAITS.map((t) => (
                         <div key={t.key}>
                           <label className="text-[11px] text-white/60 block mb-1">{t.label}</label>
-                          <select
+                          <Select
                             value={formData.artist_info[t.key] ?? (t.key === "audio" ? "transcrever" : "")}
                             onChange={(e) => setInfo(t.key, e.target.value)}
                             className="w-full bg-black/50 border border-white/10 rounded-lg py-2 px-3 text-sm focus:border-primary focus:outline-none transition-colors"
                           >
                             {t.key !== "audio" && <option value="">Deixar a IA decidir</option>}
                             {t.options.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-                          </select>
+                          </Select>
                         </div>
                       ))}
                     </div>
@@ -939,14 +940,14 @@ function AssistantPage() {
                   ] as const).map((o) => (
                     <div key={o.key}>
                       <label className="text-[11px] text-white/60 block mb-1">{o.label}</label>
-                      <select
+                      <Select
                         value={formData.artist_info[o.key] || AUTOMATION_DEFAULTS[o.key]}
                         onChange={(e) => setInfo(o.key, e.target.value)}
                         disabled={o.key.startsWith("followup_") && o.key !== "followup_enabled" && (formData.artist_info.followup_enabled || AUTOMATION_DEFAULTS.followup_enabled) === "nao"}
                         className="w-full bg-black/50 border border-white/10 rounded-lg py-2 px-3 text-sm focus:border-primary focus:outline-none transition-colors disabled:opacity-40"
                       >
                         {o.options.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
-                      </select>
+                      </Select>
                     </div>
                   ))}
                 </div>
@@ -965,13 +966,13 @@ function AssistantPage() {
                 <div className="space-y-4">
                   <div>
                     <label className="text-xs font-semibold text-white/70 uppercase tracking-widest mb-1 block">Seu país</label>
-                    <select
+                    <Select
                       value={formData.country_settings.home}
                       onChange={(e) => setCountry({ home: e.target.value, rules: formData.country_settings.rules.filter((r) => r.country !== e.target.value) })}
                       className="w-full bg-black/50 border border-white/10 rounded-lg py-2 px-3 text-sm focus:border-primary focus:outline-none transition-colors"
                     >
                       {COUNTRIES.map((c) => <option key={c.code} value={c.code}>{c.name} (+{c.ddi})</option>)}
-                    </select>
+                    </Select>
                     <p className="text-[11px] text-white/40 mt-1">Clientes do seu país usam a moeda e os valores principais.</p>
                   </div>
 
@@ -980,7 +981,7 @@ function AssistantPage() {
                     return (
                       <div key={i} className="rounded-xl border border-white/10 p-4 space-y-3">
                         <div className="flex items-center justify-between gap-2">
-                          <select
+                          <Select
                             value={rule.country}
                             onChange={(e) => {
                               const c = COUNTRIES.find((x) => x.code === e.target.value);
@@ -993,7 +994,7 @@ function AssistantPage() {
                             {COUNTRIES.filter((c) => c.code === rule.country || !taken.has(c.code)).map((c) => (
                               <option key={c.code} value={c.code}>{c.name} (+{c.ddi})</option>
                             ))}
-                          </select>
+                          </Select>
                           <button
                             type="button"
                             onClick={() => setCountry({ rules: formData.country_settings.rules.filter((_, idx) => idx !== i) })}
@@ -1005,9 +1006,9 @@ function AssistantPage() {
                         <div className="grid grid-cols-2 gap-3">
                           <div>
                             <label className="text-[11px] text-white/60 block mb-1">Moeda</label>
-                            <select value={rule.currency} onChange={(e) => updateRule(i, { currency: e.target.value })} className="w-full bg-black/50 border border-white/10 rounded-lg py-2 px-3 text-sm focus:border-primary focus:outline-none transition-colors">
+                            <Select value={rule.currency} onChange={(e) => updateRule(i, { currency: e.target.value })} className="w-full bg-black/50 border border-white/10 rounded-lg py-2 px-3 text-sm focus:border-primary focus:outline-none transition-colors">
                               {CURRENCIES.map((c) => <option key={c.code} value={c.code}>{c.code}</option>)}
-                            </select>
+                            </Select>
                           </div>
                           <div>
                             <label className="text-[11px] text-white/60 block mb-1">Fator sobre a tabela</label>

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { GraduationCap, Plus, Trash2, Loader2, ArrowUp, ArrowDown, Save, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Select } from "@/components/ui/select";
 
 type CourseRow = { id: string; title: string; hasExam: boolean; active: boolean; questionCount: number };
 type Question = { question: string; options: string[]; correct_index: number; explanation: string };
@@ -112,7 +113,7 @@ export default function AdminProvasPage() {
 
       <div className="glass p-6 rounded-2xl border border-white/5">
         <label className={label}>Curso</label>
-        <select value={courseId} onChange={(e) => openCourse(e.target.value)} className={input}>
+        <Select value={courseId} onChange={(e) => openCourse(e.target.value)} className={input}>
           <option value="">{courses.length ? "Escolha um curso…" : "Nenhum curso cadastrado ainda (Admin → Matérias)"}</option>
           {courses.map((c) => (
             <option key={c.id} value={c.id}>
@@ -120,7 +121,7 @@ export default function AdminProvasPage() {
               {c.hasExam ? ` — ${c.questionCount} pergunta(s), ${c.active ? "liberada" : "rascunho"}` : " — sem prova"}
             </option>
           ))}
-        </select>
+        </Select>
       </div>
 
       {message && <p className="text-sm text-muted-foreground">{message}</p>}

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Ticket, Plus, Trash2, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PRODUCT_CATALOG } from "@/lib/products";
+import { Select } from "@/components/ui/select";
 
 type Coupon = {
   id: string;
@@ -119,10 +120,10 @@ export default function AdminCuponsPage() {
           </div>
           <div>
             <label className={label}>Tipo de desconto</label>
-            <select value={form.discount_type} onChange={(e) => setForm({ ...form, discount_type: e.target.value as "percent" | "fixed" })} className={input}>
+            <Select value={form.discount_type} onChange={(e) => setForm({ ...form, discount_type: e.target.value as "percent" | "fixed" })} className={input}>
               <option value="percent">Porcentagem (%)</option>
               <option value="fixed">Valor fixo (R$)</option>
-            </select>
+            </Select>
           </div>
           <div>
             <label className={label}>{form.discount_type === "percent" ? "Desconto (%)" : "Desconto (R$)"}</label>
@@ -167,10 +168,10 @@ export default function AdminCuponsPage() {
           {hasSubscription && (
             <div>
               <label className={label}>Nas assinaturas, vale</label>
-              <select value={form.duration} onChange={(e) => setForm({ ...form, duration: e.target.value as "once" | "forever" })} className={input}>
+              <Select value={form.duration} onChange={(e) => setForm({ ...form, duration: e.target.value as "once" | "forever" })} className={input}>
                 <option value="once">Só na 1ª mensalidade</option>
                 <option value="forever">Em todas as mensalidades</option>
-              </select>
+              </Select>
             </div>
           )}
           <div>

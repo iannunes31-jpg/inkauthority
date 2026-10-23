@@ -31,19 +31,29 @@ export async function POST(req: Request) {
   return NextResponse.json(data);
 }
 
-// Only the cover can be changed after creation for now.
+// Updates only the fields sent: cover, title or published status.
 export async function PATCH(req: Request) {
   if (!(await checkIsAdmin())) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
-  const { id, thumbnail_url } = await req.json();
-  if (!id) return NextResponse.json({ error: 'Missing id' }, { status: 400 });
+  const body = await req.json();
+  if (!body.id) return NextResponse.json({ error: 'Missing id' }, { status: 400 });
+
+  const patch: Record<string, unknown> = {};
+  if ('thumbnail_url' in body) patch.thumbnail_url = body.thumbnail_url || null;
+  if ('is_published' in body) patch.is_published = !!body.is_published;
+  if ('title' in body) {
+    const title = String(body.title ?? '').replace(/\s+/g, ' ').trim();
+    if (!title) return NextResponse.json({ error: 'O nome do curso não pode ficar vazio.' }, { status: 400 });
+    patch.title = title.slice(0, 120);
+  }
+  if (!Object.keys(patch).length) return NextResponse.json({ error: 'Nada para atualizar.' }, { status: 400 });
 
   const { error } = await supabaseAdmin
     .from('courses')
-    .update({ thumbnail_url: thumbnail_url || null })
-    .eq('id', id);
+    .update(patch)
+    .eq('id', body.id);
   if (error) {
     console.error('Erro ao atualizar curso:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });

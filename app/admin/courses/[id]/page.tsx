@@ -5,7 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ArrowLeft, Plus, PlayCircle, Save, X, Layers, Settings, Trash2, Link2, BookOpen, Subtitles } from "lucide-react";
+import { ArrowLeft, Plus, PlayCircle, Save, X, Layers, Settings, Trash2, Link2, BookOpen, Subtitles, Pencil } from "lucide-react";
 import Link from "next/link";
 import { VideoUploader } from "@/components/admin/VideoUploader";
 import { ImageUpload } from "@/components/admin/ImageUpload";
@@ -70,18 +70,41 @@ export default function CourseManagerPage() {
     fetchCourseData();
   }, [id]);
 
-  const updateCover = async (url: string) => {
-    const previous = course.thumbnail_url;
-    setCourse((c: any) => ({ ...c, thumbnail_url: url }));
+  // Saves one course field right away, undoing the change on screen if it fails.
+  const updateCourse = async (patch: Record<string, unknown>, failMsg: string) => {
+    const previous = course;
+    setCourse((c: any) => ({ ...c, ...patch }));
     const res = await fetch("/api/admin/courses", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id, thumbnail_url: url }),
-    });
-    if (!res.ok) {
-      setCourse((c: any) => ({ ...c, thumbnail_url: previous }));
-      alert("Não foi possível salvar a capa. Tente de novo.");
+      body: JSON.stringify({ id, ...patch }),
+    }).catch(() => null);
+    if (!res?.ok) {
+      setCourse(previous);
+      const body = await res?.json().catch(() => ({}));
+      alert(body?.error || failMsg);
+      return false;
     }
+    return true;
+  };
+  const updateCover = (url: string) => updateCourse({ thumbnail_url: url }, "Não foi possível salvar a capa. Tente de novo.");
+
+  const [editingTitle, setEditingTitle] = useState(false);
+  const [titleDraft, setTitleDraft] = useState("");
+  const saveTitle = async () => {
+    if (titleDraft.trim() && titleDraft.trim() !== course.title.trim()) {
+      if (!(await updateCourse({ title: titleDraft }, "Não foi possível renomear o curso."))) return;
+    }
+    setEditingTitle(false);
+  };
+
+  const togglePublished = () => {
+    const publish = !course.is_published;
+    if (publish && !modules.some((m: any) => m.lessons?.length)) {
+      return alert("Adicione pelo menos uma aula antes de publicar.");
+    }
+    if (!publish && !confirm("Voltar para rascunho? O curso deixa de aparecer para venda até ser publicado de novo.")) return;
+    updateCourse({ is_published: publish }, "Não foi possível alterar o status do curso.");
   };
 
   const fetchCourseData = async () => {
@@ -242,8 +265,33 @@ export default function CourseManagerPage() {
             <ArrowLeft className="w-5 h-5" />
           </Button>
         </Link>
-        <div className="flex-1">
-          <h2 className="text-2xl font-bold mb-1">{course.title}</h2>
+        <div className="flex-1 min-w-0">
+          {editingTitle ? (
+            <div className="flex gap-2 mb-1">
+              <Input
+                value={titleDraft}
+                onChange={(e) => setTitleDraft(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter") saveTitle(); if (e.key === "Escape") setEditingTitle(false); }}
+                maxLength={120}
+                autoFocus
+                className="bg-black/50 text-lg font-bold h-11"
+              />
+              <Button onClick={saveTitle} className="metallic-gradient text-black font-bold h-11">Salvar</Button>
+              <Button variant="ghost" onClick={() => setEditingTitle(false)} className="h-11">Cancelar</Button>
+            </div>
+          ) : (
+            <h2 className="text-2xl font-bold mb-1 flex items-center gap-2">
+              {course.title}
+              <button
+                onClick={() => { setTitleDraft(course.title.trim()); setEditingTitle(true); }}
+                className="text-muted-foreground hover:text-foreground"
+                title="Editar nome do curso (aparece no certificado)"
+                aria-label="Editar nome do curso"
+              >
+                <Pencil className="w-4 h-4" />
+              </button>
+            </h2>
+          )}
           <p className="text-muted-foreground font-light flex items-center gap-2">
             <Settings className="w-4 h-4" /> Gerenciador de Conteúdo do Curso
           </p>
@@ -256,7 +304,17 @@ export default function CourseManagerPage() {
              <div className="mb-4 text-left">
                 <ImageUpload value={course.thumbnail_url || ""} onChange={updateCover} />
              </div>
-             <p className="text-sm font-semibold">{course.is_published ? "🟢 Publicado" : "🟡 Rascunho"}</p>
+             <p className="text-sm font-semibold mb-3">{course.is_published ? "🟢 Publicado" : "🟡 Rascunho"}</p>
+             <Button
+               onClick={togglePublished}
+               variant={course.is_published ? "outline" : "default"}
+               className={course.is_published ? "w-full border-white/15 text-xs" : "w-full metallic-gradient text-black font-bold"}
+             >
+               {course.is_published ? "Voltar para rascunho" : "Publicar curso"}
+             </Button>
+             {!course.is_published && (
+               <p className="text-[11px] text-muted-foreground mt-2">Em rascunho o curso não pode ser comprado.</p>
+             )}
           </div>
           
           <Button 

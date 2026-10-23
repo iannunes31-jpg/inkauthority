@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Save, Cloud, Database, CreditCard, Shield, Globe } from "lucide-react";
+import { Select } from "@/components/ui/select";
 
 export default function AdminSettings() {
   const [isSaving, setIsSaving] = useState(false);
@@ -65,11 +66,11 @@ export default function AdminSettings() {
             
             <div className="space-y-2">
               <label className="text-sm text-muted-foreground">Moeda Padrão</label>
-              <select className="w-full bg-black/50 border border-white/10 rounded-md h-10 px-3 text-sm text-white focus:outline-none focus:border-white/30">
+              <Select className="w-full bg-black/50 border border-white/10 rounded-md h-10 px-3 text-sm text-white focus:outline-none focus:border-white/30">
                 <option value="BRL">BRL (Real Brasileiro)</option>
                 <option value="USD">USD (Dólar Americano)</option>
                 <option value="EUR">EUR (Euro)</option>
-              </select>
+              </Select>
             </div>
             
             <div className="p-4 bg-primary/10 border border-primary/20 rounded-xl mt-4">

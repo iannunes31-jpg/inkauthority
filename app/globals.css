@@ -136,3 +136,8 @@
 .light input.text-white,
 .light textarea.text-white,
 .light select.text-white { color: var(--color-foreground); }
+
+/* Any native <select> left keeps readable options in both themes. */
+html { color-scheme: dark; }
+html.light { color-scheme: light; }
+select option { background-color: var(--color-popover); color: var(--color-popover-foreground); }

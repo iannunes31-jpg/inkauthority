@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { FileText, Brush, FileCode, UploadCloud, Trash2, Library, X } from "lucide-react";
 import { supabase } from "@/lib/supabase";
+import { Select } from "@/components/ui/select";
 
 export default function AdminLibrary() {
   const [resources, setResources] = useState<any[]>([]);
@@ -229,7 +230,7 @@ export default function AdminLibrary() {
               
               <div>
                 <label className="text-sm text-muted-foreground mb-1 block">Categoria</label>
-                <select 
+                <Select 
                   value={category}
                   onChange={(e) => setCategory(e.target.value)}
                   className="w-full bg-black/50 border border-white/10 rounded-md py-2 px-3 text-white text-sm focus:outline-none focus:border-primary"
@@ -237,7 +238,7 @@ export default function AdminLibrary() {
                   {categories.map(cat => (
                     <option key={cat} value={cat}>{cat}</option>
                   ))}
-                </select>
+                </Select>
               </div>
 
               <div>
