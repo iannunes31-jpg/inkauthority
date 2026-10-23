@@ -31,40 +31,46 @@ export default function CourseManagerPage() {
   const [equipment, setEquipment] = useState<{ name: string; url: string }[]>([]);
   const [eqName, setEqName] = useState("");
   const [eqUrl, setEqUrl] = useState("");
-  const [generatingCaptions, setGeneratingCaptions] = useState<string | null>(null);
-  const [captionStatus, setCaptionStatus] = useState<Record<string, string>>({});
+  // Caption state per lesson: real progress from the server (steps done out of 3).
+  type CaptionState = { progress: number; step: string; running?: boolean; done?: boolean; error?: string };
+  const [captions, setCaptions] = useState<Record<string, CaptionState>>({});
+  const setCap = (lessonId: string, patch: CaptionState) => setCaptions(prev => ({ ...prev, [lessonId]: patch }));
 
   const handleGenerateCaptions = async (lesson: any) => {
     if (!lesson.video_url) return alert("Essa aula não tem vídeo cadastrado.");
-    setGeneratingCaptions(lesson.id);
-    setCaptionStatus(prev => ({ ...prev, [lesson.id]: "⏳ Iniciando..." }));
-    // The server does one step per call; keep calling while it reports progress (up to ~20 min).
+    setCap(lesson.id, { progress: 0, step: "Preparando", running: true });
+    let translate = false;
     try {
-      for (let i = 0; i < 80; i++) {
-        const res = await fetch("/api/admin/generate-captions", {
+      // The server does one step per call; keep calling while it reports progress (up to ~20 min).
+      for (let i = 0; i < 90; i++) {
+        const res: Response = await fetch("/api/admin/generate-captions", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ videoId: lesson.video_url }),
+          body: JSON.stringify({ videoId: lesson.video_url, translate }),
         });
-        const data = await res.json().catch(() => ({ error: `Erro ${res.status}` }));
-        if (data.status === "done") {
-          setCaptionStatus(prev => ({ ...prev, [lesson.id]: "✓ PT / EN / ES" }));
-          return;
-        }
-        if (data.status !== "processing") {
-          setCaptionStatus(prev => ({ ...prev, [lesson.id]: "Erro: " + (data.error || "desconhecido") }));
-          return;
-        }
-        setCaptionStatus(prev => ({ ...prev, [lesson.id]: "⏳ " + data.message }));
-        await new Promise((r) => setTimeout(r, 15000));
+        const data: any = await res.json().catch(() => ({ error: `Erro ${res.status}` }));
+        if (data.status === "done") return setCap(lesson.id, { progress: 100, step: "PT · EN · ES", done: true });
+        if (data.status !== "processing") return setCap(lesson.id, { progress: 0, step: "", error: data.error || "Erro desconhecido" });
+        setCap(lesson.id, { progress: data.progress ?? 0, step: data.step ?? "Processando", running: true });
+        translate = data.next === "translate";
+        // Translation starts right away; transcription runs on Cloudflare, so check back in a bit.
+        if (!translate) await new Promise((r) => setTimeout(r, 12000));
       }
-      setCaptionStatus(prev => ({ ...prev, [lesson.id]: "⏳ Ainda processando, clique de novo mais tarde" }));
+      setCap(lesson.id, { progress: 0, step: "", error: "Demorou demais. Clique de novo para continuar de onde parou." });
     } catch {
-      setCaptionStatus(prev => ({ ...prev, [lesson.id]: "Erro de conexão" }));
-    } finally {
-      setGeneratingCaptions(null);
+      setCap(lesson.id, { progress: 0, step: "", error: "Erro de conexão. Clique de novo para continuar." });
     }
   };
+
+  // On load, show which lessons already have captions.
+  useEffect(() => {
+    const lessons = modules.flatMap((m: any) => m.lessons ?? []).filter((l: any) => l.video_url && !captions[l.id]);
+    lessons.forEach(async (l: any) => {
+      const res = await fetch(`/api/admin/generate-captions?videoId=${l.video_url}`).catch(() => null);
+      const data = await res?.json().catch(() => null);
+      if (data?.complete) setCaptions(prev => (prev[l.id] ? prev : { ...prev, [l.id]: { progress: 100, step: "PT · EN · ES", done: true } }));
+    });
+  }, [modules]);
 
   useEffect(() => {
     fetchCourseData();
@@ -364,9 +370,23 @@ export default function CourseManagerPage() {
                               <span className="text-sm font-medium">{lIndex + 1}. {lesson.title}</span>
                            </div>
                            <div className="flex items-center gap-2">
-                              {captionStatus[lesson.id] && (
-                                <span className="text-[10px] text-primary font-medium">{captionStatus[lesson.id]}</span>
-                              )}
+                              {captions[lesson.id] && (() => {
+                                const c = captions[lesson.id];
+                                if (c.error) return <span className="text-[10px] text-red-400 font-medium max-w-[220px] truncate" title={c.error}>{c.error}</span>;
+                                if (c.done) return <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-green-500/15 text-green-400 border border-green-500/30">✓ Legendas {c.step}</span>;
+                                return (
+                                  <div className="w-44" title={c.step}>
+                                    <div className="flex justify-between text-[10px] text-muted-foreground mb-1">
+                                      <span className="truncate">{c.step}</span>
+                                      <span className="font-semibold text-foreground">{c.progress}%</span>
+                                    </div>
+                                    <div className="h-1.5 rounded-full bg-white/10 overflow-hidden relative">
+                                      <div className="h-full rounded-full bg-primary transition-all duration-700" style={{ width: `${Math.max(c.progress, 3)}%` }} />
+                                      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/25 to-transparent animate-pulse" />
+                                    </div>
+                                  </div>
+                                );
+                              })()}
                               <Button
                                 variant="ghost" size="sm"
                                 onClick={() => openMaterials(lesson)}
@@ -379,12 +399,12 @@ export default function CourseManagerPage() {
                               <Button
                                 variant="ghost" size="sm"
                                 onClick={() => handleGenerateCaptions(lesson)}
-                                disabled={generatingCaptions === lesson.id}
+                                disabled={!!captions[lesson.id]?.running}
                                 className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-primary transition-all h-8 text-xs gap-1.5"
                                 title="Gerar legendas automáticas (PT/EN/ES)"
                               >
                                 <Subtitles className="w-3.5 h-3.5" />
-                                {generatingCaptions === lesson.id ? "Gerando..." : "Legendas"}
+                                Legendas
                               </Button>
                               <span className="text-xs font-mono text-white/20 hidden md:block">{lesson.video_url}</span>
                               <Button variant="ghost" size="icon" onClick={() => handleDeleteLesson(lesson.id)} className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-red-400 transition-all h-8 w-8">

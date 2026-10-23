@@ -9,8 +9,8 @@ const CF_ACCOUNT_ID = process.env.CLOUDFLARE_ACCOUNT_ID!;
 const CF_API_TOKEN = process.env.CLOUDFLARE_API_TOKEN!;
 const SOURCE = "pt";
 const TARGETS = [
-  { code: "en", name: "English" },
-  { code: "es", name: "Spanish (Latin America)" },
+  { code: "en", name: "English", label: "inglês" },
+  { code: "es", name: "Spanish (Latin America)", label: "espanhol" },
 ];
 
 const cf = (path: string, init: RequestInit = {}) =>
@@ -63,14 +63,30 @@ async function translateVtt(vtt: string, targetName: string) {
   return `${header}\n\n${out.join("\n\n")}\n`;
 }
 
+// Which caption languages a video already has, so the admin page can show it on load.
+export async function GET(req: NextRequest) {
+  if (!(await checkIsAdmin())) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  const videoId = req.nextUrl.searchParams.get("videoId") || "";
+  if (!/^[a-f0-9]{32}$/i.test(videoId)) return NextResponse.json({ error: "videoId inválido" }, { status: 400 });
+  try {
+    const captions: Caption[] = (await cfJson(`${videoId}/captions`)) ?? [];
+    const ready = captions.filter((c) => !c.status || c.status === "ready").map((c) => c.language);
+    const all = [SOURCE, ...TARGETS.map((t) => t.code)];
+    return NextResponse.json({ languages: ready, complete: all.every((l) => ready.includes(l)) });
+  } catch (err: any) {
+    return NextResponse.json({ error: err.message }, { status: 500 });
+  }
+}
+
 // Step by step, so each call stays short: the client calls again while the status is "processing".
+// Each answer carries the real progress (steps done out of 3) and the step that runs next.
 // 1. Ask Cloudflare Stream to generate the Portuguese captions from the audio (runs on their side).
 // 2. When ready, translate them to English and Spanish keeping the timings, and upload.
 export async function POST(req: NextRequest) {
   if (!(await checkIsAdmin())) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   try {
-    const { videoId } = await req.json();
+    const { videoId, translate } = await req.json();
     if (!videoId || !/^[a-f0-9]{32}$/i.test(videoId)) return NextResponse.json({ error: "videoId inválido" }, { status: 400 });
 
     const captions: Caption[] = (await cfJson(`${videoId}/captions`)) ?? [];
@@ -78,7 +94,7 @@ export async function POST(req: NextRequest) {
 
     if (!pt) {
       await cfJson(`${videoId}/captions/${SOURCE}/generate`, { method: "POST" });
-      return NextResponse.json({ status: "processing", message: "Transcrevendo o áudio (pode levar alguns minutos)..." });
+      return NextResponse.json({ status: "processing", progress: 5, step: "Transcrevendo o áudio" });
     }
     if (pt.status === "error") {
       // Clear the failed track so the next click starts over.
@@ -86,10 +102,16 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "A transcrição falhou no Cloudflare. Clique de novo para tentar outra vez." }, { status: 502 });
     }
     if (pt.status && pt.status !== "ready") {
-      return NextResponse.json({ status: "processing", message: "Transcrevendo o áudio (pode levar alguns minutos)..." });
+      return NextResponse.json({ status: "processing", progress: 5, step: "Transcrevendo o áudio" });
     }
 
     const missing = TARGETS.filter((t) => !captions.some((c) => c.language === t.code));
+    const doneSteps = 1 + TARGETS.length - missing.length;
+    const progressOf = (steps: number) => Math.round((steps / (TARGETS.length + 1)) * 100);
+    // Announce the translation first, so the page shows the right step while it runs.
+    if (missing.length && !translate) {
+      return NextResponse.json({ status: "processing", progress: progressOf(doneSteps), step: `Traduzindo para o ${missing[0].label}`, next: "translate" });
+    }
     if (missing.length) {
       const vttRes = await cf(`${videoId}/captions/${SOURCE}/vtt`);
       if (!vttRes.ok) throw new Error(`Não foi possível baixar a legenda em português (${vttRes.status}).`);
@@ -103,11 +125,11 @@ export async function POST(req: NextRequest) {
       await cfJson(`${videoId}/captions/${target.code}`, { method: "PUT", body: form });
 
       if (missing.length > 1) {
-        return NextResponse.json({ status: "processing", message: `Traduzindo (${target.code.toUpperCase()} pronto)...` });
+        return NextResponse.json({ status: "processing", progress: progressOf(doneSteps + 1), step: `Traduzindo para o ${missing[1].label}`, next: "translate" });
       }
     }
 
-    return NextResponse.json({ status: "done", message: "Legendas prontas", languages: [SOURCE, ...TARGETS.map((t) => t.code)] });
+    return NextResponse.json({ status: "done", progress: 100, step: "Legendas prontas", languages: [SOURCE, ...TARGETS.map((t) => t.code)] });
   } catch (err: any) {
     console.error("Caption generation error:", err);
     return NextResponse.json({ error: err.message || "Erro interno" }, { status: 500 });
