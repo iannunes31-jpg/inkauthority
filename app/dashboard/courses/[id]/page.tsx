@@ -8,6 +8,8 @@ import { LessonComments } from "@/components/LessonComments";
 import { PlayCircle, CheckCircle, ChevronDown, ChevronUp, Layers, BookOpen, Link2, Package, GraduationCap, Award } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { ChatMarkdown } from "@/components/ChatMarkdown";
+import { Download, FileText } from "lucide-react";
 
 export default function StudentCoursePlayer() {
   const { id } = useParams();
@@ -139,12 +141,57 @@ export default function StudentCoursePlayer() {
           </div>
           
           <div className="glass p-6 rounded-2xl border border-white/10">
-            <h1 className="text-2xl font-bold mb-2">
-              {activeLesson ? activeLesson.title : course.title}
+            <h1 className="text-2xl font-bold">
+              {activeLesson ? activeLesson.title.trim() : course.title}
             </h1>
-            <p className="text-muted-foreground">
-               {course.description || "Nenhuma descrição fornecida para esta Stream Class."}
-            </p>
+            {/* The course description belongs to the opening lesson only. */}
+            {(!activeLesson || activeLesson.id === modules[0]?.lessons?.[0]?.id) && course.description && (
+              <ChatMarkdown text={course.description} className="text-muted-foreground mt-3 text-[15px]" />
+            )}
+
+            {activeLesson && Array.isArray(activeLesson.support_materials) && activeLesson.support_materials.length > 0 && (
+              <div className="mt-6">
+                <h2 className="text-sm font-bold flex items-center gap-2 mb-3">
+                  <BookOpen className="w-4 h-4 text-primary" /> Materiais de apoio
+                </h2>
+                <div className="grid sm:grid-cols-2 gap-3">
+                  {activeLesson.support_materials.map((mat: any, i: number) => (
+                    <a
+                      key={i}
+                      href={mat.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-3 p-3 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 transition-colors group"
+                    >
+                      <span className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                        <FileText className="w-5 h-5 text-primary" />
+                      </span>
+                      <span className="flex-1 min-w-0">
+                        <span className="block text-sm font-semibold truncate">{mat.name || "Material"}</span>
+                        <span className="block text-xs text-muted-foreground">{/\.pdf($|\?)/i.test(mat.url) ? "PDF · clique para abrir" : "Link"}</span>
+                      </span>
+                      <Download className="w-4 h-4 text-muted-foreground group-hover:text-foreground shrink-0" />
+                    </a>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {activeLesson && Array.isArray(activeLesson.equipment_links) && activeLesson.equipment_links.length > 0 && (
+              <div className="mt-6">
+                <h2 className="text-sm font-bold flex items-center gap-2 mb-3">
+                  <Package className="w-4 h-4 text-primary" /> Equipamentos indicados
+                </h2>
+                <div className="flex flex-col gap-2">
+                  {activeLesson.equipment_links.map((eq: any, i: number) => (
+                    <a key={i} href={eq.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-primary hover:underline truncate">
+                      <Link2 className="w-3.5 h-3.5 flex-shrink-0" />
+                      {eq.name || eq.url}
+                    </a>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           {activeLesson && <LessonComments lessonId={activeLesson.id} />}
@@ -239,53 +286,6 @@ export default function StudentCoursePlayer() {
               </Link>
             )}
 
-            {/* Materiais de Apoio */}
-            {activeLesson && Array.isArray(activeLesson.support_materials) && activeLesson.support_materials.length > 0 && (
-              <div className="border-t border-white/10 mt-2">
-                <div className="flex items-center gap-2 px-4 py-3 bg-black/40">
-                  <BookOpen className="w-4 h-4 text-primary" />
-                  <span className="text-sm font-bold">Materiais de Apoio</span>
-                </div>
-                <div className="px-4 pb-3 flex flex-col gap-2">
-                  {activeLesson.support_materials.map((mat: any, i: number) => (
-                    <a
-                      key={i}
-                      href={mat.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-2 text-sm text-primary hover:underline truncate"
-                    >
-                      <Link2 className="w-3.5 h-3.5 flex-shrink-0" />
-                      {mat.name || mat.url}
-                    </a>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Links de Equipamento */}
-            {activeLesson && Array.isArray(activeLesson.equipment_links) && activeLesson.equipment_links.length > 0 && (
-              <div className="border-t border-white/10">
-                <div className="flex items-center gap-2 px-4 py-3 bg-black/40">
-                  <Package className="w-4 h-4 text-primary" />
-                  <span className="text-sm font-bold">Links de Equipamento</span>
-                </div>
-                <div className="px-4 pb-4 flex flex-col gap-2">
-                  {activeLesson.equipment_links.map((eq: any, i: number) => (
-                    <a
-                      key={i}
-                      href={eq.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-2 text-sm text-primary hover:underline truncate"
-                    >
-                      <Link2 className="w-3.5 h-3.5 flex-shrink-0" />
-                      {eq.name || eq.url}
-                    </a>
-                  ))}
-                </div>
-              </div>
-            )}
           </div>
         </div>
       </div>
