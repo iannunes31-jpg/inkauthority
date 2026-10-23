@@ -289,6 +289,10 @@ export function PurchaseCourseModal({
                 </span>
                 {!isLoading && <ArrowRight className="w-4 h-4" />}
               </button>
+              <p className="text-[11px] text-muted-foreground text-center mt-3 relative z-10">
+                Ao continuar, você concorda com os{" "}
+                <a href="/termos" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">Termos de Uso</a>.
+              </p>
 
               <button
                 onClick={onClose}
