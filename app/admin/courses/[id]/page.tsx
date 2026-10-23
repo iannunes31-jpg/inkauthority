@@ -37,21 +37,28 @@ export default function CourseManagerPage() {
   const handleGenerateCaptions = async (lesson: any) => {
     if (!lesson.video_url) return alert("Essa aula não tem vídeo cadastrado.");
     setGeneratingCaptions(lesson.id);
-    setCaptionStatus(prev => ({ ...prev, [lesson.id]: "Gerando..." }));
+    setCaptionStatus(prev => ({ ...prev, [lesson.id]: "⏳ Iniciando..." }));
+    // The server does one step per call; keep calling while it reports progress (up to ~20 min).
     try {
-      const res = await fetch("/api/admin/generate-captions", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ videoId: lesson.video_url }),
-      });
-      const data = await res.json();
-      if (data.status === "done") {
-        setCaptionStatus(prev => ({ ...prev, [lesson.id]: "✓ PT / EN / ES" }));
-      } else if (data.status === "processing") {
+      for (let i = 0; i < 80; i++) {
+        const res = await fetch("/api/admin/generate-captions", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ videoId: lesson.video_url }),
+        });
+        const data = await res.json().catch(() => ({ error: `Erro ${res.status}` }));
+        if (data.status === "done") {
+          setCaptionStatus(prev => ({ ...prev, [lesson.id]: "✓ PT / EN / ES" }));
+          return;
+        }
+        if (data.status !== "processing") {
+          setCaptionStatus(prev => ({ ...prev, [lesson.id]: "Erro: " + (data.error || "desconhecido") }));
+          return;
+        }
         setCaptionStatus(prev => ({ ...prev, [lesson.id]: "⏳ " + data.message }));
-      } else {
-        setCaptionStatus(prev => ({ ...prev, [lesson.id]: "Erro: " + data.error }));
+        await new Promise((r) => setTimeout(r, 15000));
       }
+      setCaptionStatus(prev => ({ ...prev, [lesson.id]: "⏳ Ainda processando, clique de novo mais tarde" }));
     } catch {
       setCaptionStatus(prev => ({ ...prev, [lesson.id]: "Erro de conexão" }));
     } finally {

@@ -1,205 +1,113 @@
 import { NextRequest, NextResponse } from "next/server";
+import { createVertex } from "@ai-sdk/google-vertex";
+import { generateText } from "ai";
+import { checkIsAdmin } from "@/lib/auth-server";
+
+export const maxDuration = 300;
 
 const CF_ACCOUNT_ID = process.env.CLOUDFLARE_ACCOUNT_ID!;
 const CF_API_TOKEN = process.env.CLOUDFLARE_API_TOKEN!;
-
-// Languages to generate captions for
-const LANGUAGES = [
-  { code: "pt", label: "Português", whisperLang: "pt" },
-  { code: "en", label: "English", whisperLang: "en" },
-  { code: "es", label: "Español", whisperLang: "es" },
+const SOURCE = "pt";
+const TARGETS = [
+  { code: "en", name: "English" },
+  { code: "es", name: "Spanish (Latin America)" },
 ];
 
-// Transcribe audio using Cloudflare Workers AI Whisper
-async function transcribeWithWhisper(audioBuffer: ArrayBuffer, language: string): Promise<any> {
-  const base64Audio = Buffer.from(audioBuffer).toString("base64");
+const cf = (path: string, init: RequestInit = {}) =>
+  fetch(`https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT_ID}/stream/${path}`, {
+    ...init,
+    headers: { Authorization: `Bearer ${CF_API_TOKEN}`, ...(init.headers || {}) },
+  });
 
-  const response = await fetch(
-    `https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT_ID}/ai/run/@cf/openai/whisper`,
-    {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${CF_API_TOKEN}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        audio: base64Audio,
-        task: "transcribe",
-        language,
-        vtt: true,
-      }),
-    }
-  );
-
-  if (!response.ok) {
-    const err = await response.text();
-    throw new Error(`Whisper error: ${err}`);
+async function cfJson(path: string, init: RequestInit = {}) {
+  const res = await cf(path, init);
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok || body.success === false) {
+    throw new Error(body.errors?.[0]?.message || `Cloudflare ${res.status}`);
   }
-
-  return response.json();
+  return body.result;
 }
 
-// Translate text using Cloudflare Workers AI translation model
-async function translateText(text: string, targetLang: string): Promise<string> {
-  const response = await fetch(
-    `https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT_ID}/ai/run/@cf/meta/m2m100-1.2b`,
-    {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${CF_API_TOKEN}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        text,
-        source_lang: "pt",
-        target_lang: targetLang,
-      }),
+type Caption = { language: string; label?: string; generated?: boolean; status?: string };
+
+// Translates only the text lines of a WebVTT, keeping every cue timing, in chunks.
+async function translateVtt(vtt: string, targetName: string) {
+  const credentials = JSON.parse(process.env.GOOGLE_VERTEX_CREDENTIALS || "{}");
+  const vertex = createVertex({ project: credentials.project_id, location: "global", googleAuthOptions: { credentials } });
+
+  const blocks = vtt.replace(/\r/g, "").split(/\n{2,}/);
+  const header = blocks[0].startsWith("WEBVTT") ? blocks.shift()! : "WEBVTT";
+  const cues = blocks.filter((b) => b.includes("-->"));
+
+  const out: string[] = [];
+  for (let i = 0; i < cues.length; i += 120) {
+    const chunk = cues.slice(i, i + 120);
+    // Number the cues so the model's answer can be matched back without touching timings.
+    const numbered = chunk.map((c, n) => `[${n}] ${c.split("\n").filter((l) => !l.includes("-->")).join(" ")}`).join("\n");
+    const { text } = await generateText({
+      model: vertex("gemini-3.1-flash-lite"),
+      system: `You translate video subtitles from Brazilian Portuguese to ${targetName}. The video is a course for tattoo artists about marketing and positioning. Keep it natural and short, like real subtitles. Keep proper names and brand names (Ink Authority, Instagram, Reels). Answer with exactly one line per input line, in the same "[n] text" format, nothing else.`,
+      prompt: numbered,
+    });
+    const map = new Map<number, string>();
+    for (const line of text.split("\n")) {
+      const m = line.match(/^\s*\[(\d+)\]\s*(.*)$/);
+      if (m) map.set(Number(m[1]), m[2].trim());
     }
-  );
-
-  if (!response.ok) throw new Error("Translation error");
-  const data = await response.json();
-  return data.result?.translated_text || text;
-}
-
-// Upload SRT caption to Cloudflare Stream
-async function uploadCaption(videoId: string, langCode: string, vttContent: string): Promise<void> {
-  const formData = new FormData();
-  const blob = new Blob([vttContent], { type: "text/vtt" });
-  formData.append("file", blob, `${langCode}.vtt`);
-
-  const response = await fetch(
-    `https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT_ID}/stream/${videoId}/captions/${langCode}`,
-    {
-      method: "PUT",
-      headers: {
-        Authorization: `Bearer ${CF_API_TOKEN}`,
-      },
-      body: formData,
-    }
-  );
-
-  if (!response.ok) {
-    const err = await response.text();
-    throw new Error(`Caption upload error (${langCode}): ${err}`);
+    chunk.forEach((c, n) => {
+      const timing = c.split("\n").find((l) => l.includes("-->"))!;
+      const original = c.split("\n").filter((l) => !l.includes("-->") && !/^\d+$/.test(l.trim())).join(" ");
+      out.push(`${timing}\n${map.get(n) || original}`);
+    });
   }
+  return `${header}\n\n${out.join("\n\n")}\n`;
 }
 
-// Convert Whisper word-level timestamps to VTT format
-function buildVTT(words: Array<{ word: string; start: number; end: number }>): string {
-  if (!words || words.length === 0) return "WEBVTT\n\n";
-
-  const lines: string[] = ["WEBVTT", ""];
-  const CHUNK_DURATION = 5; // seconds per subtitle line
-  let chunkStart = words[0].start;
-  let chunkWords: string[] = [];
-
-  const formatTime = (s: number) => {
-    const h = Math.floor(s / 3600);
-    const m = Math.floor((s % 3600) / 60);
-    const sec = (s % 60).toFixed(3);
-    return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${sec.padStart(6, "0")}`;
-  };
-
-  for (const w of words) {
-    chunkWords.push(w.word);
-    if (w.end - chunkStart >= CHUNK_DURATION || w === words[words.length - 1]) {
-      lines.push(`${formatTime(chunkStart)} --> ${formatTime(w.end)}`);
-      lines.push(chunkWords.join(" ").trim());
-      lines.push("");
-      chunkStart = w.end;
-      chunkWords = [];
-    }
-  }
-
-  return lines.join("\n");
-}
-
+// Step by step, so each call stays short: the client calls again while the status is "processing".
+// 1. Ask Cloudflare Stream to generate the Portuguese captions from the audio (runs on their side).
+// 2. When ready, translate them to English and Spanish keeping the timings, and upload.
 export async function POST(req: NextRequest) {
+  if (!(await checkIsAdmin())) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
   try {
     const { videoId } = await req.json();
-    if (!videoId) return NextResponse.json({ error: "videoId required" }, { status: 400 });
+    if (!videoId || !/^[a-f0-9]{32}$/i.test(videoId)) return NextResponse.json({ error: "videoId inválido" }, { status: 400 });
 
-    // 1. Download audio from Cloudflare Stream
-    const audioUrl = `https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT_ID}/stream/${videoId}/downloads`;
-    const downloadsRes = await fetch(audioUrl, {
-      headers: { Authorization: `Bearer ${CF_API_TOKEN}` },
-    });
+    const captions: Caption[] = (await cfJson(`${videoId}/captions`)) ?? [];
+    const pt = captions.find((c) => c.language === SOURCE);
 
-    if (!downloadsRes.ok) throw new Error("Failed to get video downloads");
-    const downloadsData = await downloadsRes.json();
-    const mp4Url = downloadsData.result?.default?.url;
-
-    if (!mp4Url) {
-      // Create download if doesn't exist
-      await fetch(audioUrl, {
-        method: "POST",
-        headers: { Authorization: `Bearer ${CF_API_TOKEN}` },
-      });
-      return NextResponse.json({
-        status: "processing",
-        message: "Download do vídeo sendo preparado. Aguarde 1 minuto e tente novamente.",
-      });
+    if (!pt) {
+      await cfJson(`${videoId}/captions/${SOURCE}/generate`, { method: "POST" });
+      return NextResponse.json({ status: "processing", message: "Transcrevendo o áudio (pode levar alguns minutos)..." });
+    }
+    if (pt.status === "error") {
+      // Clear the failed track so the next click starts over.
+      await cf(`${videoId}/captions/${SOURCE}`, { method: "DELETE" });
+      return NextResponse.json({ error: "A transcrição falhou no Cloudflare. Clique de novo para tentar outra vez." }, { status: 502 });
+    }
+    if (pt.status && pt.status !== "ready") {
+      return NextResponse.json({ status: "processing", message: "Transcrevendo o áudio (pode levar alguns minutos)..." });
     }
 
-    // 2. Fetch the video file
-    const videoRes = await fetch(mp4Url);
-    if (!videoRes.ok) throw new Error("Failed to download video");
-    const audioBuffer = await videoRes.arrayBuffer();
+    const missing = TARGETS.filter((t) => !captions.some((c) => c.language === t.code));
+    if (missing.length) {
+      const vttRes = await cf(`${videoId}/captions/${SOURCE}/vtt`);
+      if (!vttRes.ok) throw new Error(`Não foi possível baixar a legenda em português (${vttRes.status}).`);
+      const vtt = await vttRes.text();
 
-    // 3. Transcribe in Portuguese (source language)
-    const transcription = await transcribeWithWhisper(audioBuffer, "pt");
-    const words = transcription.result?.words || [];
-    const fullText = transcription.result?.text || "";
+      // One language per call keeps each request well within the time limit.
+      const target = missing[0];
+      const translated = await translateVtt(vtt, target.name);
+      const form = new FormData();
+      form.append("file", new Blob([translated], { type: "text/vtt" }), `${target.code}.vtt`);
+      await cfJson(`${videoId}/captions/${target.code}`, { method: "PUT", body: form });
 
-    const results: Record<string, string> = {};
-
-    // 4. Generate captions for each language
-    for (const lang of LANGUAGES) {
-      let vttContent: string;
-
-      if (lang.code === "pt") {
-        // Source language — use direct transcription
-        vttContent = transcription.result?.vtt || buildVTT(words);
-      } else {
-        // Translate the full text
-        const translated = await translateText(fullText, lang.whisperLang);
-        // Build simple VTT from translated text (no word timestamps for translations)
-        const sentences = translated.match(/[^.!?]+[.!?]+/g) || [translated];
-        const avgDuration = words.length > 0
-          ? (words[words.length - 1].end - words[0].start) / sentences.length
-          : 5;
-
-        const formatTime = (s: number) => {
-          const h = Math.floor(s / 3600);
-          const m = Math.floor((s % 3600) / 60);
-          const sec = (s % 60).toFixed(3);
-          return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${sec.padStart(6, "0")}`;
-        };
-
-        let vttLines = ["WEBVTT", ""];
-        const startOffset = words[0]?.start || 0;
-        sentences.forEach((sentence, i) => {
-          const start = startOffset + i * avgDuration;
-          const end = start + avgDuration;
-          vttLines.push(`${formatTime(start)} --> ${formatTime(end)}`);
-          vttLines.push(sentence.trim());
-          vttLines.push("");
-        });
-        vttContent = vttLines.join("\n");
+      if (missing.length > 1) {
+        return NextResponse.json({ status: "processing", message: `Traduzindo (${target.code.toUpperCase()} pronto)...` });
       }
-
-      // 5. Upload to Cloudflare Stream
-      await uploadCaption(videoId, lang.code, vttContent);
-      results[lang.code] = "ok";
     }
 
-    return NextResponse.json({
-      status: "done",
-      message: "Legendas geradas com sucesso!",
-      languages: Object.keys(results),
-    });
-
+    return NextResponse.json({ status: "done", message: "Legendas prontas", languages: [SOURCE, ...TARGETS.map((t) => t.code)] });
   } catch (err: any) {
     console.error("Caption generation error:", err);
     return NextResponse.json({ error: err.message || "Erro interno" }, { status: 500 });
