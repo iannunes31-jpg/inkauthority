@@ -202,7 +202,7 @@ export function PurchaseCourseModal({
                   <>
                     <div className="flex items-baseline gap-2 flex-wrap">
                       <span className="text-2xl font-black text-foreground">
-                        12x de {price.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
+                        12x de {(Math.round((price / 12) * 100) / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
                       </span>
                     </div>
                     <p className="text-xs text-muted-foreground mt-1">
