@@ -124,11 +124,12 @@ export default function AdminCourses() {
                       </span>
                     </td>
                     <td className="py-4 text-right">
-                      <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <Link href={`/admin/courses/${course.id}`}>
-                          <button className="p-2 hover:bg-white/10 rounded-lg text-muted-foreground hover:text-white transition-colors">
-                            <Edit2 className="w-4 h-4" />
-                          </button>
+                      <div className="flex items-center justify-end gap-2">
+                        <Link
+                          href={`/admin/courses/${course.id}`}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-white/15 text-xs font-semibold hover:bg-white/10 transition-colors"
+                        >
+                          <Edit2 className="w-3.5 h-3.5" /> Editar
                         </Link>
                         <button onClick={() => handleDeleteCourse(course.id)} className="p-2 hover:bg-destructive/20 rounded-lg text-muted-foreground hover:text-destructive transition-colors">
                           <Trash2 className="w-4 h-4" />

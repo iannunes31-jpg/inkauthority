@@ -24,6 +24,24 @@ export async function POST(req: Request) {
   return NextResponse.json({ success: true });
 }
 
+export async function PATCH(req: Request) {
+  if (!(await checkIsAdmin())) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  }
+
+  const { id, title } = await req.json();
+  const clean = String(title ?? '').trim();
+  if (!id || !clean) return NextResponse.json({ error: 'O módulo precisa de um nome.' }, { status: 400 });
+
+  const { error } = await supabaseAdmin.from('modules').update({ title: clean.slice(0, 200) }).eq('id', id);
+  if (error) {
+    console.error('Erro ao renomear módulo:', error);
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+
+  return NextResponse.json({ success: true });
+}
+
 export async function DELETE(req: Request) {
   if (!(await checkIsAdmin())) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });

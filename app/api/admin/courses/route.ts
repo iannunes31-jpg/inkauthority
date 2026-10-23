@@ -56,6 +56,7 @@ export async function PATCH(req: Request) {
   const patch: Record<string, unknown> = {};
   if ('thumbnail_url' in body) patch.thumbnail_url = body.thumbnail_url || null;
   if ('is_published' in body) patch.is_published = !!body.is_published;
+  if ('description' in body) patch.description = String(body.description ?? '').trim().slice(0, 5000) || null;
   if ('title' in body) {
     const title = String(body.title ?? '').replace(/\s+/g, ' ').trim();
     if (!title) return NextResponse.json({ error: 'O nome do curso não pode ficar vazio.' }, { status: 400 });

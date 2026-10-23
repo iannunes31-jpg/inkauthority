@@ -176,7 +176,41 @@ export default function CourseManagerPage() {
     }
   };
 
+  // Set while the lesson modal edits an existing lesson instead of creating one.
+  const [editingLessonId, setEditingLessonId] = useState<string | null>(null);
+
+  const handleEditLesson = (moduleId: string, lesson: any) => {
+    setEditingLessonId(lesson.id);
+    setActiveModuleId(moduleId);
+    setNewLessonTitle(lesson.title?.trim() ?? "");
+    setNewLessonVideoId(lesson.video_url || null);
+    setMaterials(Array.isArray(lesson.support_materials) ? lesson.support_materials : []);
+    setEquipment(Array.isArray(lesson.equipment_links) ? lesson.equipment_links : []);
+    setEqName(""); setEqUrl("");
+    setIsLessonModalOpen(true);
+  };
+
+  const [editingModule, setEditingModule] = useState<{ id: string; title: string } | null>(null);
+  const saveModuleTitle = async () => {
+    if (!editingModule) return;
+    const res = await fetch("/api/admin/modules", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(editingModule),
+    }).catch(() => null);
+    if (!res?.ok) return alert((await res?.json().catch(() => ({})))?.error || "Não foi possível renomear o módulo.");
+    setEditingModule(null);
+    fetchCourseData();
+  };
+
+  const [editingDescription, setEditingDescription] = useState(false);
+  const [descriptionDraft, setDescriptionDraft] = useState("");
+  const saveDescription = async () => {
+    if (await updateCourse({ description: descriptionDraft }, "Não foi possível salvar a descrição.")) setEditingDescription(false);
+  };
+
   const handleOpenLessonModal = (moduleId: string) => {
+    setEditingLessonId(null);
     setActiveModuleId(moduleId);
     setNewLessonTitle("");
     setNewLessonVideoId(null);
@@ -193,19 +227,14 @@ export default function CourseManagerPage() {
       const targetModule = modules.find(m => m.id === activeModuleId);
       const nextIndex = targetModule?.lessons?.length || 0;
 
+      const fields = { title: newLessonTitle, video_url: newLessonVideoId, support_materials: materials, equipment_links: equipment };
       const res = await fetch("/api/admin/lessons", {
-        method: "POST",
+        method: editingLessonId ? "PATCH" : "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          module_id: activeModuleId,
-          title: newLessonTitle,
-          video_url: newLessonVideoId,
-          order_index: nextIndex,
-          support_materials: materials,
-          equipment_links: equipment,
-        }),
+        body: JSON.stringify(editingLessonId ? { id: editingLessonId, ...fields } : { module_id: activeModuleId, order_index: nextIndex, ...fields }),
       });
       if (!res.ok) throw new Error((await res.json()).error);
+      setEditingLessonId(null);
       setIsLessonModalOpen(false);
       fetchCourseData();
     } catch (err) {
@@ -295,9 +324,33 @@ export default function CourseManagerPage() {
               </button>
             </h2>
           )}
-          <p className="text-muted-foreground font-light flex items-center gap-2">
-            <Settings className="w-4 h-4" /> Gerenciador de Conteúdo do Curso
-          </p>
+          {editingDescription ? (
+            <div className="mt-2 space-y-2">
+              <textarea
+                value={descriptionDraft}
+                onChange={(e) => setDescriptionDraft(e.target.value)}
+                maxLength={5000}
+                rows={5}
+                autoFocus
+                className="w-full bg-black/50 border border-white/10 rounded-lg p-3 text-sm focus:outline-none focus:border-primary resize-y"
+                placeholder="Descrição que o aluno vê na página do curso"
+              />
+              <div className="flex gap-2">
+                <Button onClick={saveDescription} className="metallic-gradient text-black font-bold">Salvar descrição</Button>
+                <Button variant="ghost" onClick={() => setEditingDescription(false)}>Cancelar</Button>
+              </div>
+            </div>
+          ) : (
+            <div className="mt-1 flex items-start gap-2">
+              <p className="text-sm text-muted-foreground line-clamp-2 max-w-3xl">{course.description || "Sem descrição"}</p>
+              <button
+                onClick={() => { setDescriptionDraft(course.description ?? ""); setEditingDescription(true); }}
+                className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1 shrink-0 border border-white/10 rounded-md px-2 py-1"
+              >
+                <Pencil className="w-3 h-3" /> Editar descrição
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
@@ -346,10 +399,27 @@ export default function CourseManagerPage() {
             modules.map((mod: any, index: number) => (
               <div key={mod.id} className="glass rounded-2xl border border-white/10 overflow-hidden">
                 <div className="bg-black/60 p-4 border-b border-white/10 flex items-center justify-between">
-                   <h3 className="text-lg font-bold flex items-center gap-2">
-                     <span className="bg-white/10 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs">{index + 1}</span>
-                     {mod.title}
-                   </h3>
+                   {editingModule?.id === mod.id ? (
+                     <div className="flex items-center gap-2 flex-1 mr-4">
+                       <Input
+                         value={editingModule?.title ?? ""}
+                         onChange={(e) => setEditingModule({ id: mod.id, title: e.target.value })}
+                         onKeyDown={(e) => { if (e.key === "Enter") saveModuleTitle(); if (e.key === "Escape") setEditingModule(null); }}
+                         autoFocus
+                         className="bg-black/50 font-bold h-9"
+                       />
+                       <Button size="sm" onClick={saveModuleTitle} className="metallic-gradient text-black font-bold h-9">Salvar</Button>
+                       <Button size="sm" variant="ghost" onClick={() => setEditingModule(null)} className="h-9">Cancelar</Button>
+                     </div>
+                   ) : (
+                     <h3 className="text-lg font-bold flex items-center gap-2">
+                       <span className="bg-white/10 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs">{index + 1}</span>
+                       {mod.title}
+                       <button onClick={() => setEditingModule({ id: mod.id, title: mod.title.trim() })} className="text-muted-foreground hover:text-foreground" title="Renomear módulo" aria-label="Renomear módulo">
+                         <Pencil className="w-3.5 h-3.5" />
+                       </button>
+                     </h3>
+                   )}
                    <div className="flex gap-2">
                      <Button variant="ghost" size="sm" onClick={() => handleOpenLessonModal(mod.id)} className="text-primary hover:text-primary/80 hover:bg-primary/10">
                        <Plus className="w-4 h-4 mr-1" /> Nova Aula
@@ -387,6 +457,14 @@ export default function CourseManagerPage() {
                                   </div>
                                 );
                               })()}
+                              <Button
+                                variant="ghost" size="sm"
+                                onClick={() => handleEditLesson(mod.id, lesson)}
+                                className="text-muted-foreground hover:text-primary h-8 text-xs gap-1.5"
+                                title="Editar aula (título, vídeo, materiais, equipamentos)"
+                              >
+                                <Pencil className="w-3.5 h-3.5" /> Editar
+                              </Button>
                               <Button
                                 variant="ghost" size="sm"
                                 onClick={() => openMaterials(lesson)}
@@ -468,7 +546,7 @@ export default function CourseManagerPage() {
             <button onClick={() => setIsLessonModalOpen(false)} className="absolute top-4 right-4 text-muted-foreground hover:text-white">
                <X className="w-5 h-5" />
             </button>
-            <h3 className="text-xl font-bold mb-4">Nova Aula</h3>
+            <h3 className="text-xl font-bold mb-4">{editingLessonId ? "Editar Aula" : "Nova Aula"}</h3>
             
             <div className="space-y-4 mb-6">
                <div>
@@ -579,7 +657,7 @@ export default function CourseManagerPage() {
                  disabled={!newLessonTitle || !newLessonVideoId || isSavingLesson}
                  className="metallic-gradient text-black font-bold"
               >
-                 {isSavingLesson ? "Salvando..." : "Salvar Aula"}
+                 {isSavingLesson ? "Salvando..." : editingLessonId ? "Salvar alterações" : "Salvar Aula"}
               </Button>
             </div>
           </div>

@@ -29,22 +29,37 @@ export async function POST(req: Request) {
   return NextResponse.json({ success: true });
 }
 
-// Edits the support materials of an existing lesson.
+const cleanLinks = (list: any[]) =>
+  list
+    .filter((m: any) => m && typeof m.name === 'string' && typeof m.url === 'string' && /^https?:\/\//.test(m.url))
+    .map((m: any) => ({ name: m.name.trim().slice(0, 120) || 'Material', url: m.url.trim() }))
+    .slice(0, 30);
+
+// Edits an existing lesson; only the fields sent are changed.
 export async function PATCH(req: Request) {
   if (!(await checkIsAdmin())) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
-  const { id, support_materials } = await req.json();
-  if (!id || !Array.isArray(support_materials)) {
-    return NextResponse.json({ error: 'id and support_materials are required' }, { status: 400 });
-  }
-  const materials = support_materials
-    .filter((m: any) => m && typeof m.name === 'string' && typeof m.url === 'string' && /^https?:\/\//.test(m.url))
-    .map((m: any) => ({ name: m.name.trim().slice(0, 120) || 'Material', url: m.url.trim() }))
-    .slice(0, 30);
+  const body = await req.json();
+  if (!body.id) return NextResponse.json({ error: 'id is required' }, { status: 400 });
 
-  const { error } = await supabaseAdmin.from('lessons').update({ support_materials: materials }).eq('id', id);
+  const patch: Record<string, unknown> = {};
+  if ('title' in body) {
+    const title = String(body.title ?? '').trim();
+    if (!title) return NextResponse.json({ error: 'A aula precisa de um título.' }, { status: 400 });
+    patch.title = title.slice(0, 200);
+  }
+  if ('video_url' in body) {
+    const video = String(body.video_url ?? '').trim();
+    if (!video) return NextResponse.json({ error: 'A aula precisa de um vídeo.' }, { status: 400 });
+    patch.video_url = video;
+  }
+  if (Array.isArray(body.support_materials)) patch.support_materials = cleanLinks(body.support_materials);
+  if (Array.isArray(body.equipment_links)) patch.equipment_links = cleanLinks(body.equipment_links);
+  if (!Object.keys(patch).length) return NextResponse.json({ error: 'Nada para atualizar.' }, { status: 400 });
+
+  const { error } = await supabaseAdmin.from('lessons').update(patch).eq('id', body.id);
   if (error) {
     console.error('Erro ao atualizar materiais:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });
