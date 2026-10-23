@@ -1865,7 +1865,9 @@ export function FloatingMenu() {
         if (!val || !val.trim()) return;
 
         const anyNode = node as any;
-        if (anyNode._parentOrig === undefined) {
+        // Re-read the original when the app itself changed this text since our last pass
+        // (e.g. switching lessons); otherwise we'd keep writing the old text back.
+        if (anyNode._parentOrig === undefined || (anyNode._parentSet !== undefined && val !== anyNode._parentSet)) {
           const norm = val.trim();
           const pt = reverseMap[norm.toLowerCase()];
           anyNode._parentOrig = pt ? val.replace(norm, pt) : val;
@@ -1880,6 +1882,7 @@ export function FloatingMenu() {
           }
         }
 
+        anyNode._parentSet = res;
         if (res !== node.nodeValue) {
           node.nodeValue = res;
         }
