@@ -14,13 +14,16 @@ async function evoPost(path: string, body: unknown) {
   return res.ok;
 }
 
+// A full JID (e.g. "123@lid" for contacts with a hidden number) must be sent as is.
+const target = (number: string) => (number.includes("@") ? number : number.replace(/\D/g, ""));
+
 // Evolution API v2 payloads (the v1 "textMessage"/"mediaMessage" shapes are rejected).
 export const sendText = (instance: string, number: string, text: string, delay = 1200) =>
-  evoPost(`/message/sendText/${instance}`, { number: number.replace(/\D/g, ""), text, delay });
+  evoPost(`/message/sendText/${instance}`, { number: target(number), text, delay });
 
 export const sendImage = (instance: string, number: string, media: string, caption: string, mimetype = "image/jpeg") =>
   evoPost(`/message/sendMedia/${instance}`, {
-    number: number.replace(/\D/g, ""),
+    number: target(number),
     mediatype: "image",
     mimetype,
     caption,

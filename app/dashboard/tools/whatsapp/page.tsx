@@ -932,7 +932,7 @@ function AssistantPage() {
                 </p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {([
-                    { key: "allow_previews", label: "Criar prévias de arte para o cliente", options: [["nao", "Não"], ["sim", "Sim, quando o cliente pedir"]] },
+                    { key: "allow_previews", label: "Criar prévias de arte para o cliente", options: [["sim", "Sim, quando o cliente pedir"], ["nao", "Não"]] },
                     { key: "followup_enabled", label: "Follow-up automático", options: [["sim", "Ligado"], ["nao", "Desligado"]] },
                     { key: "followup_hours", label: "Mandar follow-up depois de", options: [["24", "24 horas sem resposta"], ["48", "48 horas sem resposta"], ["72", "72 horas sem resposta"]] },
                     { key: "followup_max", label: "Máximo de follow-ups por cliente", options: [["1", "1"], ["2", "2"], ["3", "3"]] },

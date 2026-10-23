@@ -6,7 +6,7 @@ import { SALES_INSTANCE, getSalesSettings, buildSalesPrompt } from '@/lib/sales-
 import { BODY_PART_GROUPS, BODY_PART_LABELS, formatMoney } from '@/lib/body-parts';
 import { countryFromPhone, OTHER_COUNTRIES, CountryRule, CountrySettings } from '@/lib/countries';
 import { ARTIST_INFO_FIELDS, POSITIONING_OPTIONS, PRICING_MODELS, ArtistInfo, traitPrompts, automationSettings } from '@/lib/artist-info';
-import { isStage, sendImage, generateImage } from '@/lib/dante';
+import { isStage, sendText, sendImage, generateImage } from '@/lib/dante';
 
 // Previews are generated after the reply is sent; give that work room to finish.
 export const maxDuration = 120;
@@ -314,9 +314,9 @@ ${[...infoLines, positioning ? `- ${positioning}` : ''].filter(Boolean).join('\n
     const countryInstructions = countryRule?.instructions?.trim();
 
     const automation = automationSettings(artistInfo);
-    const allowPreviews = automation.allow_previews === 'sim' && (customer?.previews_sent ?? 0) < 2;
+    const allowPreviews = automation.allow_previews === 'sim' && (customer?.previews_sent ?? 0) < 3;
     const previewRule = allowPreviews
-      ? '- Se o cliente pedir para ver uma previa, rascunho ou exemplo do desenho e a ideia ja estiver definida (o que, estilo e tamanho), diga que vai mandar uma previa ilustrativa e inclua no FINAL da resposta a tag [GERAR_PREVIA: descricao detalhada em ingles do desenho — elementos, estilo, composicao, nivel de detalhe]. Deixe claro que o desenho final e criado com exclusividade pelo artista.'
+      ? '- PREVIA DE ARTE: voce CONSEGUE gerar previas. Se o cliente pedir para ver uma previa, rascunho, esboco ou exemplo do desenho e voce ja souber O QUE ele quer tatuar, diga que vai mandar uma previa ilustrativa em instantes e inclua OBRIGATORIAMENTE no FINAL da resposta a tag [GERAR_PREVIA: descricao detalhada em ingles do desenho — elementos, estilo, composicao, nivel de detalhe]. Sem a tag nenhuma imagem e enviada, entao nunca prometa a previa sem ela. Se faltar o estilo, use o estilo principal do estudio. So pergunte antes se voce nao souber nada do desenho. Deixe claro que e uma previa e que o desenho final e criado com exclusividade pelo artista.'
       : '- Se o cliente pedir uma previa ou rascunho do desenho, explique com naturalidade que o artista cria o desenho exclusivo nos dias antes da sessao e que ele vai ver tudo antes de tatuar.';
 
     // New accounts may have empty fields; never let "null" leak into the prompt.
@@ -514,15 +514,27 @@ No FINAL de TODA resposta inclua exatamente uma tag [ETAPA: x], onde x e a etapa
       }
 
       // AI preview: generated after the reply so the client isn't kept waiting
-      const previewDesc = previewMatch?.[1]?.trim();
+      // If the model promised a preview the client asked for but forgot the tag, build it from the client's own words.
+      const askedPreview = /pr[eé]via|rascunho|esbo[cç]o|exemplo d[oae]|preview|sketch|mock ?up|como (vai )?ficar/i.test(messageText);
+      const promisedPreview = /pr[eé]via|preview|esbo[cç]o|rascunho/i.test(finalResponse);
+      const fallbackDesc = askedPreview && promisedPreview
+        ? [...formattedHistory.filter((m) => m.role === 'user').slice(-4).map((m) => m.content), messageText].join(' | ')
+        : '';
+      const previewDesc = previewMatch?.[1]?.trim() || fallbackDesc;
+      console.log('[WPP] preview:', { tag: !!previewMatch, fallback: !!fallbackDesc, allowPreviews, customer: !!customer?.id });
       if (previewDesc && allowPreviews && customer?.id) {
         after(async () => {
           try {
             const img = await generateImage(
               `Tattoo design preview for a client: ${previewDesc}. Studio styles: ${settings.styles || 'any'}. Clean, professional tattoo flash illustration on a plain white background, centered, no text, no watermark, no body or skin.`
             );
-            if (!img) return;
-            await sendImage(instanceName, phoneNumber, img.base64, 'Prévia ilustrativa gerada por IA ✨ O desenho final é criado com exclusividade pelo artista.', img.mimeType);
+            const sent = img && await sendImage(instanceName, phoneNumber, img.base64, 'Prévia ilustrativa gerada por IA ✨ O desenho final é criado com exclusividade pelo artista.', img.mimeType);
+            if (!sent) {
+              // The client was promised an image; don't leave them waiting in silence.
+              console.error('[WPP] preview not delivered', { generated: !!img });
+              await sendText(instanceName, phoneNumber, 'Não consegui finalizar a prévia agora 😕 Mas fica tranquilo: o artista vai preparar o desenho com todo cuidado e você vê tudo antes da sessão!');
+              return;
+            }
             await supabase.from('customers').update({ previews_sent: (customer.previews_sent ?? 0) + 1 }).eq('id', customer.id);
             await supabase.from('chat_history').insert({ clerk_user_id, phone_number: remoteJid, role: 'assistant', content: '[Prévia ilustrativa enviada ao cliente]' });
           } catch (err) {

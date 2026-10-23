@@ -124,14 +124,14 @@ export function traitPrompts(info: Record<string, string | undefined>) {
 
 // Dante automations; stored in artist_info like the other preferences.
 export const AUTOMATION_OPTIONS = {
-  allow_previews: ["nao", "sim"],
+  allow_previews: ["sim", "nao"],
   followup_enabled: ["sim", "nao"],
   followup_hours: ["24", "48", "72"],
   followup_max: ["1", "2", "3"],
 } as const;
 
 export const AUTOMATION_DEFAULTS: Record<keyof typeof AUTOMATION_OPTIONS, string> = {
-  allow_previews: "nao",
+  allow_previews: "sim",
   followup_enabled: "sim",
   followup_hours: "48",
   followup_max: "2",
