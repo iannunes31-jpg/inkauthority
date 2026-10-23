@@ -5,7 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ArrowLeft, Plus, PlayCircle, Save, X, Layers, Settings, Trash2, Link2, BookOpen, Subtitles, Pencil } from "lucide-react";
+import { ArrowLeft, Plus, PlayCircle, Save, X, Layers, Settings, Trash2, Link2, BookOpen, Subtitles, Pencil, GripVertical } from "lucide-react";
 import Link from "next/link";
 import { VideoUploader } from "@/components/admin/VideoUploader";
 import { ImageUpload } from "@/components/admin/ImageUpload";
@@ -209,6 +209,59 @@ export default function CourseManagerPage() {
     if (await updateCourse({ description: descriptionDraft }, "Não foi possível salvar a descrição.")) setEditingDescription(false);
   };
 
+  // Drag and drop: modules reorder among themselves; lessons reorder or move to another module.
+  type Drag = { type: "module" | "lesson"; id: string };
+  const [drag, setDrag] = useState<Drag | null>(null);
+  const [dropAt, setDropAt] = useState<string | null>(null);
+  const lowerHalf = (e: React.DragEvent) => {
+    const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    return e.clientY > r.top + r.height / 2;
+  };
+  const dropLine = (key: string): React.CSSProperties | undefined =>
+    dropAt === `${key}-before` ? { boxShadow: "inset 0 3px 0 0 #d4d4d8" }
+    : dropAt === `${key}-after` ? { boxShadow: "inset 0 -3px 0 0 #d4d4d8" }
+    : undefined;
+  const endDrag = () => { setDrag(null); setDropAt(null); };
+
+  const saveOrder = async (next: any[]) => {
+    const previous = modules;
+    setModules(next);
+    const res = await fetch("/api/admin/courses/reorder", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ courseId: id, modules: next.map((m: any) => ({ id: m.id, lessons: (m.lessons ?? []).map((l: any) => l.id) })) }),
+    }).catch(() => null);
+    if (!res?.ok) {
+      setModules(previous);
+      alert((await res?.json().catch(() => ({})))?.error || "Não foi possível salvar a nova ordem.");
+    }
+  };
+
+  const dropModule = (targetId: string, after: boolean) => {
+    if (drag?.type !== "module" || drag.id === targetId) return endDrag();
+    const moved = modules.find((m: any) => m.id === drag.id);
+    const list = modules.filter((m: any) => m.id !== drag.id);
+    list.splice(list.findIndex((m: any) => m.id === targetId) + (after ? 1 : 0), 0, moved);
+    endDrag();
+    saveOrder(list);
+  };
+
+  // targetLessonId null = end of the module.
+  const dropLesson = (targetModuleId: string, targetLessonId: string | null, after: boolean) => {
+    if (drag?.type !== "lesson" || drag.id === targetLessonId) return endDrag();
+    let moved: any = null;
+    const next = modules.map((m: any) => ({
+      ...m,
+      lessons: (m.lessons ?? []).filter((l: any) => (l.id === drag.id ? ((moved = l), false) : true)),
+    }));
+    const target = next.find((m: any) => m.id === targetModuleId);
+    if (!moved || !target) return endDrag();
+    const at = targetLessonId ? target.lessons.findIndex((l: any) => l.id === targetLessonId) + (after ? 1 : 0) : target.lessons.length;
+    target.lessons.splice(at, 0, moved);
+    endDrag();
+    saveOrder(next);
+  };
+
   const handleOpenLessonModal = (moduleId: string) => {
     setEditingLessonId(null);
     setActiveModuleId(moduleId);
@@ -397,8 +450,24 @@ export default function CourseManagerPage() {
              </div>
           ) : (
             modules.map((mod: any, index: number) => (
-              <div key={mod.id} className="glass rounded-2xl border border-white/10 overflow-hidden">
-                <div className="bg-black/60 p-4 border-b border-white/10 flex items-center justify-between">
+              <div
+                key={mod.id}
+                className={`glass rounded-2xl border border-white/10 overflow-hidden transition-opacity ${drag?.id === mod.id ? "opacity-40" : ""}`}
+                style={dropLine(`mod-${mod.id}`)}
+                onDragOver={(e) => {
+                  if (drag?.type !== "module") return;
+                  e.preventDefault();
+                  setDropAt(`mod-${mod.id}-${lowerHalf(e) ? "after" : "before"}`);
+                }}
+                onDrop={(e) => { if (drag?.type === "module") { e.preventDefault(); dropModule(mod.id, lowerHalf(e)); } }}
+              >
+                <div
+                  draggable={editingModule?.id !== mod.id}
+                  onDragStart={(e) => { setDrag({ type: "module", id: mod.id }); e.dataTransfer.effectAllowed = "move"; e.dataTransfer.setData("text/plain", mod.id); }}
+                  onDragEnd={endDrag}
+                  className="bg-black/60 p-4 border-b border-white/10 flex items-center justify-between cursor-grab active:cursor-grabbing"
+                >
+                   <GripVertical className="w-4 h-4 text-muted-foreground mr-2 shrink-0" aria-label="Arraste para mudar a ordem do módulo" />
                    {editingModule?.id === mod.id ? (
                      <div className="flex items-center gap-2 flex-1 mr-4">
                        <Input
@@ -429,13 +498,38 @@ export default function CourseManagerPage() {
                      </Button>
                    </div>
                 </div>
-                <div className="p-2">
+                <div
+                  className="p-2"
+                  style={dropAt === `end-${mod.id}` ? { boxShadow: "inset 0 -3px 0 0 #d4d4d8" } : undefined}
+                  onDragOver={(e) => {
+                    if (drag?.type !== "lesson") return;
+                    e.preventDefault();
+                    if (e.target === e.currentTarget || !(e.target as HTMLElement).closest("[data-lesson-row]")) setDropAt(`end-${mod.id}`);
+                  }}
+                  onDrop={(e) => { if (drag?.type === "lesson") { e.preventDefault(); dropLesson(mod.id, null, true); } }}
+                >
                    {(!mod.lessons || mod.lessons.length === 0) ? (
-                      <div className="p-6 text-center text-sm text-white/40">Este módulo não tem aulas.</div>
+                      <div className="p-6 text-center text-sm text-white/40">{drag?.type === "lesson" ? "Solte a aula aqui" : "Este módulo não tem aulas."}</div>
                    ) : (
                       mod.lessons.map((lesson: any, lIndex: number) => (
-                        <div key={lesson.id} className="flex items-center justify-between p-3 hover:bg-white/5 rounded-lg group transition-colors">
+                        <div
+                          key={lesson.id}
+                          data-lesson-row=""
+                          draggable
+                          onDragStart={(e) => { e.stopPropagation(); setDrag({ type: "lesson", id: lesson.id }); e.dataTransfer.effectAllowed = "move"; e.dataTransfer.setData("text/plain", lesson.id); }}
+                          onDragEnd={endDrag}
+                          onDragOver={(e) => {
+                            if (drag?.type !== "lesson") return;
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setDropAt(`les-${lesson.id}-${lowerHalf(e) ? "after" : "before"}`);
+                          }}
+                          onDrop={(e) => { if (drag?.type === "lesson") { e.preventDefault(); e.stopPropagation(); dropLesson(mod.id, lesson.id, lowerHalf(e)); } }}
+                          style={dropLine(`les-${lesson.id}`)}
+                          className={`flex items-center justify-between p-3 hover:bg-white/5 rounded-lg group transition-colors cursor-grab active:cursor-grabbing ${drag?.id === lesson.id ? "opacity-40" : ""}`}
+                        >
                            <div className="flex items-center gap-3 min-w-0">
+                              <GripVertical className="w-4 h-4 text-muted-foreground/60 shrink-0" aria-label="Arraste para mudar a ordem da aula" />
                               <PlayCircle className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
                               <span className="text-sm font-medium whitespace-nowrap truncate">{lIndex + 1}. {lesson.title}</span>
                            </div>
