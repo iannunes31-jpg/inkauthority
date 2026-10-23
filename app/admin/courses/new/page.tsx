@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { ArrowLeft, Save, Image as ImageIcon } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { ImageUpload } from "@/components/admin/ImageUpload";
 
 export default function NewCoursePage() {
   const router = useRouter();
@@ -92,17 +93,7 @@ export default function NewCoursePage() {
               <ImageIcon className="w-5 h-5 text-primary" />
               Capa do Curso (Opcional)
             </h3>
-            <Input 
-                value={thumbnailUrl}
-                onChange={(e) => setThumbnailUrl(e.target.value)}
-                placeholder="https://exemplo.com/imagem.jpg" 
-                className="bg-black/40 border-white/10 text-white"
-            />
-            {thumbnailUrl && (
-              <div className="mt-4 aspect-video rounded-xl border border-white/10 overflow-hidden bg-black relative">
-                <img src={thumbnailUrl} alt="Thumbnail preview" className="w-full h-full object-cover" />
-              </div>
-            )}
+            <ImageUpload value={thumbnailUrl} onChange={setThumbnailUrl} />
           </div>
         </div>
 

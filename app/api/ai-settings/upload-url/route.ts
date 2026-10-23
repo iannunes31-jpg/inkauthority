@@ -1,8 +1,11 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
+import { checkIsAdmin } from '@/lib/auth-server';
 
 const BUCKET = 'assets';
+// Course covers are admin-only; everything else is an artist's style reference.
+const ADMIN_FOLDERS = ['course-covers'];
 const ALLOWED_EXT = ['jpg', 'jpeg', 'png', 'webp', 'gif', 'heic', 'heif'];
 
 async function signedUpload(path: string) {
@@ -26,7 +29,11 @@ export async function POST(req: Request) {
   const { userId } = await auth();
   if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const { files } = (await req.json()) as { files?: { ext?: string }[] };
+  const { files, folder: rawFolder } = (await req.json()) as { files?: { ext?: string }[]; folder?: string };
+  const folder = ADMIN_FOLDERS.includes(rawFolder ?? '') ? rawFolder! : 'style-references';
+  if (folder !== 'style-references' && !(await checkIsAdmin())) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  }
   if (!Array.isArray(files) || files.length === 0 || files.length > 10) {
     return NextResponse.json({ error: 'Envie de 1 a 10 arquivos.' }, { status: 400 });
   }
@@ -37,7 +44,7 @@ export async function POST(req: Request) {
     if (!ALLOWED_EXT.includes(ext)) {
       return NextResponse.json({ error: `Formato não suportado: .${ext}` }, { status: 400 });
     }
-    const path = `style-references/${userId}-${crypto.randomUUID()}.${ext}`;
+    const path = `${folder}/${userId}-${crypto.randomUUID()}.${ext}`;
     const { data, error } = await signedUpload(path);
     if (error || !data) {
       console.error('[upload-url] createSignedUploadUrl error:', error);

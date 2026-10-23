@@ -136,7 +136,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               initial={{ opacity: 0, scale: 0.8 }}
               animate={{ opacity: 1, scale: 1 }}
               onClick={() => setShowPurchaseModal(true)}
-              className="fixed bottom-24 left-6 z-40 metallic-gradient text-black font-bold uppercase tracking-[0.15em] text-[11px] h-12 px-5 rounded-full flex items-center gap-2 shadow-lg hover:scale-105 transition-transform neon-glow"
+              className="fixed bottom-24 left-6 lg:left-4 lg:w-56 justify-center z-40 metallic-gradient text-black font-bold uppercase tracking-[0.15em] text-[11px] h-12 px-5 rounded-full flex items-center gap-2 shadow-lg hover:scale-105 transition-transform neon-glow"
             >
               Comprar Stream Class
               <ArrowRight className="w-3.5 h-3.5" />

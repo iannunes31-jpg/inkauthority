@@ -31,6 +31,27 @@ export async function POST(req: Request) {
   return NextResponse.json(data);
 }
 
+// Only the cover can be changed after creation for now.
+export async function PATCH(req: Request) {
+  if (!(await checkIsAdmin())) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  }
+
+  const { id, thumbnail_url } = await req.json();
+  if (!id) return NextResponse.json({ error: 'Missing id' }, { status: 400 });
+
+  const { error } = await supabaseAdmin
+    .from('courses')
+    .update({ thumbnail_url: thumbnail_url || null })
+    .eq('id', id);
+  if (error) {
+    console.error('Erro ao atualizar curso:', error);
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+
+  return NextResponse.json({ success: true });
+}
+
 export async function DELETE(req: Request) {
   if (!(await checkIsAdmin())) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });

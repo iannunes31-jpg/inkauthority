@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { ArrowLeft, Plus, PlayCircle, Save, X, Layers, Settings, Trash2, Link2, BookOpen, Subtitles } from "lucide-react";
 import Link from "next/link";
 import { VideoUploader } from "@/components/admin/VideoUploader";
+import { ImageUpload } from "@/components/admin/ImageUpload";
 
 export default function CourseManagerPage() {
   const { id } = useParams();
@@ -62,6 +63,20 @@ export default function CourseManagerPage() {
   useEffect(() => {
     fetchCourseData();
   }, [id]);
+
+  const updateCover = async (url: string) => {
+    const previous = course.thumbnail_url;
+    setCourse((c: any) => ({ ...c, thumbnail_url: url }));
+    const res = await fetch("/api/admin/courses", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id, thumbnail_url: url }),
+    });
+    if (!res.ok) {
+      setCourse((c: any) => ({ ...c, thumbnail_url: previous }));
+      alert("Não foi possível salvar a capa. Tente de novo.");
+    }
+  };
 
   const fetchCourseData = async () => {
     try {
@@ -209,15 +224,9 @@ export default function CourseManagerPage() {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <div className="md:col-span-1 space-y-4">
           <div className="glass rounded-xl p-4 border border-white/10 text-center">
-             {course.thumbnail_url ? (
-                <div className="aspect-video w-full rounded-lg overflow-hidden mb-4 border border-white/10">
-                   <img src={course.thumbnail_url} alt={course.title} className="w-full h-full object-cover" />
-                </div>
-             ) : (
-                <div className="aspect-video w-full rounded-lg bg-black/50 mb-4 border border-white/10 flex items-center justify-center">
-                   <Layers className="w-8 h-8 text-white/20" />
-                </div>
-             )}
+             <div className="mb-4 text-left">
+                <ImageUpload value={course.thumbnail_url || ""} onChange={updateCover} />
+             </div>
              <p className="text-sm font-semibold">{course.is_published ? "🟢 Publicado" : "🟡 Rascunho"}</p>
           </div>
           
