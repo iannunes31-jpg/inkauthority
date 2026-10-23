@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useUser } from "@clerk/nextjs";
-import { Maximize, Minimize, ShieldCheck, Loader2 } from "lucide-react";
+import { Maximize, Minimize, ShieldCheck, Loader2, SkipForward, X } from "lucide-react";
 import { TermsContent } from "@/components/TermsContent";
 import { TERMS_VERSION } from "@/lib/terms";
 
@@ -12,14 +12,40 @@ interface VideoPlayerProps {
   className?: string;
   lessonId?: string;
   onProgress?: (percent: number) => void;
+  /** The lesson that comes after this one; shows "next lesson" near the end and plays it automatically. */
+  next?: { title: string; onGo: () => void };
+  autoplay?: boolean;
 }
 
 // Shared across players on the page so the Terms check runs once per visit.
 let termsAccepted = false;
 
-export function VideoPlayer({ videoId, poster, className = "", lessonId, onProgress }: VideoPlayerProps) {
+const NEXT_BUTTON_SECONDS = 20; // "Próxima aula" shows up this long before the end
+const AUTO_NEXT_SECONDS = 5; // countdown after the video ends
+
+// Cloudflare's player SDK: gives currentTime/duration and the "ended" event of the iframe player.
+let sdkPromise: Promise<any> | null = null;
+function loadStreamSdk() {
+  if (typeof window === "undefined") return Promise.resolve(null);
+  if ((window as any).Stream) return Promise.resolve((window as any).Stream);
+  sdkPromise ??= new Promise((resolve) => {
+    const script = document.createElement("script");
+    script.src = "https://embed.cloudflarestream.com/embed/sdk.latest.js";
+    script.onload = () => resolve((window as any).Stream ?? null);
+    script.onerror = () => resolve(null);
+    document.head.appendChild(script);
+  });
+  return sdkPromise;
+}
+
+export function VideoPlayer({ videoId, poster, className = "", lessonId, onProgress, next, autoplay }: VideoPlayerProps) {
   const { user } = useUser();
   const wrapperRef = useRef<HTMLDivElement>(null);
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+  const [nearEnd, setNearEnd] = useState(false);
+  const [countdown, setCountdown] = useState<number | null>(null);
+  const nextRef = useRef(next);
+  nextRef.current = next;
   const [terms, setTerms] = useState<"loading" | "pending" | "accepted" | "error">(termsAccepted ? "accepted" : "loading");
   const [showTerms, setShowTerms] = useState(false);
   const [agree, setAgree] = useState(false);
@@ -73,28 +99,38 @@ export function VideoPlayer({ videoId, poster, className = "", lessonId, onProgr
     else setFullscreen(true);
   };
 
+  // Progress, "next lesson" near the end and the countdown when the video finishes.
   useEffect(() => {
-    if (!lessonId) return;
+    setNearEnd(false);
+    setCountdown(null);
+    if (terms !== "accepted" || !iframeRef.current) return;
+    let player: any = null;
+    let cancelled = false;
+    loadStreamSdk().then((Stream) => {
+      if (cancelled || !Stream || !iframeRef.current) return;
+      player = Stream(iframeRef.current);
+      player.addEventListener("timeupdate", () => {
+        const current = player.currentTime || 0;
+        const duration = player.duration || 0;
+        if (!duration) return;
+        const percent = Math.min(100, Math.round((current / duration) * 100));
+        if (lessonId) try { localStorage.setItem(`progress_${lessonId}`, String(percent)); } catch {}
+        onProgress?.(percent);
+        setNearEnd(duration - current <= NEXT_BUTTON_SECONDS);
+      });
+      player.addEventListener("ended", () => {
+        if (nextRef.current) setCountdown(AUTO_NEXT_SECONDS);
+      });
+    });
+    return () => { cancelled = true; };
+  }, [videoId, terms]);
 
-    const handleMessage = (e: MessageEvent) => {
-      try {
-        const data = typeof e.data === "string" ? JSON.parse(e.data) : e.data;
-        const eventName = data?.name || data?.type || data?.event;
-        if (eventName === "timeupdate" || eventName === "stream-timeupdate") {
-          const currentTime = data?.data?.currentTime ?? data?.currentTime ?? 0;
-          const duration = data?.data?.duration ?? data?.duration ?? 0;
-          if (duration > 0 && currentTime > 0) {
-            const percent = Math.min(100, Math.round((currentTime / duration) * 100));
-            try { localStorage.setItem(`progress_${lessonId}`, String(percent)); } catch {}
-            onProgress?.(percent);
-          }
-        }
-      } catch {}
-    };
-
-    window.addEventListener("message", handleMessage);
-    return () => window.removeEventListener("message", handleMessage);
-  }, [lessonId]);
+  useEffect(() => {
+    if (countdown === null) return;
+    if (countdown <= 0) { setCountdown(null); nextRef.current?.onGo(); return; }
+    const t = setTimeout(() => setCountdown((c) => (c === null ? null : c - 1)), 1000);
+    return () => clearTimeout(t);
+  }, [countdown]);
 
   if (!videoId) {
     return (
@@ -121,7 +157,9 @@ export function VideoPlayer({ videoId, poster, className = "", lessonId, onProgr
         {terms === "accepted" ? (
           <>
             <iframe
-              src={`https://iframe.cloudflarestream.com/${videoId}?controls=true&preload=true&defaultTextTrack=pt${poster ? `&poster=${encodeURIComponent(poster)}` : ""}`}
+              key={videoId}
+              ref={iframeRef}
+              src={`https://iframe.cloudflarestream.com/${videoId}?controls=true&preload=true&defaultTextTrack=pt${autoplay ? "&autoplay=true" : ""}${poster ? `&poster=${encodeURIComponent(poster)}` : ""}`}
               allow="accelerometer; gyroscope; autoplay; encrypted-media;"
               className="absolute inset-0 w-full h-full"
               style={{ border: "none" }}
@@ -143,6 +181,30 @@ export function VideoPlayer({ videoId, poster, className = "", lessonId, onProgr
             >
               {fullscreen ? <Minimize className="w-4 h-4" /> : <Maximize className="w-4 h-4" />}
             </button>
+
+            {next && countdown !== null && (
+              <div className="absolute inset-0 z-20 bg-black/80 backdrop-blur-sm flex flex-col items-center justify-center text-center p-6">
+                <p className="text-xs uppercase tracking-[0.25em] text-white/60">Próxima aula em {countdown}s</p>
+                <p className="text-xl sm:text-2xl font-bold text-white mt-2 max-w-lg">{next.title}</p>
+                <div className="flex gap-3 mt-6">
+                  <button onClick={() => { setCountdown(null); next.onGo(); }} className="flex items-center gap-2 bg-white text-black font-bold text-sm px-5 py-2.5 rounded-full">
+                    <SkipForward className="w-4 h-4" /> Assistir agora
+                  </button>
+                  <button onClick={() => setCountdown(null)} className="flex items-center gap-2 border border-white/30 text-white text-sm px-5 py-2.5 rounded-full">
+                    <X className="w-4 h-4" /> Cancelar
+                  </button>
+                </div>
+              </div>
+            )}
+            {next && nearEnd && countdown === null && (
+              <button
+                onClick={next.onGo}
+                className="absolute bottom-16 right-4 z-10 flex items-center gap-2 bg-white text-black font-bold text-sm pl-4 pr-5 py-2.5 rounded-full shadow-xl animate-in fade-in slide-in-from-right-4 max-w-[70%]"
+              >
+                <SkipForward className="w-4 h-4 shrink-0" />
+                <span className="truncate">Próxima aula: {next.title}</span>
+              </button>
+            )}
           </>
         ) : (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-center p-6">

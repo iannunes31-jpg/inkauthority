@@ -84,10 +84,18 @@ export default function StudentCoursePlayer() {
     } catch {}
   };
 
-  const handleSelectLesson = (lesson: any) => {
+  const [autoplay, setAutoplay] = useState(false);
+  const handleSelectLesson = (lesson: any, play = false) => {
+    setAutoplay(play);
     setActiveLesson(lesson);
     if (course) saveLastWatched(course, lesson);
+    const mod = modules.find((m: any) => m.lessons.some((l: any) => l.id === lesson.id));
+    if (mod) setExpandedModules((prev) => (prev.includes(mod.id) ? prev : [...prev, mod.id]));
   };
+
+  // The lesson after the current one, across modules.
+  const allLessons = modules.flatMap((m: any) => m.lessons);
+  const nextLesson = activeLesson ? allLessons[allLessons.findIndex((l: any) => l.id === activeLesson.id) + 1] : undefined;
 
   const toggleModule = (moduleId: string) => {
     setExpandedModules(prev => 
@@ -131,6 +139,8 @@ export default function StudentCoursePlayer() {
                 videoId={activeLesson.video_url}
                 lessonId={activeLesson.id}
                 poster={course.thumbnail_url}
+                autoplay={autoplay}
+                next={nextLesson ? { title: nextLesson.title.trim(), onGo: () => handleSelectLesson(nextLesson, true) } : undefined}
                 className="w-full aspect-video"
               />
             ) : (
