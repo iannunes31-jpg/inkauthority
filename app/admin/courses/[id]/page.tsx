@@ -435,15 +435,15 @@ export default function CourseManagerPage() {
                    ) : (
                       mod.lessons.map((lesson: any, lIndex: number) => (
                         <div key={lesson.id} className="flex items-center justify-between p-3 hover:bg-white/5 rounded-lg group transition-colors">
-                           <div className="flex items-center gap-3">
+                           <div className="flex items-center gap-3 min-w-0">
                               <PlayCircle className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
-                              <span className="text-sm font-medium">{lIndex + 1}. {lesson.title}</span>
+                              <span className="text-sm font-medium whitespace-nowrap truncate">{lIndex + 1}. {lesson.title}</span>
                            </div>
-                           <div className="flex items-center gap-2">
+                           <div className="flex items-center gap-2 shrink-0">
                               {captions[lesson.id] && (() => {
                                 const c = captions[lesson.id];
                                 if (c.error) return <span className="text-[10px] text-red-400 font-medium max-w-[220px] truncate" title={c.error}>{c.error}</span>;
-                                if (c.done) return <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-green-500/15 text-green-400 border border-green-500/30">✓ Legendas {c.step}</span>;
+                                if (c.done) return <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-green-500/15 text-green-400 border border-green-500/30 whitespace-nowrap">✓ Legendas {c.step}</span>;
                                 return (
                                   <div className="w-44" title={c.step}>
                                     <div className="flex justify-between text-[10px] text-muted-foreground mb-1">
@@ -484,7 +484,6 @@ export default function CourseManagerPage() {
                                 <Subtitles className="w-3.5 h-3.5" />
                                 Legendas
                               </Button>
-                              <span className="text-xs font-mono text-white/20 hidden md:block">{lesson.video_url}</span>
                               <Button variant="ghost" size="icon" onClick={() => handleDeleteLesson(lesson.id)} className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-red-400 transition-all h-8 w-8">
                                 <Trash2 className="w-4 h-4" />
                               </Button>
