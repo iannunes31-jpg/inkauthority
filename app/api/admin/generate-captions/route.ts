@@ -55,15 +55,22 @@ function wrap(text: string) {
   return lines;
 }
 
-function formatVtt(vtt: string) {
+// stripLeakedIndex: older translations carry the cue number at the start of the text ("1 Realizing...").
+function formatVtt(vtt: string, stripLeakedIndex = false) {
   const blocks = vtt.replace(/\r/g, "").split(/\n{2,}/);
   const out: string[] = [];
+  let cueNumber = 0;
   for (const block of blocks) {
     const rows = block.split("\n");
     const t = rows.findIndex((r) => r.includes("-->"));
     if (t < 0) continue;
     const [startRaw, endRaw] = rows[t].split("-->").map((x) => x.trim().split(/\s+/)[0]);
-    const text = rows.slice(t + 1).join(" ").replace(/\s+/g, " ").trim();
+    let text = rows.slice(t + 1).join(" ").replace(/\s+/g, " ").trim();
+    // The leaked numbers run 1, 2, 3...; parts of split cues have none, so follow the sequence found.
+    if (stripLeakedIndex && text.startsWith(`${cueNumber + 1} `)) {
+      cueNumber++;
+      text = text.slice(String(cueNumber).length + 1);
+    }
     if (!text) continue;
     const lines = wrap(text);
     const parts: string[][] = [];
@@ -100,7 +107,7 @@ async function formatAll(videoId: string, captions: Caption[]) {
   for (const c of captions.filter((c) => !c.status || c.status === "ready")) {
     const res = await cf(`${videoId}/captions/${c.language}/vtt`);
     if (!res.ok) throw new Error(`Não foi possível baixar a legenda ${c.language} (${res.status}).`);
-    await uploadVtt(videoId, c.language, formatVtt(await res.text()));
+    await uploadVtt(videoId, c.language, formatVtt(await res.text(), c.language !== SOURCE));
   }
 }
 
@@ -117,7 +124,9 @@ async function translateVtt(vtt: string, targetName: string) {
   for (let i = 0; i < cues.length; i += 120) {
     const chunk = cues.slice(i, i + 120);
     // Number the cues so the model's answer can be matched back without touching timings.
-    const numbered = chunk.map((c, n) => `[${n}] ${c.split("\n").filter((l) => !l.includes("-->")).join(" ")}`).join("\n");
+    // Cue number lines ("12") must not go to the model, or they come back inside the text.
+    const textOf = (c: string) => c.split("\n").filter((l) => !l.includes("-->") && !/^\d+$/.test(l.trim())).join(" ");
+    const numbered = chunk.map((c, n) => `[${n}] ${textOf(c)}`).join("\n");
     const { text } = await generateText({
       model: vertex("gemini-3.1-flash-lite"),
       system: `You translate video subtitles from Brazilian Portuguese to ${targetName}. The video is a course for tattoo artists about marketing and positioning. Keep it natural and short, like real subtitles. Keep proper names and brand names (Ink Authority, Instagram, Reels). Answer with exactly one line per input line, in the same "[n] text" format, nothing else.`,
