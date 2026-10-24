@@ -99,21 +99,41 @@ export function VideoPlayer({ videoId, poster, className = "", lessonId, onProgr
     else setFullscreen(true);
   };
 
+  // Lesson videos only play with a signed token, issued by the server after checking the purchase.
+  // Other videos (lives) play by id.
+  const [source, setSource] = useState<{ src: string | null; error?: string }>({ src: lessonId ? null : videoId });
+  useEffect(() => {
+    if (!lessonId) return setSource({ src: videoId });
+    if (terms !== "accepted") return;
+    let off = false;
+    setSource({ src: null });
+    fetch(`/api/lessons/${lessonId}/stream`, { cache: "no-store" })
+      .then(async (r) => {
+        const body = await r.json().catch(() => ({}));
+        if (off) return;
+        if (!r.ok) setSource({ src: null, error: body.error || "Não foi possível carregar a aula." });
+        else setSource({ src: body.token || videoId });
+      })
+      .catch(() => !off && setSource({ src: null, error: "Não foi possível carregar a aula. Verifique sua conexão." }));
+    return () => { off = true; };
+  }, [lessonId, videoId, terms]);
+  const src = source.src;
+
   // Progress, "next lesson" near the end and the countdown when the video finishes.
   useEffect(() => {
     setNearEnd(false);
     setCountdown(null);
-    if (terms !== "accepted" || !iframeRef.current) return;
+    if (terms !== "accepted" || !src || !iframeRef.current) return;
     let player: any = null;
     let cancelled = false;
     // The SDK doesn't always report the duration; the video's HLS playlist always has it.
     let knownDuration = 0;
-    fetch(`https://videodelivery.net/${videoId}/manifest/video.m3u8`)
+    fetch(`https://videodelivery.net/${src}/manifest/video.m3u8`)
       .then((r) => r.text())
       .then(async (master) => {
         const rendition = master.split("\n").find((l) => l && !l.startsWith("#"));
         if (!rendition) return;
-        const playlist = await (await fetch(new URL(rendition, `https://videodelivery.net/${videoId}/manifest/`).href)).text();
+        const playlist = await (await fetch(new URL(rendition, `https://videodelivery.net/${src}/manifest/`).href)).text();
         knownDuration = [...playlist.matchAll(/#EXTINF:([\d.]+)/g)].reduce((sum, m) => sum + Number(m[1]), 0);
       })
       .catch(() => {});
@@ -135,7 +155,7 @@ export function VideoPlayer({ videoId, poster, className = "", lessonId, onProgr
       });
     });
     return () => { cancelled = true; };
-  }, [videoId, terms]);
+  }, [src, terms]);
 
   useEffect(() => {
     if (countdown === null) return;
@@ -166,12 +186,16 @@ export function VideoPlayer({ videoId, poster, className = "", lessonId, onProgr
             : `w-full aspect-video rounded-xl overflow-hidden shadow-2xl bg-black relative select-none ${className}`
         }
       >
-        {terms === "accepted" ? (
+        {terms === "accepted" && !src ? (
+          <div className="absolute inset-0 flex items-center justify-center text-center p-6">
+            {source.error ? <p className="text-sm text-muted-foreground max-w-sm">{source.error}</p> : <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />}
+          </div>
+        ) : terms === "accepted" ? (
           <>
             <iframe
-              key={videoId}
+              key={src}
               ref={iframeRef}
-              src={`https://iframe.cloudflarestream.com/${videoId}?controls=true&preload=true&defaultTextTrack=pt${autoplay ? "&autoplay=true" : ""}${poster ? `&poster=${encodeURIComponent(poster)}` : ""}`}
+              src={`https://iframe.cloudflarestream.com/${src}?controls=true&preload=true&defaultTextTrack=pt${autoplay ? "&autoplay=true" : ""}${poster ? `&poster=${encodeURIComponent(poster)}` : ""}`}
               allow="accelerometer; gyroscope; autoplay; encrypted-media;"
               className="absolute inset-0 w-full h-full"
               style={{ border: "none" }}
