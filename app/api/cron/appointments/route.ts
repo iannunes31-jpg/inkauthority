@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { requestInfo, securityEvent } from '@/lib/security';
 import { supabaseAdmin as supabase } from '@/lib/supabase-admin';
 
 export const maxDuration = 60; 
@@ -7,6 +8,7 @@ export async function GET(req: Request) {
   // Vercel cron sends "Authorization: Bearer <CRON_SECRET>"; anyone else could trigger WhatsApp messages.
   const secret = process.env.CRON_SECRET;
   if (!secret || req.headers.get('authorization') !== `Bearer ${secret}`) {
+    await securityEvent('forged_cron', 'medium', requestInfo(req.headers, { method: 'GET', path: new URL(req.url).pathname }));
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
   const evolutionUrl = process.env.EVOLUTION_API_URL;

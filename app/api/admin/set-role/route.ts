@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth, clerkClient } from "@clerk/nextjs/server";
 import { checkIsAdmin } from "@/lib/auth-server";
+import { requestInfo, securityEvent } from "@/lib/security";
 
 // Grants or removes the admin role. Admin-only: without this check anyone signed in
 // could make themselves admin.
@@ -26,6 +27,10 @@ export async function POST(req: NextRequest) {
       publicMetadata: { role: role ? "Admin" : null },
     });
     console.log("[set-role]", me, "set", userId, "to", role ? "Admin" : "none");
+    await securityEvent("role_change", "critical", requestInfo(req.headers, { method: "POST", path: "/api/admin/set-role", userId: me }), {
+      alvo: userId,
+      novoCargo: role ? "Admin" : "sem cargo",
+    });
 
     return NextResponse.json({ ok: true });
   } catch (err: any) {

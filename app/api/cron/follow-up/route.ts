@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { requestInfo, securityEvent } from '@/lib/security';
 import { supabaseAdmin as supabase } from '@/lib/supabase-admin';
 import { createVertex } from '@ai-sdk/google-vertex';
 import { generateText } from 'ai';
@@ -16,6 +17,7 @@ export async function GET(req: Request) {
   // messages to every artist's clients.
   const secret = process.env.CRON_SECRET;
   if (!secret || req.headers.get('authorization') !== `Bearer ${secret}`) {
+    await securityEvent('forged_cron', 'medium', requestInfo(req.headers, { method: 'GET', path: new URL(req.url).pathname }));
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 

@@ -2,6 +2,9 @@
 // Each server instance keeps its own count, so it is a speed bump against abuse
 // (coupon guessing, AI spam), not an exact quota.
 
+import { headers } from "next/headers";
+import { requestInfo, securityEvent } from "@/lib/security";
+
 const hits = new Map<string, number[]>();
 
 /** Returns a 429 response when `key` made more than `max` requests in `windowSec`, otherwise null. */
@@ -11,6 +14,9 @@ export function rateLimit(key: string, max: number, windowSec: number): Response
   const recent = (hits.get(key) ?? []).filter((t) => t > since);
   if (recent.length >= max) {
     const retry = Math.ceil((recent[0] + windowSec * 1000 - now) / 1000);
+    headers()
+      .then((h) => securityEvent("rate_limited", "low", requestInfo(h, { path: h.get("x-ia-path") || key.split(":")[0] }), { limit: key.split(":")[0] }))
+      .catch(() => {});
     return new Response(JSON.stringify({ error: "Muitas tentativas seguidas. Aguarde um pouco e tente de novo." }), {
       status: 429,
       headers: { "Content-Type": "application/json", "Retry-After": String(retry) },

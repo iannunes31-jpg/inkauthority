@@ -4,8 +4,9 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { 
-  LayoutDashboard, 
-  Video, 
+  LayoutDashboard,
+  ShieldAlert,
+  Video,
   Users, 
   Megaphone, 
   Share2, 
@@ -28,6 +29,7 @@ export function AdminSidebar() {
     { name: "Provas", path: "/admin/provas", icon: <GraduationCap className="w-4 h-4" /> },
     { name: "Cupons", path: "/admin/cupons", icon: <Ticket className="w-4 h-4" /> },
     { name: "Assistente de Vendas", path: "/admin/assistente", icon: <MessageCircle className="w-4 h-4" /> },
+    { name: "Segurança", path: "/admin/seguranca", icon: <ShieldAlert className="w-4 h-4" /> },
     { name: "Ajustes", path: "/admin/settings", icon: <Settings className="w-4 h-4" /> },
   ];
 

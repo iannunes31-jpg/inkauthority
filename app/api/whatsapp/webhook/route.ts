@@ -7,6 +7,7 @@ import { BODY_PART_GROUPS, BODY_PART_LABELS, formatMoney } from '@/lib/body-part
 import { countryFromPhone, OTHER_COUNTRIES, CountryRule, CountrySettings } from '@/lib/countries';
 import { ARTIST_INFO_FIELDS, POSITIONING_OPTIONS, PRICING_MODELS, ArtistInfo, traitPrompts, automationSettings } from '@/lib/artist-info';
 import { isStage, sendText, sendImage, generateImage } from '@/lib/dante';
+import { requestInfo, securityEvent } from '@/lib/security';
 
 // Previews are generated after the reply is sent; give that work room to finish.
 export const maxDuration = 120;
@@ -79,6 +80,7 @@ export async function POST(req: Request) {
     const url = new URL(req.url);
     const expectedSecret = process.env.WHATSAPP_WEBHOOK_SECRET;
     if (expectedSecret && url.searchParams.get('secret') !== expectedSecret) {
+      await securityEvent('forged_webhook', 'high', requestInfo(req.headers, { method: 'POST', path: url.pathname }));
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
