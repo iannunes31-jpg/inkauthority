@@ -1,4 +1,5 @@
 import { auth } from "@clerk/nextjs/server";
+import { rateLimit } from "@/lib/rate-limit";
 import { createVertex } from "@ai-sdk/google-vertex";
 import { streamText } from "ai";
 import { userHasAccess, planRequired } from "@/lib/access-server";
@@ -12,6 +13,8 @@ export async function POST(req: Request) {
   const { userId } = await auth();
   if (!userId) return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 });
   if (!(await userHasAccess(userId, "dante"))) return planRequired();
+  const limited = rateLimit(`dante-chat:${userId}`, 20, 60);
+  if (limited) return limited;
 
   const body = await req.json();
   const messages = (body.messages ?? []).map((m: any) => ({

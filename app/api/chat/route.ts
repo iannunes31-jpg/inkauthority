@@ -1,4 +1,5 @@
 import { createVertex } from '@ai-sdk/google-vertex';
+import { rateLimit } from "@/lib/rate-limit";
 import { streamText } from 'ai';
 import { auth } from '@clerk/nextjs/server';
 
@@ -15,6 +16,8 @@ export async function POST(req: Request) {
         headers: { 'Content-Type': 'application/json' },
       });
     }
+    const limited = rateLimit(`tutor:${userId}`, 20, 60);
+    if (limited) return limited;
 
     const body = await req.json();
 

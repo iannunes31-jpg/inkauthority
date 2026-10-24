@@ -5,6 +5,7 @@
  * Pass `agentType` in the body to select the system prompt.
  */
 import { createVertex } from '@ai-sdk/google-vertex';
+import { rateLimit } from "@/lib/rate-limit";
 import { streamText } from 'ai';
 import { auth } from '@clerk/nextjs/server';
 import { userHasAccess, planRequired } from "@/lib/access-server";
@@ -130,6 +131,8 @@ export async function POST(req: Request) {
         headers: { 'Content-Type': 'application/json' },
       });
     }
+    const limited = rateLimit(`ads-chat:${userId}`, 20, 60);
+    if (limited) return limited;
     if (!(await userHasAccess(userId, "ads"))) return planRequired();
 
     const body = await req.json();
