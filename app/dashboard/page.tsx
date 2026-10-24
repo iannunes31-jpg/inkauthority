@@ -219,9 +219,10 @@ export default function Dashboard() {
             : inProgressCourses[0];
           const others = inProgressCourses.filter(c => c.id !== featured.id);
           const heroVideoId = (lastWatched && lastWatched.courseId === featured.id ? lastWatched.videoId : null) || featured.firstVideoId;
-          const heroThumb = heroVideoId
+          // Lesson videos are signed-only, so their thumbnails don't load by id: use the course cover first.
+          const heroThumb = featured.thumbnail_url || (heroVideoId
             ? `https://videodelivery.net/${heroVideoId}/thumbnails/thumbnail.jpg?time=3s&height=540`
-            : null;
+            : null);
           const isLastWatchedFeatured = !!(lastWatched && lastWatched.courseId === featured.id);
           const heroTitle = isLastWatchedFeatured && lastWatched ? lastWatched.lessonTitle : featured.title;
           const heroSub = isLastWatchedFeatured ? featured.title : (featured.description || "Stream Class da metodologia Ink Authority.");
