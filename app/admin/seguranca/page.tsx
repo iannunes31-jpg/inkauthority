@@ -74,6 +74,16 @@ export default function SecurityPage() {
         <Button variant="outline" onClick={load} className="border-white/15"><RefreshCw className="w-4 h-4 mr-2" /> Atualizar</Button>
       </div>
 
+      {stats.serious > 0 && (
+        <div className="rounded-2xl border border-red-500/40 bg-red-500/10 p-4 flex items-start gap-3">
+          <ShieldAlert className="w-5 h-5 text-red-400 shrink-0 mt-0.5" />
+          <div>
+            <p className="font-bold text-red-300">{stats.serious} evento(s) grave(s) nas últimas 24 horas</p>
+            <p className="text-sm text-muted-foreground">Os IPs envolvidos já foram bloqueados automaticamente. Use "Relatório" para gerar o documento do boletim de ocorrência.</p>
+          </div>
+        </div>
+      )}
+
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {[
           ["Eventos (24h)", stats.last24],

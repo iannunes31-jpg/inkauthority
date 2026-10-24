@@ -9,7 +9,17 @@ const forbidden = () => NextResponse.json({ error: "Forbidden" }, { status: 403 
 // Security panel data. ?ip=X returns every event of one IP (for the police report).
 export async function GET(req: Request) {
   if (!(await checkIsAdmin())) return forbidden();
-  const ip = new URL(req.url).searchParams.get("ip");
+  const params = new URL(req.url).searchParams;
+  const ip = params.get("ip");
+
+  if (params.get("summary")) {
+    const { count } = await supabaseAdmin
+      .from("security_events")
+      .select("id", { count: "exact", head: true })
+      .in("severity", ["high", "critical"])
+      .gte("created_at", new Date(Date.now() - 86400_000).toISOString());
+    return NextResponse.json({ serious24h: count ?? 0 }, { headers: { "Cache-Control": "no-store" } });
+  }
 
   if (ip) {
     const [{ data: events }, { data: block }] = await Promise.all([

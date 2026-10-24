@@ -146,17 +146,25 @@ const escapeHtml = (s: string) => s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "
 
 // --- Alerts ---------------------------------------------------------------
 
-/** Emails the security alert (needs RESEND_API_KEY; without it the alert is only logged). */
+/**
+ * Sends the security alert by every channel available:
+ * e-mail (when RESEND_API_KEY exists) and WhatsApp to the alert owner's phone, sent from the
+ * Ink Authority sales number or, if that one is offline, from the owner's own connected WhatsApp.
+ * Every event is also on Admin → Segurança, so nothing is lost when no channel is connected.
+ */
 export async function sendAlert(subject: string, tableRows: string, intro = "O agente de segurança da Ink Authority registrou o evento abaixo.") {
+  const [mail, whats] = await Promise.all([sendEmail(subject, tableRows, intro), sendWhatsApp(subject, tableRows, intro)]);
+  if (!mail && !whats) console.warn("[security] alerta só no painel (nenhum canal conectado):", subject);
+  return mail || whats;
+}
+
+async function sendEmail(subject: string, tableRows: string, intro: string) {
   const key = process.env.RESEND_API_KEY;
+  if (!key) return false;
   const html = `<div style="font-family:Arial,sans-serif;max-width:640px">
 <h2 style="margin:0 0 8px">🛡️ ${escapeHtml(subject)}</h2><p style="color:#444">${intro}</p>
 <table style="border-collapse:collapse;border:1px solid #eee;width:100%">${tableRows}</table>
 <p style="color:#888;font-size:12px;margin-top:16px">Veja tudo e gere o relatório para boletim de ocorrência em Admin → Segurança.</p></div>`;
-  if (!key) {
-    console.warn("[security] alert (sem RESEND_API_KEY):", subject);
-    return false;
-  }
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
@@ -168,6 +176,55 @@ export async function sendAlert(subject: string, tableRows: string, intro = "O a
     }),
   }).catch(() => null);
   if (!res?.ok) console.error("[security] alert email failed", res?.status);
+  return !!res?.ok;
+}
+
+const EVOLUTION_URL = () => process.env.EVOLUTION_API_URL || "https://evolution-api-production-fbfd.up.railway.app";
+const SALES_INSTANCE = "inkauthority-vendas";
+
+// The alert owner (ALERT_EMAIL) in Clerk: phone from the signup form and the id that names their WhatsApp instance.
+let ownerCache: { phone: string | null; id: string | null; at: number } | null = null;
+async function alertOwner() {
+  if (ownerCache && Date.now() - ownerCache.at < 3600_000) return ownerCache;
+  const fixed = process.env.SECURITY_ALERT_WHATSAPP?.replace(/\D/g, "") || null;
+  let phone = fixed, id: string | null = null;
+  try {
+    const res = await fetch(`https://api.clerk.com/v1/users?email_address=${encodeURIComponent(ALERT_EMAIL)}`, {
+      headers: { Authorization: `Bearer ${process.env.CLERK_SECRET_KEY}` },
+    });
+    const user = ((await res.json()) as any[])?.[0];
+    id = user?.id ?? null;
+    if (!phone) {
+      const raw = String(user?.unsafe_metadata?.telefone ?? user?.phone_numbers?.[0]?.phone_number ?? "").replace(/\D/g, "");
+      phone = raw.length === 10 || raw.length === 11 ? `55${raw}` : raw || null;
+    }
+  } catch {}
+  ownerCache = { phone, id, at: Date.now() };
+  return ownerCache;
+}
+
+async function instanceOpen(name: string) {
+  const res = await fetch(`${EVOLUTION_URL()}/instance/connectionState/${name}`, { headers: { apikey: process.env.EVOLUTION_API_KEY! } }).catch(() => null);
+  const body = await res?.json().catch(() => null);
+  return (body?.instance?.state || body?.state) === "open";
+}
+
+async function sendWhatsApp(subject: string, tableRows: string, intro: string) {
+  if (!process.env.EVOLUTION_API_KEY) return false;
+  const owner = await alertOwner();
+  if (!owner.phone) return false;
+  const from = (await instanceOpen(SALES_INSTANCE)) ? SALES_INSTANCE : owner.id && (await instanceOpen(owner.id)) ? owner.id : null;
+  if (!from) return false;
+  // The HTML table rows become "label: value" lines.
+  const lines = [...tableRows.matchAll(/<td[^>]*>(.*?)<\/td><td[^>]*>(?:<b>)?(.*?)(?:<\/b>)?<\/td>/g)]
+    .map((m) => `*${m[1]}:* ${m[2].replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"')}`);
+  const text = `🛡️ *${subject}*\n${intro}\n\n${lines.join("\n")}\n\nDetalhes e relatório para BO: inkauthority.com.br/admin/seguranca`;
+  const res = await fetch(`${EVOLUTION_URL()}/message/sendText/${from}`, {
+    method: "POST",
+    headers: { apikey: process.env.EVOLUTION_API_KEY, "Content-Type": "application/json" },
+    body: JSON.stringify({ number: owner.phone, text: text.slice(0, 3500) }),
+  }).catch(() => null);
+  if (!res?.ok) console.error("[security] alert whatsapp failed", res?.status);
   return !!res?.ok;
 }
 

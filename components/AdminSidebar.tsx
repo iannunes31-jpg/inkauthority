@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 import { 
   LayoutDashboard,
@@ -17,6 +18,16 @@ import { motion } from "motion/react";
 
 export function AdminSidebar() {
   const pathname = usePathname();
+
+  // Red counter on "Segurança" when the security agent saw something serious in the last 24h.
+  const [serious, setSerious] = useState(0);
+  useEffect(() => {
+    const load = () => fetch("/api/admin/security?summary=1", { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null)).then((d) => setSerious(d?.serious24h ?? 0)).catch(() => {});
+    load();
+    const t = setInterval(load, 120_000);
+    return () => clearInterval(t);
+  }, []);
 
   const links = [
     { name: "Dashboard", path: "/admin", icon: <LayoutDashboard className="w-4 h-4" /> },
@@ -68,6 +79,11 @@ export function AdminSidebar() {
               )}
               <div className="relative z-10">{link.icon}</div>
               <span className="relative z-10">{link.name}</span>
+              {link.path === "/admin/seguranca" && serious > 0 && (
+                <span className="relative z-10 ml-auto min-w-5 h-5 px-1.5 rounded-full bg-red-600 text-white text-[10px] font-bold flex items-center justify-center" title="Eventos graves nas últimas 24h">
+                  {serious > 99 ? "99+" : serious}
+                </span>
+              )}
             </Link>
           );
         })}
