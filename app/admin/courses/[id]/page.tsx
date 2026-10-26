@@ -26,6 +26,7 @@ export default function CourseManagerPage() {
   const [activeModuleId, setActiveModuleId] = useState<string | null>(null);
   const [newLessonTitle, setNewLessonTitle] = useState("");
   const [newLessonVideoId, setNewLessonVideoId] = useState<string | null>(null);
+  const [newLessonDescription, setNewLessonDescription] = useState("");
   const [isSavingLesson, setIsSavingLesson] = useState(false);
   const [materials, setMaterials] = useState<{ name: string; url: string }[]>([]);
   const [equipment, setEquipment] = useState<{ name: string; url: string }[]>([]);
@@ -183,6 +184,7 @@ export default function CourseManagerPage() {
     setEditingLessonId(lesson.id);
     setActiveModuleId(moduleId);
     setNewLessonTitle(lesson.title?.trim() ?? "");
+    setNewLessonDescription(lesson.description ?? "");
     setNewLessonVideoId(lesson.video_url || null);
     setMaterials(Array.isArray(lesson.support_materials) ? lesson.support_materials : []);
     setEquipment(Array.isArray(lesson.equipment_links) ? lesson.equipment_links : []);
@@ -266,6 +268,7 @@ export default function CourseManagerPage() {
     setEditingLessonId(null);
     setActiveModuleId(moduleId);
     setNewLessonTitle("");
+    setNewLessonDescription("");
     setNewLessonVideoId(null);
     setMaterials([]);
     setEquipment([]);
@@ -274,19 +277,21 @@ export default function CourseManagerPage() {
   };
 
   const handleSaveLesson = async () => {
-    if (!newLessonTitle || !newLessonVideoId || !activeModuleId) return;
+    if (!newLessonTitle || !activeModuleId) return;
     setIsSavingLesson(true);
     try {
       const targetModule = modules.find(m => m.id === activeModuleId);
       const nextIndex = targetModule?.lessons?.length || 0;
 
-      const fields = { title: newLessonTitle, video_url: newLessonVideoId, support_materials: materials, equipment_links: equipment };
+      const fields = { title: newLessonTitle, video_url: newLessonVideoId ?? "", description: newLessonDescription, support_materials: materials, equipment_links: equipment };
       const res = await fetch("/api/admin/lessons", {
         method: editingLessonId ? "PATCH" : "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(editingLessonId ? { id: editingLessonId, ...fields } : { module_id: activeModuleId, order_index: nextIndex, ...fields }),
       });
-      if (!res.ok) throw new Error((await res.json()).error);
+      const saved = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(saved.error);
+      if (saved.warning) alert(saved.warning);
       setEditingLessonId(null);
       setIsLessonModalOpen(false);
       fetchCourseData();
@@ -653,7 +658,19 @@ export default function CourseManagerPage() {
                </div>
 
                <div>
-                 <label className="text-sm text-muted-foreground mb-1 block">Vídeo (Cloudflare Stream)</label>
+                 <label className="text-sm text-muted-foreground mb-1 block">Descrição da aula <span className="text-white/30">(opcional)</span></label>
+                 <textarea
+                   value={newLessonDescription}
+                   onChange={(e) => setNewLessonDescription(e.target.value)}
+                   maxLength={10000}
+                   rows={4}
+                   placeholder="O que o aluno vai aprender nesta aula. Aceita **negrito** e listas com -."
+                   className="w-full bg-black/50 border border-white/10 rounded-md p-3 text-sm focus:outline-none focus:border-primary resize-y"
+                 />
+               </div>
+
+               <div>
+                 <label className="text-sm text-muted-foreground mb-1 block">Vídeo (Cloudflare Stream) <span className="text-white/30">(opcional — dá para publicar só com material e descrição)</span></label>
                  {!newLessonVideoId ? (
                    <div className="space-y-3">
                      <VideoUploader onSuccess={(id) => setNewLessonVideoId(id)} />
@@ -747,7 +764,7 @@ export default function CourseManagerPage() {
               <Button variant="outline" onClick={() => setIsLessonModalOpen(false)}>Cancelar</Button>
               <Button
                  onClick={handleSaveLesson}
-                 disabled={!newLessonTitle || !newLessonVideoId || isSavingLesson}
+                 disabled={!newLessonTitle || isSavingLesson}
                  className="metallic-gradient text-black font-bold"
               >
                  {isSavingLesson ? "Salvando..." : editingLessonId ? "Salvar alterações" : "Salvar Aula"}

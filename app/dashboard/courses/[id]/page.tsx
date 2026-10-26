@@ -134,7 +134,29 @@ export default function StudentCoursePlayer() {
         {/* Lado Esquerdo - Player */}
         <div className="lg:col-span-2 xl:col-span-3 flex flex-col gap-4 lg:gap-6">
           <div className="rounded-2xl overflow-hidden bg-black border border-white/10 shadow-2xl">
-            {activeLesson ? (
+            {activeLesson && !activeLesson.video_url ? (
+              // Lesson without a video yet (e.g. a bonus with only a PDF).
+              <div
+                className="w-full aspect-video relative flex items-center justify-center text-center p-6 bg-black bg-cover bg-center"
+                style={course.thumbnail_url ? { backgroundImage: `url(${course.thumbnail_url})` } : undefined}
+              >
+                <div className="absolute inset-0 bg-black/75 backdrop-blur-sm" />
+                <div className="relative max-w-md">
+                  <FileText className="w-10 h-10 text-primary mx-auto mb-3" />
+                  <p className="text-xl font-bold">{activeLesson.title.trim()}</p>
+                  <p className="text-sm text-muted-foreground mt-2">
+                    {Array.isArray(activeLesson.support_materials) && activeLesson.support_materials.length > 0
+                      ? "O conteúdo desta aula está no material de apoio logo abaixo. O vídeo chega em breve."
+                      : "O vídeo desta aula chega em breve."}
+                  </p>
+                  {nextLesson && (
+                    <button onClick={() => handleSelectLesson(nextLesson, true)} className="mt-5 inline-flex items-center gap-2 bg-white text-black font-bold text-sm px-5 py-2.5 rounded-full">
+                      Próxima aula: {nextLesson.title.trim()}
+                    </button>
+                  )}
+                </div>
+              </div>
+            ) : activeLesson ? (
               <VideoPlayer
                 videoId={activeLesson.video_url}
                 lessonId={activeLesson.id}
@@ -154,6 +176,9 @@ export default function StudentCoursePlayer() {
             <h1 className="text-2xl font-bold">
               {activeLesson ? activeLesson.title.trim() : course.title}
             </h1>
+            {activeLesson?.description && (
+              <ChatMarkdown text={activeLesson.description} className="text-muted-foreground mt-3 text-[15px]" />
+            )}
             {/* The course description belongs to the opening lesson only. */}
             {(!activeLesson || activeLesson.id === modules[0]?.lessons?.[0]?.id) && course.description && (
               <ChatMarkdown text={course.description} className="text-muted-foreground mt-3 text-[15px]" />
