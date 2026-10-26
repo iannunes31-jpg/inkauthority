@@ -12,6 +12,52 @@ import { requestInfo, securityEvent } from '@/lib/security';
 // Previews are generated after the reply is sent; give that work room to finish.
 export const maxDuration = 120;
 
+// Human handoff on the sales number (the team answers on this same WhatsApp):
+// while a conversation is handed off, the assistant stays quiet in it.
+const HANDOFF_AFTER_REQUEST_H = 24; // client asked for a person / refund / payment help
+const HANDOFF_AFTER_HUMAN_H = 12; // someone from the team replied by hand
+
+async function handoffUntil(remoteJid: string) {
+  const { data } = await supabase
+    .from('chat_history')
+    .select('content')
+    .eq('clerk_user_id', SALES_INSTANCE)
+    .eq('phone_number', remoteJid)
+    .eq('role', 'handoff')
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  const until = data ? new Date(data.content).getTime() : 0;
+  return until > Date.now() ? until : 0;
+}
+
+async function startHandoff(remoteJid: string, hours: number) {
+  await supabase.from('chat_history').insert({
+    clerk_user_id: SALES_INSTANCE,
+    phone_number: remoteJid,
+    role: 'handoff',
+    content: new Date(Date.now() + hours * 3600_000).toISOString(),
+  });
+}
+
+// A message sent from the sales phone that the assistant didn't write means a person took over.
+async function noteSalesTeamMessage(remoteJid: string, messageData: any) {
+  const text: string = messageData?.message?.conversation || messageData?.message?.extendedTextMessage?.text || '';
+  if (text.startsWith('🛡️')) return; // security alerts sent to ourselves
+  const { data: recent } = await supabase
+    .from('chat_history')
+    .select('content, created_at')
+    .eq('clerk_user_id', SALES_INSTANCE)
+    .eq('phone_number', remoteJid)
+    .eq('role', 'assistant')
+    .gte('created_at', new Date(Date.now() - 5 * 60_000).toISOString());
+  const fromAssistant = text && (recent ?? []).some((m) => m.content.trim() === text.trim());
+  if (!fromAssistant) {
+    await startHandoff(remoteJid, HANDOFF_AFTER_HUMAN_H);
+    console.log('[WPP sales] team replied by hand, assistant paused', remoteJid);
+  }
+}
+
 // Ink Authority's own sales WhatsApp: answers tattoo artists asking about the platform.
 async function handleSalesMessage(opts: {
   remoteJid: string;
@@ -26,6 +72,12 @@ async function handleSalesMessage(opts: {
   const { remoteJid, replyTo, messageText, hasAudio, base64Media, mimeType, evolutionUrl, apiKey } = opts;
   const settings = await getSalesSettings();
   if (!settings.is_active) return NextResponse.json({ status: 'sales_inactive' });
+
+  // Handed off to the team: keep the message in the history, don't answer.
+  if (await handoffUntil(remoteJid)) {
+    await supabase.from('chat_history').insert({ clerk_user_id: SALES_INSTANCE, phone_number: remoteJid, role: 'user', content: messageText || (hasAudio ? '[Áudio]' : '[Imagem]') });
+    return NextResponse.json({ status: 'sales_handed_off' });
+  }
 
   const { data: history } = await supabase
     .from('chat_history')
@@ -53,8 +105,10 @@ async function handleSalesMessage(opts: {
       { role: 'user', content: userParts },
     ],
   });
-  const reply = text.trim();
+  const wantsHuman = /\[HUMANO\]/i.test(text);
+  const reply = text.replace(/\[HUMANO\]/gi, '').trim();
   if (!reply) return NextResponse.json({ status: 'empty_reply' });
+  if (wantsHuman) await startHandoff(remoteJid, HANDOFF_AFTER_REQUEST_H);
 
   await supabase.from('chat_history').insert([
     { clerk_user_id: SALES_INSTANCE, phone_number: remoteJid, role: 'user', content: messageText || (hasAudio ? '[Áudio]' : '[Imagem]') },
@@ -102,6 +156,12 @@ export async function POST(req: Request) {
     const clerk_user_id = instanceName;
 
     console.log('[WPP] remoteJid:', remoteJid, 'fromMe:', fromMe, 'instance:', instanceName, 'msgKeys:', Object.keys(messageData || {}));
+
+    // On the sales number, a message sent from the phone by a person pauses the assistant in that chat.
+    if (fromMe && instanceName === SALES_INSTANCE && remoteJid && !/@(g\.us|broadcast|newsletter)$/.test(remoteJid)) {
+      await noteSalesTeamMessage(remoteJid, messageData);
+      return NextResponse.json({ status: 'ignored' });
+    }
 
     // Groups, contacts' status posts and channels are not conversations with a client.
     if (!remoteJid || fromMe || /@(g\.us|broadcast|newsletter)$/.test(remoteJid)) {
