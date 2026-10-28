@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useUser } from "@clerk/nextjs";
-import { isAdminUser } from "@/lib/admin";
+import { isStaffUser } from "@/lib/admin";
 import { fetchAccess, hasProductType } from "@/lib/access";
 import { PLANS, PlanId, ACCESS_TYPES, COMBO_FULL_PRICE, COMBO_SAVINGS, formatBRL } from "@/lib/pricing";
 import { Lock, Loader2 } from "lucide-react";
@@ -22,7 +22,7 @@ type Props = {
 export function PlanAccessGate({ plan, description, children }: Props) {
   const { user } = useUser();
   const [hasAccess, setHasAccess] = useState<boolean | null>(null);
-  const isAdmin = isAdminUser(user?.primaryEmailAddress?.emailAddress, user?.publicMetadata);
+  const isAdmin = isStaffUser(user?.primaryEmailAddress?.emailAddress, user?.publicMetadata);
   const p = PLANS[plan];
 
   useEffect(() => {

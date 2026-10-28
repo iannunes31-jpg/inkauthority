@@ -33,3 +33,14 @@ export function isAdminMetadata(publicMetadata?: unknown): boolean {
 export function isAdminUser(email?: string | null, publicMetadata?: unknown): boolean {
   return isAdminEmail(email) || isAdminMetadata(publicMetadata);
 }
+
+/** "Tester": can use every product and open the admin panel, but not the sensitive actions. */
+export function isTesterMetadata(publicMetadata?: unknown): boolean {
+  const role = (publicMetadata as { role?: unknown } | undefined)?.role;
+  return typeof role === "string" && role.toLowerCase() === "tester";
+}
+
+/** Admins and testers: full product access and the admin panel. */
+export function isStaffUser(email?: string | null, publicMetadata?: unknown): boolean {
+  return isAdminUser(email, publicMetadata) || isTesterMetadata(publicMetadata);
+}

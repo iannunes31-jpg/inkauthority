@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
-import { checkIsAdmin } from "@/lib/auth-server";
+import { checkIsFullAdmin } from "@/lib/auth-server";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import { blockIp, unblockIp } from "@/lib/security";
 
@@ -8,7 +8,7 @@ const forbidden = () => NextResponse.json({ error: "Forbidden" }, { status: 403 
 
 // Security panel data. ?ip=X returns every event of one IP (for the police report).
 export async function GET(req: Request) {
-  if (!(await checkIsAdmin())) return forbidden();
+  if (!(await checkIsFullAdmin())) return forbidden();
   const params = new URL(req.url).searchParams;
   const ip = params.get("ip");
 
@@ -43,7 +43,7 @@ export async function GET(req: Request) {
 
 // { action: "block" | "unblock", ip, hours? }
 export async function POST(req: Request) {
-  if (!(await checkIsAdmin())) return forbidden();
+  if (!(await checkIsFullAdmin())) return forbidden();
   const { action, ip, hours } = await req.json().catch(() => ({}));
   if (!ip || typeof ip !== "string" || ip.length > 64) return NextResponse.json({ error: "IP inválido." }, { status: 400 });
   const { userId } = await auth();

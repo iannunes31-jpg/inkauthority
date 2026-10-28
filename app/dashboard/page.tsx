@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/lib/supabase";
 import { fetchAccess } from "@/lib/access";
 import { useUser, useAuth } from "@clerk/nextjs";
-import { isAdminUser } from "@/lib/admin";
+import { isStaffUser } from "@/lib/admin";
 
 // Quick-access cards for every area of the platform, shown on the
 // dashboard home so a new user (with nothing "in progress" yet) still
@@ -65,7 +65,7 @@ export default function Dashboard() {
   const fetchUserProgress = async () => {
     try {
       setLoading(true);
-      const adminCheck = isAdminUser(user?.primaryEmailAddress?.emailAddress, user?.publicMetadata);
+      const adminCheck = isStaffUser(user?.primaryEmailAddress?.emailAddress, user?.publicMetadata);
 
       let coursesData: any[] = [];
       if (adminCheck) {

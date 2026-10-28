@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { clerkClient } from "@clerk/nextjs/server";
 import { checkIsAdmin } from "@/lib/auth-server";
-import { isAdminUser } from "@/lib/admin";
+import { isAdminUser, isTesterMetadata } from "@/lib/admin";
 
 export async function GET() {
   try {
@@ -12,7 +12,7 @@ export async function GET() {
     }
 
     const client = await clerkClient();
-    const response = await client.users.getUserList();
+    const response = await client.users.getUserList({ limit: 500, orderBy: "-created_at" });
     
     // Check if the response contains the data property (newer Clerk SDKs) or is the array itself
     const usersList: any[] = Array.isArray(response) ? response : (response as any).data || [];
@@ -21,7 +21,7 @@ export async function GET() {
       id: user.id,
       name: `${user.firstName || ""} ${user.lastName || ""}`.trim() || "Usuário",
       email: user.emailAddresses[0]?.emailAddress || "Sem email",
-      role: isAdminUser(user.emailAddresses[0]?.emailAddress, user.publicMetadata) ? "Admin" : (user.publicMetadata?.role || "Aluno"),
+      role: isAdminUser(user.emailAddresses[0]?.emailAddress, user.publicMetadata) ? "Admin" : isTesterMetadata(user.publicMetadata) ? "Testador" : "Aluno",
       status: "Ativo", // Clerk users are active unless banned
       joinDate: new Date(user.createdAt).toLocaleDateString("pt-BR"),
       imageUrl: user.imageUrl,

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Search, ChevronDown, User, ShieldAlert, ShieldCheck, ShieldOff, MoreHorizontal, Download, X, Phone, Instagram, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Select } from "@/components/ui/select";
 
 export default function AdminUsers() {
   const [users, setUsers] = useState<any[]>([]);
@@ -27,18 +28,24 @@ export default function AdminUsers() {
     fetchUsers();
   }, []);
 
-  const handleToggleAdmin = async (e: React.MouseEvent, user: any) => {
-    e.stopPropagation();
-    const isAdmin = user.role === 'Admin';
+  // Aluno (no role), Testador (uses everything + admin panel) or Admin. Only admins can change it.
+  const ROLE_VALUE: Record<string, string | null> = { Aluno: null, Testador: "tester", Admin: "admin" };
+  const handleSetRole = async (user: any, role: string) => {
+    if (role === user.role) return;
+    if (role === "Admin" && !confirm(`Dar acesso de ADMIN completo para ${user.name}? Admin pode mudar cargos e ver o painel de Segurança.`)) return;
     setTogglingAdmin(user.id);
     try {
       const res = await fetch('/api/admin/set-role', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: user.id, role: isAdmin ? null : 'admin' }),
+        body: JSON.stringify({ userId: user.id, role: ROLE_VALUE[role] }),
       });
+      const body = await res.json().catch(() => ({}));
       if (res.ok) {
-        setUsers(prev => prev.map(u => u.id === user.id ? { ...u, role: isAdmin ? 'Usuário' : 'Admin' } : u));
+        setUsers(prev => prev.map(u => u.id === user.id ? { ...u, role } : u));
+        setSelectedUser((sel: any) => (sel && sel.id === user.id ? { ...sel, role } : sel));
+      } else {
+        alert(body.error === 'Forbidden' ? 'Só administradores podem mudar cargos.' : body.error || 'Não foi possível mudar o cargo.');
       }
     } catch {}
     setTogglingAdmin(null);
@@ -155,7 +162,7 @@ export default function AdminUsers() {
                       </div>
                     </td>
                     <td className="py-4">
-                      <span className={`text-xs px-2 py-1 rounded-full ${user.role === 'Admin' ? 'bg-primary/20 text-white border border-white/20' : 'bg-white/5 text-muted-foreground'}`}>
+                      <span className={`text-xs px-2 py-1 rounded-full ${user.role === 'Admin' ? 'bg-primary/20 text-white border border-white/20' : user.role === 'Testador' ? 'bg-sky-500/15 text-sky-300 border border-sky-500/30' : 'bg-white/5 text-muted-foreground'}`}>
                         {user.role}
                       </span>
                     </td>
@@ -167,20 +174,19 @@ export default function AdminUsers() {
                     </td>
                     <td className="py-4 text-muted-foreground text-sm">{user.joinDate}</td>
                     <td className="py-4 text-right">
-                      <button
-                        onClick={(e) => handleToggleAdmin(e, user)}
-                        disabled={togglingAdmin === user.id}
-                        title={user.role === 'Admin' ? 'Remover Admin' : 'Tornar Admin'}
-                        className={`p-2 rounded-lg transition-colors ${user.role === 'Admin' ? 'text-white/60 hover:text-red-400 hover:bg-red-400/10' : 'text-muted-foreground hover:text-primary hover:bg-white/10'} disabled:opacity-40`}
-                      >
-                        {togglingAdmin === user.id ? (
-                          <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                        ) : user.role === 'Admin' ? (
-                          <ShieldOff className="w-4 h-4" />
-                        ) : (
-                          <ShieldCheck className="w-4 h-4" />
-                        )}
-                      </button>
+                      <div onClick={(e) => e.stopPropagation()}>
+                        <Select
+                          value={user.role}
+                          onChange={(e) => handleSetRole(user, e.target.value)}
+                          disabled={togglingAdmin === user.id}
+                          className="w-36 text-xs py-1.5 ml-auto"
+                          aria-label="Cargo"
+                        >
+                          <option value="Aluno">Aluno</option>
+                          <option value="Testador">Testador</option>
+                          <option value="Admin">Admin</option>
+                        </Select>
+                      </div>
                     </td>
                   </tr>
                 ))
@@ -242,15 +248,19 @@ export default function AdminUsers() {
             </div>
             
             <div className="mt-6 flex gap-3">
-              <Button
-                onClick={(e) => { handleToggleAdmin(e, selectedUser); setSelectedUser(null); }}
-                disabled={togglingAdmin === selectedUser.id}
-                variant="outline"
-                className={`flex-1 border-white/10 ${selectedUser.role === 'Admin' ? 'text-red-400 hover:border-red-400/30' : 'text-primary hover:border-primary/30'}`}
-              >
-                {selectedUser.role === 'Admin' ? <ShieldOff className="w-4 h-4 mr-2" /> : <ShieldCheck className="w-4 h-4 mr-2" />}
-                {selectedUser.role === 'Admin' ? 'Remover Admin' : 'Tornar Admin'}
-              </Button>
+              <div className="flex-1">
+                <Select
+                          value={selectedUser.role}
+                          onChange={(e) => handleSetRole(selectedUser, e.target.value)}
+                          disabled={togglingAdmin === selectedUser.id}
+                          className="w-full text-sm"
+                          aria-label="Cargo"
+                        >
+                          <option value="Aluno">Aluno</option>
+                          <option value="Testador">Testador</option>
+                          <option value="Admin">Admin</option>
+                        </Select>
+              </div>
               <Button className="flex-1 metallic-gradient text-black font-bold">Enviar Mensagem</Button>
             </div>
           </div>

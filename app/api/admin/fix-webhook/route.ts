@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { checkIsAdmin } from '@/lib/auth-server';
+import { checkIsFullAdmin } from '@/lib/auth-server';
 import { registerWebhook, getWebhookUrl } from '@/lib/evolution-webhook';
 
 // POST /api/admin/fix-webhook  { instanceName: "user_xxx" }
 export async function POST(req: NextRequest) {
-  if (!(await checkIsAdmin())) {
+  if (!(await checkIsFullAdmin())) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 

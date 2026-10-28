@@ -6,7 +6,7 @@ import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { fetchAccess } from "@/lib/access";
 import { useUser, useAuth } from "@clerk/nextjs";
-import { isAdminUser } from "@/lib/admin";
+import { isStaffUser } from "@/lib/admin";
 
 export default function MyCoursesPage() {
   const { userId } = useAuth();
@@ -16,7 +16,7 @@ export default function MyCoursesPage() {
   const [hasFullAccess, setHasFullAccess] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  const isAdmin = isAdminUser(user?.primaryEmailAddress?.emailAddress, user?.publicMetadata);
+  const isAdmin = isStaffUser(user?.primaryEmailAddress?.emailAddress, user?.publicMetadata);
 
   useEffect(() => {
     if (userId) {
@@ -29,7 +29,7 @@ export default function MyCoursesPage() {
       setLoading(true);
       
       // 1. Fetch courses — admins see all, regular users see only published
-      const adminCheck = isAdminUser(user?.primaryEmailAddress?.emailAddress, user?.publicMetadata);
+      const adminCheck = isStaffUser(user?.primaryEmailAddress?.emailAddress, user?.publicMetadata);
       let query = supabase
         .from('courses')
         .select('*, modules(order_index, lessons(video_url, order_index))')

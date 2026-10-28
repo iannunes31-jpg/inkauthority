@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { checkIsAdmin } from '@/lib/auth-server';
+import { checkIsAdmin, checkIsFullAdmin } from '@/lib/auth-server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 
 // Course reads stay public (anon key, client-side) — courses are meant to
@@ -79,7 +79,7 @@ export async function PATCH(req: Request) {
 }
 
 export async function DELETE(req: Request) {
-  if (!(await checkIsAdmin())) {
+  if (!(await checkIsFullAdmin())) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 

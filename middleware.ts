@@ -1,5 +1,5 @@
 import { clerkClient, clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
-import { isAdminUser } from "@/lib/admin";
+import { isStaffUser } from "@/lib/admin";
 import { NextResponse } from "next/server";
 import { blockIp, inspectUrl, isBlocked, requestInfo, securityEvent } from "@/lib/security";
 
@@ -42,7 +42,7 @@ export default clerkMiddleware(async (auth, req) => {
     if (userId) {
       try {
         const user = await (await clerkClient()).users.getUser(userId);
-        admin = isAdminUser(user.primaryEmailAddress?.emailAddress ?? user.emailAddresses[0]?.emailAddress, user.publicMetadata);
+        admin = isStaffUser(user.primaryEmailAddress?.emailAddress ?? user.emailAddresses[0]?.emailAddress, user.publicMetadata);
       } catch {}
     }
     if (!admin) return blockedPage(info.ip);

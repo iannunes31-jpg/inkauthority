@@ -21,9 +21,11 @@ export function AdminSidebar() {
 
   // Red counter on "Segurança" when the security agent saw something serious in the last 24h.
   const [serious, setSerious] = useState(0);
+  const [fullAdmin, setFullAdmin] = useState(true);
   useEffect(() => {
     const load = () => fetch("/api/admin/security?summary=1", { cache: "no-store" })
-      .then((r) => (r.ok ? r.json() : null)).then((d) => setSerious(d?.serious24h ?? 0)).catch(() => {});
+      .then((r) => { if (r.status === 403) setFullAdmin(false); return r.ok ? r.json() : null; })
+      .then((d) => setSerious(d?.serious24h ?? 0)).catch(() => {});
     load();
     const t = setInterval(load, 120_000);
     return () => clearInterval(t);
@@ -59,7 +61,7 @@ export function AdminSidebar() {
 
       <div className="flex-1 overflow-y-auto py-6 px-4 flex flex-col gap-2">
         <span className="text-[10px] font-bold tracking-widest uppercase text-muted-foreground mb-2 px-2">Menu Principal</span>
-        {links.map((link) => {
+        {links.filter((l) => fullAdmin || l.path !== "/admin/seguranca").map((link) => {
           const isActive = pathname === link.path;
           return (
             <Link
