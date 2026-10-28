@@ -28,7 +28,15 @@ async function createCheckoutSession(
   let methods = candidateMethods;
   for (let attempt = 0; attempt < candidateMethods.length; attempt++) {
     try {
-      return await stripe.checkout.sessions.create({ ...params, payment_method_types: methods });
+      // Only send options for the methods offered (e.g. no card options on a Pix-only checkout).
+      const options = params.payment_method_options
+        ? Object.fromEntries(Object.entries(params.payment_method_options).filter(([m]) => methods.includes(m as any)))
+        : undefined;
+      return await stripe.checkout.sessions.create({
+        ...params,
+        payment_method_types: methods,
+        ...(options ? { payment_method_options: Object.keys(options).length ? options : undefined } : {}),
+      });
     } catch (err: any) {
       // Card installments (parcelamento) not available on the account: keep the checkout working without them.
       if (/installments/i.test(err?.message || '') && (params.payment_method_options as any)?.card?.installments) {
@@ -62,7 +70,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { productId, productType, returnUrl: rawReturnUrl, couponCode } = await req.json();
+    const { productId, productType, returnUrl: rawReturnUrl, couponCode, paymentMethod } = await req.json();
     // Only same-site paths; "//evil.com" or "@evil.com" would redirect off-site.
     const returnUrl = typeof rawReturnUrl === 'string' && /^\/(?!\/)/.test(rawReturnUrl) ? rawReturnUrl : '/dashboard';
 
@@ -162,7 +170,8 @@ export async function POST(req: NextRequest) {
       },
       // boleto/pix don't support recurring billing -- only offer them for
       // one-time purchases.
-      isSubscription ? ['card'] : ['card', 'boleto', 'pix']
+      // The button the customer chose opens just that method (Pix QR code, or card with installments).
+      isSubscription ? ['card'] : paymentMethod === 'PIX' ? ['pix'] : paymentMethod === 'CREDIT_CARD' ? ['card'] : ['card', 'boleto', 'pix']
     );
 
     return NextResponse.json({ url: session.url });
