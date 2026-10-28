@@ -29,7 +29,7 @@ export default function CoursesPage() {
     "Como utilizar o tráfego pago de forma objetiva",
     "Acesso à comunidade exclusiva da Ink Authority",
     "🎁 BÔNUS: Análise de perfil grátis (para os 20 primeiros)",
-    "🎁 BÔNUS: Sorteio de uma mentoria prática entre os alunos",
+    "🎁 BÔNUS: Sorteio de uma Mentoria Prática de Preto e Cinza + Análise de Posicionamento + Plano de Ação",
   ];
 
   return (

@@ -171,6 +171,8 @@ export async function POST(req: NextRequest) {
         billingType,
         chargeType: 'DETACHED',
         maxInstallmentCount: billingType === 'CREDIT_CARD' || billingType === 'UNDEFINED' ? 12 : 1,
+        // Required by Asaas for Pix/boleto links: business days until the charge is due.
+        ...(billingType !== 'CREDIT_CARD' ? { dueDateLimitDays: 3 } : {}),
         notificationEnabled: true,
         externalReference: JSON.stringify({ userId, productId, productType: resolvedType }),
         successUrl,

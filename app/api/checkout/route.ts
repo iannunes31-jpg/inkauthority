@@ -30,6 +30,13 @@ async function createCheckoutSession(
     try {
       return await stripe.checkout.sessions.create({ ...params, payment_method_types: methods });
     } catch (err: any) {
+      // Card installments (parcelamento) not available on the account: keep the checkout working without them.
+      if (/installments/i.test(err?.message || '') && (params.payment_method_options as any)?.card?.installments) {
+        const { card, ...rest } = params.payment_method_options as any;
+        params = { ...params, payment_method_options: rest };
+        attempt--;
+        continue;
+      }
       const invalidType = err?.message?.match(/payment method type provided: (\w+) is invalid/i)?.[1];
       if (invalidType && methods.includes(invalidType as any) && methods.length > 1) {
         methods = methods.filter((m) => m !== invalidType);
@@ -146,6 +153,8 @@ export async function POST(req: NextRequest) {
         ...(!isSubscription ? {
           payment_method_options: {
             pix: { expires_after_seconds: 3600 },
+            // Parcelamento em até 12x no cartão.
+            card: { installments: { enabled: true } },
           },
         } : {}),
         success_url: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}${returnUrl}?success=true`,
