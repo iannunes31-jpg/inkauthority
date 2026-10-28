@@ -24,7 +24,15 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: `Webhook Error: ${err.message}` }, { status: 400 });
   }
 
-  if (event.type === 'checkout.session.completed') {
+  // Card: "completed" already comes paid. Pix/boleto: "completed" only means the code was generated
+  // (payment_status "unpaid"); access is granted when "async_payment_succeeded" arrives.
+  const isCheckoutEvent = event.type === 'checkout.session.completed' || event.type === 'checkout.session.async_payment_succeeded';
+  const paidSession = isCheckoutEvent && ['paid', 'no_payment_required'].includes((event.data.object as Stripe.Checkout.Session).payment_status);
+  if (isCheckoutEvent && !paidSession) {
+    console.log('[stripe webhook] waiting for payment', (event.data.object as Stripe.Checkout.Session).id);
+  }
+
+  if (paidSession) {
     const session = event.data.object as Stripe.Checkout.Session;
     const userId = session.metadata?.userId;
     const productId = session.metadata?.productId;
