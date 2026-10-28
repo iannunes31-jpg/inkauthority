@@ -161,6 +161,7 @@ export async function POST(req: NextRequest) {
         ...(!isSubscription ? {
           payment_method_options: {
             pix: { expires_after_seconds: 3600 },
+            boleto: { expires_after_days: 3 },
             // Parcelamento em até 12x no cartão.
             card: { installments: { enabled: true } },
           },
@@ -171,7 +172,7 @@ export async function POST(req: NextRequest) {
       // boleto/pix don't support recurring billing -- only offer them for
       // one-time purchases.
       // The button the customer chose opens just that method (Pix QR code, or card with installments).
-      isSubscription ? ['card'] : paymentMethod === 'PIX' ? ['pix'] : paymentMethod === 'CREDIT_CARD' ? ['card'] : ['card', 'boleto', 'pix']
+      isSubscription ? ['card'] : paymentMethod === 'PIX' ? ['pix'] : paymentMethod === 'BOLETO' ? ['boleto'] : paymentMethod === 'CREDIT_CARD' ? ['card'] : ['card', 'boleto', 'pix']
     );
 
     return NextResponse.json({ url: session.url });

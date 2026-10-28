@@ -30,7 +30,7 @@ interface PaymentOption {
 const PAYMENT_OPTIONS: PaymentOption[] = [
   { id: "CREDIT_CARD", label: "Cartão de Crédito", description: "Até 12x sem juros", icon: <CreditCard className="w-5 h-5" />, gateway: "stripe" },
   { id: "PIX", label: "Pix", description: "Aprovação instantânea", icon: <QrCode className="w-5 h-5" />, gateway: "stripe" },
-  { id: "BOLETO", label: "Boleto Bancário", description: "Prazo de 3 dias úteis", icon: <FileText className="w-5 h-5" />, gateway: "asaas" },
+  { id: "BOLETO", label: "Boleto Bancário", description: "Prazo de 3 dias úteis", icon: <FileText className="w-5 h-5" />, gateway: "stripe" },
 ];
 
 const PLAN_BULLETS: Record<PlanId, string[]> = {
